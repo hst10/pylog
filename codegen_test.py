@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 
 import pycgen as c
 
@@ -6,38 +7,6 @@ import copy
 import ast
 import astunparse
 import astpretty
-
-source_code_1 = """
-def my_kernel(A, n):
-    for i in range(n):
-        for j in range(n):
-            A[i,j] = i + j
-"""
-
-source_code_2 = """
-# def add_one(x):
-#     return x + 1
-
-map(lambda x, y: x+y, [9, 1, 4])
-# map(add_one, [9, 1, 4])
-"""
-
-source_code_3 = """
-a = [321, 123, 32]
-b = [[1, 1], [1, 0]]
-map(lambda x: x[-1] + x[0] + x[1], a)
-"""
-
-source_code_4 = """
-def foo(m, n):
-    return m + n
-a = [321, 123, 32]
-b = [1, 3, 4]
-c = map(lambda x, y: x+y, a, b)
-# c = map(foo, a, b)
-"""
-
-
 
 def gen_for_loop(size, id, loop_body): 
     assert(isinstance(size, int))
@@ -56,7 +25,7 @@ def inst_lambda(lambda_node, param2arg, id):
         lambda_body_str = lambda_body_str.replace(param, arg + "[%s]" % id)
     return lambda_body_str
 
-class LogicGen(ast.NodeVisitor):
+class LogicPy(ast.NodeVisitor):
     def __init__(self):
         self.logic_ast = c.Block()
         self.array_sizes = {}
@@ -108,10 +77,9 @@ if __name__ == "__main__":
     src_file.close()
 
     ast_py = ast.parse(src)
+    astpretty.pprint(ast_py)
 
-# astpretty.pprint(ast_3)
-
-    gen_inst = LogicGen()
+    gen_inst = LogicPy()
     gen_inst.visit(ast_py)
 
     print("Input code: ")

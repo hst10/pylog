@@ -1,1 +1,1 @@
-# LogicGen
+# LogicPy
