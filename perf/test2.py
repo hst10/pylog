@@ -1,5 +1,19 @@
-a = [6, 8, 0, 6, 1, 2, 8, 5, 4, 5]
-b = [1, 3, 4, 6, 8, 0, 6, 1, 2, 5]
-c = [2, 3, 4, 6, 8, 0, 6, 1, 2, 8]
-d = [3, 3, 4, 6, 8, 0, 6, 1, 2, 8]
-result = map(lambda x, y, z, m: x + y * z / m, a, b, c, d)
+import random
+import time
+import sys
+
+if len(sys.argv) < 2:
+    exit()
+
+order = int(sys.argv[1])
+length = 2**order
+
+a = [random.random() for x in range(length)]
+b = [random.random() for x in range(length)]
+c = [random.random() for x in range(length)]
+d = [random.random() for x in range(length)]
+
+start = time.time()
+e = map(lambda x, y, z, m: x+y*z/m, a, b, c, d)
+end = time.time()
+print("test2, python, %d, %f" % (order, end - start))

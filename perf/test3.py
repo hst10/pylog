@@ -1,15 +1,24 @@
-a = [6, 8, 0, 6, 1, 2, 8, 5, 4, 5]
-b = [1, 3, 4, 6, 8, 0, 6, 1, 2, 5]
-c = [2, 3, 4, 6, 8, 0, 6, 1, 2, 8]
-d = [3, 3, 4, 6, 8, 0, 6, 1, 2, 8]
+import random
+import time
+import sys
 
-def foo(x):
-    return x + 1
+def foo(x, y, z):
+    return x + y * z
 
-def bar(x):
-    return x*2
+def bar(x, y, z):
+    return x * y * z
 
-test = map(lambda x: foo(x) + bar(x), a)
-print(test)
+if len(sys.argv) < 2:
+    exit()
 
-# result = map(lambda x, y, z, m: x + y * z / m, a, b, c, d)
+order = int(sys.argv[1])
+length = 2**order
+
+a = [random.random() for x in range(length)]
+b = [random.random() for x in range(length)]
+c = [random.random() for x in range(length)]
+
+start = time.time()
+d = map(lambda x, y, z: foo(x, y, z) / bar(x, y, z), a, b, c)
+end = time.time()
+print("test3, python, %d, %f" % (order, end - start))

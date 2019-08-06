@@ -1,12 +1,17 @@
-# import numpy as np
+import random
+import time
+import sys
 
-# data = np.random.rand(10)
+if len(sys.argv) < 2:
+    exit()
 
-data = [23, 43, 23, 5, 65, 23, 23, 43, 23, 5]
+order = int(sys.argv[1])
+length = 2**order
 
-# def conv(x):
-#     return x[-1] + x[0] + x[1]
+a = [random.random() for x in range(length)]
+w = [random.random() for x in range(3)]
 
-# c = hmap(lambda x: x[-1, 0] + x[0, 0] + x[1, 0], data[1:9, :])
-# c = hmap(lambda x: x[-1] + x[0] + x[1], data[1:9])
-c = hmap(lambda x: x + x + x, data[1:9])
+start = time.time()
+b = [a[i-1]*w[0] + a[i]*w[1] + a[i+1]*w[2] for i in range(1, len(a)-1)]
+end = time.time()
+print("test4, python, %d, %f" % (order, end - start))

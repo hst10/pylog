@@ -14,28 +14,29 @@ int main(int argc, char * argv[])
     const int length = 1 << order; 
     float* a = new float[length]; 
     float* b = new float[length]; 
-    float* c = new float[length]; 
+    float* w = new float[3]; 
+
+    for (int i = 0; i < 3; i++)
+        w[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 
     for (int i = 0; i < length; i++)
-    {
         a[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        b[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    }
 
     auto start = std::chrono::system_clock::now();
+
 #ifdef OMP
     #pragma omp parallel for
 #endif
-    for (int i = 0; i < length; i++)
+    for (int i = 1; i < length - 1; i++)
     {
-        c[i] = a[i] + b[i];
+        b[i-1] = a[i-1]*w[0] + a[i]*w[1] + a[i+1]*w[2];
     }
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
 #ifdef OMP
-    std::cout<< "test1, omp, " << order << ", " << elapsed_seconds.count() << std::endl;
+    std::cout<< "test4, omp, " << order << ", " << elapsed_seconds.count() << std::endl;
 #else
-    std::cout<< "test1, noomp, " << order << ", " << elapsed_seconds.count() << std::endl;
+    std::cout<< "test4, noomp, " << order << ", " << elapsed_seconds.count() << std::endl;
 #endif
 
     return 0;
