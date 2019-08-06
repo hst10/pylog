@@ -25,6 +25,16 @@ def inst_lambda(lambda_node, param2arg, id):
         lambda_body_str = lambda_body_str.replace(param, arg + "[%s]" % id)
     return lambda_body_str
 
+def get_size(data):
+    if isinstance(data, ast.Subscript):
+        if isinstance(data.slice, ast.Slice):
+            lower = 0 if data.slice.lower == None else data.slice.lower.n
+            upper = 
+
+            return 
+        elif 
+        return 
+
 class LogicPy(ast.NodeVisitor):
     def __init__(self):
         self.logic_ast = c.Block()
@@ -43,10 +53,28 @@ class LogicPy(ast.NodeVisitor):
 
         if isinstance(node.value, ast.Call):
             call_nd = node.value
-            if call_nd.func.id == "map": 
-                print('Found function call: ', call_nd.func.id)
-                arg_ids = [call_nd.args[i].id for i in range(1, len(call_nd.args))]
+            if call_nd.func.id == "hmap":
+                print('Found hyper map call. ')
+                arg_ids = [ call_nd.args[i].id if isinstance(call_nd.args[i], ast.Name) 
+                            else call_nd.args[i].value.id for i in range(1, len(call_nd.args))]
+                map_size = self.array_sizes[arg_ids[0]]
+                param_ids = []
+                map_op = call_nd.args[0]
+                loop_idx = 'i'
+                # if isinstance(map_op, ast.Lambda):
+                #     param_ids = [ elem.arg for elem in map_op.args.args]
+                #     param2arg = dict(zip(param_ids, arg_ids))
+                #     loop_body = target_id + "[%s] = " % loop_idx + inst_lambda(map_op, param2arg, loop_idx)
+                    
+                #     loop = gen_for_loop(map_size, loop_idx, loop_body)
+                #     self.logic_ast.append(loop)
 
+
+
+            if call_nd.func.id == "map": 
+                print('Found map call. ')
+                arg_ids = [ call_nd.args[i].id if isinstance(call_nd.args[i], ast.Name) 
+                            else call_nd.args[i].value.id for i in range(1, len(call_nd.args))]
                 map_size = self.array_sizes[arg_ids[0]]
 
                 param_ids = []
@@ -72,7 +100,9 @@ class LogicPy(ast.NodeVisitor):
 if __name__ == "__main__":
     if len(sys.argv) < 2: 
         print("Usage: %s test.py" % __file__ )
-    src_file = open(sys.argv[1])
+        src_file = open("./tests/test_conv.py")
+    else:
+        src_file = open(sys.argv[1])
     src = src_file.read()
     src_file.close()
 
