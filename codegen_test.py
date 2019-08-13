@@ -67,6 +67,9 @@ class ASTEditor(ast.NodeTransformer):
             ctx=subscript_nd.ctx
         ), subscript_nd)
 
+class CodegenConfig:
+    hmap = False
+
 
 class LogicPy(ast.NodeVisitor):
     def __init__(self):
@@ -74,7 +77,23 @@ class LogicPy(ast.NodeVisitor):
         self.array_sizes = {}
         self.funcs = {}
 
-    def codegen_hmap(self, assign_nd):
+    def visit(self, node, config=None):
+        """Visit a node."""
+        method = 'visit_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+        return visitor(node, config)
+
+    def generic_visit(self, node, config=None):
+        """Called if no explicit visitor function exists for a node."""
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.visit(item, config)
+            elif isinstance(value, ast.AST):
+                self.visit(value, config)
+
+    def codegen_hmap(self, assign_nd, config=None):
         target_id = assign_nd.targets[0].id
         assert(isinstance(assign_nd.value, ast.Call))
         call_nd = assign_nd.value
@@ -82,7 +101,7 @@ class LogicPy(ast.NodeVisitor):
         arg_ids = [ call_nd.args[i].id if isinstance(call_nd.args[i], ast.Name) 
                     else call_nd.args[i].value.id for i in range(1, len(call_nd.args))]
         print("arg_ids = ", arg_ids)
-        map_size = self.array_sizes[arg_ids[0]]
+        # map_size = self.array_sizes[arg_ids[0]]
         param_ids = []
         hmap_op = call_nd.args[0]
         loop_idx = 'i'
@@ -104,7 +123,7 @@ class LogicPy(ast.NodeVisitor):
         #     loop = gen_for_loop(map_size, loop_idx, loop_body)
         #     self.logic_ast.append(loop)
 
-    def codegen_map(self, assign_nd):
+    def codegen_map(self, assign_nd, config=None):
         target_id = assign_nd.targets[0].id
         assert(isinstance(assign_nd.value, ast.Call))
         call_nd = assign_nd.value
@@ -133,10 +152,10 @@ class LogicPy(ast.NodeVisitor):
             ## TODO: Add support for map with pre-defined functions 
 
 
-    def visit_FunctionDef(self, node):
+    def visit_FunctionDef(self, node, config=None):
         self.funcs[node.name] = node
 
-    def visit_Assign(self, node):
+    def visit_Assign(self, node, config=None):
         target_id = node.targets[0].id
 
         print("type of assign node", type(node))
@@ -179,10 +198,17 @@ class ast_visitor_test(ast.NodeVisitor):
         print("Type: ", type(node))
         if config != None:
             print("MESSAGE = ", config)
+        print("Parent = ", node.parent)
         return node.id
     def visit_BinOp(self, node, config=None):
         print("BinOp, type: ", type(node))
         ret = self.visit(node.left, "Hello!!! ")
+
+
+def make_parent(root):
+    for node in ast.walk(root):
+        for child in ast.iter_child_nodes(node):
+            child.parent = node
 
 if __name__ == "__main__":
     if len(sys.argv) < 2: 
@@ -197,14 +223,16 @@ if __name__ == "__main__":
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
+    make_parent(ast_py)
+
     print(type(ast_py))
 
     # gen_inst = LogicPy()
     # gen_inst.visit(ast_py)
 
-    print("Input code: ")
-    print(src)
-    print("Output code: ")
+    # print("Input code: ")
+    # print(src)
+    # print("Output code: ")
     # gen_inst.codegen()
 
     print("Testing ast visitor: ")
