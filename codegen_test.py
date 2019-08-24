@@ -2,6 +2,7 @@
 
 import pycgen as c
 from utils import *
+from nodes import *
 
 import sys
 import copy
@@ -40,19 +41,6 @@ def inst_lambda(lambda_node, param2arg, id):
 #         elif 
 #         return
 
-
-
-class Variable:
-    def __init__(self, name=None, offset=None, index=None):
-        self.name = name
-        self.offset = offset
-        self.index = index
-    def set_name(self, name):
-        self.name = name
-    def set_offset(self, offset):
-        self.offset = offset
-    def set_index(self, index):
-        self.index = index
 
 class ASTEditor(ast.NodeTransformer):
     def visit_Subscript(self, subscript_nd):
@@ -235,7 +223,7 @@ if __name__ == "__main__":
     # print("Output code: ")
     # gen_inst.codegen()
 
-    print("Testing ast visitor: ")
+    print("Testing AST visitor: ")
 
     ast_visitor_test_inst = ast_visitor_test()
     ast_visitor_test_inst.visit(ast_py)
