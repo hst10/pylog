@@ -11,7 +11,7 @@ import ast
 import astunparse
 import astpretty
 
-class ast_visitor_test(ast.NodeVisitor):
+class LpAnalyzer(ast.NodeVisitor):
     def visit(self, node, config=None):
         """Visit a node."""
         method = 'visit_' + node.__class__.__name__
@@ -28,16 +28,34 @@ class ast_visitor_test(ast.NodeVisitor):
             elif isinstance(value, ast.AST):
                 self.visit(value, config)
 
+    def visit_NoneType(self, node, config=None):
+        pass
+
+    def visit_Num(self, node, config=None):
+        node.lp_data = ConstNode(node)
+        print("Num: ", node.lp_data)
+
     def visit_Name(self, node, config=None):
-        print("found Name node: ", node.id)
-        print("Type: ", type(node))
-        if config != None:
-            print("MESSAGE = ", config)
-        print("Parent = ", node.parent)
-        return node.id
-    def visit_BinOp(self, node, config=None):
-        print("BinOp, type: ", type(node))
-        ret = self.visit(node.left, "Hello!!! ")
+        node.lp_data = VariableNode(node)
+        print("Name: ", node.lp_data)
+
+    def visit_UnaryOp(self, node, config=None):
+        self.visit(node.operand)
+        node.lp_data = ConstNode(node)
+        print("UnaryOp: ", node.lp_data)
+
+    def visit_Slice(self, node, config=None):
+        self.visit(node.lower)
+        self.visit(node.upper)
+        self.visit(node.step)
+        node.lp_data = SliceNode(node)
+        print("Slice: ", node.lp_data)
+
+    def visit_ExtSlice(self, node, config=None):
+        for slice_node in node.dims:
+            self.visit(slice_node)
+        node.lp_data = SliceNode(node)
+        print("ExtSlice: ", node.lp_data)
 
 def make_parent(root):
     for node in ast.walk(root):
@@ -59,17 +77,8 @@ if __name__ == "__main__":
 
     make_parent(ast_py)
 
-    print(type(ast_py))
+    analyzer = LpAnalyzer()
+    analyzer.visit(ast_py)
 
-    # gen_inst = LogicPy()
-    # gen_inst.visit(ast_py)
-
-    # print("Input code: ")
-    # print(src)
-    # print("Output code: ")
-    # gen_inst.codegen()
-
-    print("Testing AST visitor: ")
-
-    ast_visitor_test_inst = ast_visitor_test()
-    ast_visitor_test_inst.visit(ast_py)
+    print("Input code: ")
+    print(src)
