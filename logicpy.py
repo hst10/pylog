@@ -11,7 +11,27 @@ import ast
 import astunparse
 import astpretty
 
-class LpAnalyzer(ast.NodeVisitor):
+class LpPostorderVisitor(ast.NodeVisitor):
+    def visit(self, node, config=None):
+        """Visit a node."""
+        # visit children first
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.visit(item, config)
+            elif isinstance(value, ast.AST):
+                self.visit(value, config)
+        # visit current node after visiting children (postorder)
+        method = 'visit_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+        return visitor(node, config)
+
+    def generic_visit(self, node, config=None):
+        """Called if no explicit visitor function exists for a node."""
+        pass
+
+class LpPreorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
         """Visit a node."""
         method = 'visit_' + node.__class__.__name__
@@ -28,6 +48,12 @@ class LpAnalyzer(ast.NodeVisitor):
             elif isinstance(value, ast.AST):
                 self.visit(value, config)
 
+class LpTester(LpPostorderVisitor):
+    pass
+
+
+class LpAnalyzer(LpPostorderVisitor):
+
     def visit_NoneType(self, node, config=None):
         pass
 
@@ -40,22 +66,21 @@ class LpAnalyzer(ast.NodeVisitor):
         print("Name: ", node.lp_data)
 
     def visit_UnaryOp(self, node, config=None):
-        self.visit(node.operand)
         node.lp_data = ConstNode(node)
         print("UnaryOp: ", node.lp_data)
 
     def visit_Slice(self, node, config=None):
-        self.visit(node.lower)
-        self.visit(node.upper)
-        self.visit(node.step)
         node.lp_data = SliceNode(node)
         print("Slice: ", node.lp_data)
 
     def visit_ExtSlice(self, node, config=None):
-        for slice_node in node.dims:
-            self.visit(slice_node)
         node.lp_data = SliceNode(node)
         print("ExtSlice: ", node.lp_data)
+
+    def visit_BinOp(self, node, config=None):
+        pass
+        # self.visit(node.left)
+        # self.
 
 def make_parent(root):
     for node in ast.walk(root):
@@ -77,8 +102,13 @@ if __name__ == "__main__":
 
     make_parent(ast_py)
 
+    print("Top module type: ", type(ast_py))
+
     analyzer = LpAnalyzer()
+    tester   = LpTester()
+
     analyzer.visit(ast_py)
+    tester.visit(ast_py)
 
     print("Input code: ")
     print(src)
