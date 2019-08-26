@@ -53,7 +53,6 @@ class SliceNode(Node):
             return "ExtSlice Content"
 
     def extract_slice(self, ast_node):
-        print(type(ast_node))
         lower = None
         upper = None
         step  = None
@@ -78,8 +77,6 @@ class SliceNode(Node):
             self.dim = len(self.ast_node.dims)
             self.lower = None
             self.upper = None
-            for s in self.ast_node.dims:
-                print("type of elem in extslice: ", type(s))
             self.slices = [self.extract_slice(s) for s in self.ast_node.dims]
 
         else:
@@ -116,23 +113,58 @@ class VariableNode(Node):
             self.upper = slice_node.upper
             self.lower = slice_node.lower
             self.slices = slice_node.slices
-
         elif isinstance(self.ast_node, ast.Name):
             self.name = self.ast_node.id
+            self.offset = None
+            self.index = None
+        elif isinstance(self.ast_node, ast.arg):
+            self.name = self.ast_node.arg
             self.offset = None
             self.index = None
         else:
             raise NotImplementedError
 
+class BinOpNode(Node):
+    def __init__(self, ast_node=None, name=None, offset=None, index=None):
+        Node.__init__(self, ast_node)
+        self.name = name
+        if ast_node != None:
+            self.extract(ast_node)
+
+    def __repr__(self):
+        if isinstance(self.op, ast.Mult):
+            return str(self.left) + "*" + str(self.right)
+
+
+    def extract(self, ast_node):
+        self.left = ast_node.left.lp_data
+        self.right = ast_node.right.lp_data
+        self.op = ast_node.op
 
 class LambdaNode(Node):
-    def __init__(self, ast_node=None):
+    def __init__(self, ast_node=None, name=None, offset=None, index=None):
         Node.__init__(self, ast_node)
-        self.params = []
+        self.name = name
+        if ast_node != None:
+            self.extract(ast_node)
+    def __repr__(self):
+        return "LambdaNode"
 
+    def extract(self, ast_node):
+        self.args = ast_node.args.lp_data
+        self.body = ast_node.body.lp_data
 
 class HmapNode(Node):
-    def __init__(self, asNode=None, lambda_node=None, op_lst=None):
+    def __init__(self, ast_node=None, name=None, offset=None, index=None):
         Node.__init__(self, ast_node)
-        self.lambda_node = lambda_node
-        self.op_lst = op_lst
+        self.name = name
+        if ast_node != None:
+            self.extract(ast_node)
+
+    def extract(self, ast_node):
+        self.func = ast_node.args[0].lp_data
+        self.data = ast_node.args[1].lp_data
+        self.target = ast_node.parent.targets[0].lp_data
+        print(self.func)
+        print(self.data)
+        print(self.target)

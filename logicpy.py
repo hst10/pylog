@@ -25,7 +25,10 @@ class LpPostorderVisitor(ast.NodeVisitor):
         # visit current node after visiting children (postorder)
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        return visitor(node, config)
+        visit_return = visitor(node, config)
+        if config == "DEBUG" and hasattr(node, "lp_data"):
+            print(node.__class__.__name__+": ", node.lp_data)
+        return visit_return
 
     def generic_visit(self, node, config=None):
         """Called if no explicit visitor function exists for a node."""
@@ -49,8 +52,11 @@ class LpPreorderVisitor(ast.NodeVisitor):
                 self.visit(value, config)
 
 class LpTester(LpPostorderVisitor):
-    pass
-
+    # pass
+    def visit_Assign(self, node, config=None):
+        print(type(node))
+    def visit_stmt(self, node, config=None):
+        print(type(node))
 
 class LpAnalyzer(LpPostorderVisitor):
 
@@ -59,28 +65,63 @@ class LpAnalyzer(LpPostorderVisitor):
 
     def visit_Num(self, node, config=None):
         node.lp_data = ConstNode(node)
-        print("Num: ", node.lp_data)
 
     def visit_Name(self, node, config=None):
         node.lp_data = VariableNode(node)
-        print("Name: ", node.lp_data)
 
     def visit_UnaryOp(self, node, config=None):
         node.lp_data = ConstNode(node)
-        print("UnaryOp: ", node.lp_data)
 
     def visit_Slice(self, node, config=None):
         node.lp_data = SliceNode(node)
-        print("Slice: ", node.lp_data)
 
     def visit_ExtSlice(self, node, config=None):
         node.lp_data = SliceNode(node)
-        print("ExtSlice: ", node.lp_data)
+
+    def visit_Subscript(self, node, config=None):
+        node.lp_data = VariableNode(node)
 
     def visit_BinOp(self, node, config=None):
+        node.lp_data = BinOpNode(node)
+
+    def visit_arg(self, node, config=None):
+        node.lp_data = VariableNode(node)
+
+    def visit_arguments(self, node, config=None):
+        node.lp_data = [ e.lp_data for e in node.args ]
+
+    def visit_Lambda(self, node, config=None):
+        node.lp_data = LambdaNode(node)
+
+    def visit_Call(self, node, config=None):
+        if node.func.id == "hmap":
+            node.lp_data = HmapNode(node)
+
+
+class LpCodeGenerator(ast.NodeVisitor):
+    def codegen(self, node, config=None):
+        """Visit a node."""
+        # visit children first
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.codegen(item, config)
+            elif isinstance(value, ast.AST):
+                self.visit(value, config)
+        # visit current node after visiting children (postorder)
+        method = 'codegen_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_codegen)
+        visit_return = visitor(node, config)
+        if config == "DEBUG" and hasattr(node, "lp_data"):
+            print(node.__class__.__name__+": ", node.lp_data)
+        return visit_return
+
+    def generic_codegen(self, node, config=None):
+        """Called if no explicit visitor function exists for a node."""
         pass
-        # self.visit(node.left)
-        # self.
+
+#    def codegen_
 
 def make_parent(root):
     for node in ast.walk(root):
