@@ -108,7 +108,7 @@ class LpCodeGenerator(ast.NodeVisitor):
                     if isinstance(item, ast.AST):
                         self.codegen(item, config)
             elif isinstance(value, ast.AST):
-                self.visit(value, config)
+                self.codegen(value, config)
         # visit current node after visiting children (postorder)
         method = 'codegen_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_codegen)
@@ -121,7 +121,11 @@ class LpCodeGenerator(ast.NodeVisitor):
         """Called if no explicit visitor function exists for a node."""
         pass
 
-#    def codegen_
+    def codegen_Call(self, node, config=None):
+        cc = CodegenConfig(3, "  ", 4)
+        cc = CodegenConfig()
+        node.lp_data.codegen(cc)
+        print(node.lp_data.src)
 
 def make_parent(root):
     for node in ast.walk(root):
@@ -147,9 +151,11 @@ if __name__ == "__main__":
 
     analyzer = LpAnalyzer()
     tester   = LpTester()
+    codegen  = LpCodeGenerator()
 
     analyzer.visit(ast_py)
     tester.visit(ast_py)
+    codegen.codegen(ast_py)
 
     print("Input code: ")
     print(src)

@@ -1,5 +1,11 @@
 import ast
 
+class CodegenConfig:
+    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0):
+        self.indent_level = indent_level
+        self.indent_str = indent_str
+        self.idx_var_num = idx_var_num
+
 class Node:
     def __init__(self, ast_node=None):
         self.ast_node = ast_node
@@ -42,7 +48,7 @@ class SliceNode(Node):
         self.dim = None
         self.lower = None
         self.upper = None
-        self.step  = None
+        self.step  = 1
         if ast_node != None:
             self.extract(ast_node)
 
@@ -55,7 +61,7 @@ class SliceNode(Node):
     def extract_slice(self, ast_node):
         lower = None
         upper = None
-        step  = None
+        step  = 1
         if hasattr(ast_node.lower, "lp_data"):
             lower = ast_node.lower.lp_data.value
         if hasattr(ast_node.upper, "lp_data"):
@@ -154,6 +160,12 @@ class LambdaNode(Node):
         self.args = ast_node.args.lp_data
         self.body = ast_node.body.lp_data
 
+    def codegen(self, config):
+        self.src = ""
+        self.src += config.indent_level*config.indent_str + "Hello! \n"
+        return self.src
+        pass
+
 class HmapNode(Node):
     def __init__(self, ast_node=None, name=None, offset=None, index=None):
         Node.__init__(self, ast_node)
@@ -165,6 +177,37 @@ class HmapNode(Node):
         self.func = ast_node.args[0].lp_data
         self.data = ast_node.args[1].lp_data
         self.target = ast_node.parent.targets[0].lp_data
-        print(self.func)
-        print(self.data)
-        print(self.target)
+        print("hmap_func   = ", self.func)
+        print("hmap_data   = ", self.data)
+        print("hmap_target = ", self.target)
+
+        print(self.data.dim)
+        print(self.data.slices)
+
+    def codegen(self, config):
+        self.src = ""
+        dim = self.data.dim
+        indent_level = config.indent_level
+        indent_str = config.indent_str
+        idx_var_num = config.idx_var_num
+        for dim_i in range(dim):
+            idx_var_num += dim_i
+            
+            lower_i = self.data.slices[dim_i][0]
+            upper_i = self.data.slices[dim_i][1]
+            step_i = self.data.slices[dim_i][2]
+            self.src += indent_str*indent_level \
+                        + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
+                        (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
+                         idx_var_num, step_i)
+
+            indent_level += 1
+
+        config.indent_level = indent_level
+        config.idx_var_num = idx_var_num
+        self.src += self.func.codegen(config)
+
+        for dim_i in range(dim):
+            indent_level -= 1
+            self.src += indent_str*indent_level + "}\n"
+            
