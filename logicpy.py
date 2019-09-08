@@ -11,6 +11,7 @@ import ast
 import astunparse
 import astpretty
 
+
 class LpPostorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
         """Visit a node."""
@@ -60,6 +61,21 @@ class LpTester(LpPostorderVisitor):
 
 class LpAnalyzer(LpPostorderVisitor):
 
+    def isLambdaArg(self, node):
+        assert(isinstance(node, ast.Subscript))
+        """Check if Subscript node is lambda argument, which represents delta/offset. """
+        is_lambda_arg = False
+        p_node = node.parent
+        while (not isinstance(p_node, ast.Module)):
+            if isinstance(p_node, ast.Lambda):
+                arg_lst = [elem.arg for elem in p_node.args.args]
+
+                if node.value.id in arg_lst:
+                    is_lambda_arg = True
+                    break
+            p_node = p_node.parent
+        return is_lambda_arg
+
     def visit_NoneType(self, node, config=None):
         pass
 
@@ -79,6 +95,8 @@ class LpAnalyzer(LpPostorderVisitor):
         node.lp_data = SliceNode(node)
 
     def visit_Subscript(self, node, config=None):
+        if self.isLambdaArg(node):
+            node.is_delta_node = True
         node.lp_data = VariableNode(node)
 
     def visit_BinOp(self, node, config=None):
@@ -96,6 +114,8 @@ class LpAnalyzer(LpPostorderVisitor):
     def visit_Call(self, node, config=None):
         if node.func.id == "hmap":
             node.lp_data = HmapNode(node)
+        elif node.func.id == "dot":
+            node.lp_data = DotNode(node)
 
 
 class LpCodeGenerator(ast.NodeVisitor):
@@ -145,7 +165,7 @@ if __name__ == "__main__":
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
-    make_parent(ast_py)
+    make_parent(ast_py) # need to be called before analyzer
 
     print("Top module type: ", type(ast_py))
 

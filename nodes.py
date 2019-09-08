@@ -160,54 +160,112 @@ class LambdaNode(Node):
         self.args = ast_node.args.lp_data
         self.body = ast_node.body.lp_data
 
-    def codegen(self, config):
+    def codegen(self, config, arguments, output_var):
         self.src = ""
-        self.src += config.indent_level*config.indent_str + "Hello! \n"
+        
+        self.iter_vars = config.iter_vars
+        self.param2arg = dict(zip(self.args, arguments))
+        self.output_var = output_var
+
+        self.src += config.indent_level*config.indent_str + "\n"
+        self.src += str(type(self.args))
         return self.src
-        pass
 
 class HmapNode(Node):
     def __init__(self, ast_node=None, name=None, offset=None, index=None):
         Node.__init__(self, ast_node)
         self.name = name
+        self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
 
     def extract(self, ast_node):
-        self.func = ast_node.args[0].lp_data
-        self.data = ast_node.args[1].lp_data
+        arg_lst = [ arg.lp_data for arg in ast_node.args ]
+        self.func = arg_lst[0]
+        self.data = arg_lst[1:]
         self.target = ast_node.parent.targets[0].lp_data
-        print("hmap_func   = ", self.func)
-        print("hmap_data   = ", self.data)
-        print("hmap_target = ", self.target)
+        self.dim = self.data[0].dim
+        # print("hmap_func   = ", self.func)
+        # print("hmap_data   = ", self.data)
+        # print("hmap_target = ", self.target)
 
-        print(self.data.dim)
-        print(self.data.slices)
+        # print(self.data.dim)
+        # print(self.data.slices)
 
     def codegen(self, config):
         self.src = ""
-        dim = self.data.dim
+        dim = self.dim
         indent_level = config.indent_level
         indent_str = config.indent_str
         idx_var_num = config.idx_var_num
         for dim_i in range(dim):
-            idx_var_num += dim_i
+            idx_var_num += 1
             
-            lower_i = self.data.slices[dim_i][0]
-            upper_i = self.data.slices[dim_i][1]
-            step_i = self.data.slices[dim_i][2]
+            # assuming these are all consts not variables
+            lower_i = self.data[0].slices[dim_i][0]
+            upper_i = self.data[0].slices[dim_i][1]
+            step_i = self.data[0].slices[dim_i][2]
             self.src += indent_str*indent_level \
                         + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
                         (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
                          idx_var_num, step_i)
+            self.iter_vars.append("i%d" % idx_var_num)
 
             indent_level += 1
 
         config.indent_level = indent_level
         config.idx_var_num = idx_var_num
-        self.src += self.func.codegen(config)
+        config.iter_vars = self.iter_vars
+        self.src += self.func.codegen(config, self.data, self.target)
 
         for dim_i in range(dim):
             indent_level -= 1
             self.src += indent_str*indent_level + "}\n"
+
+        config.indent_level = indent_level
             
+class DotNode(Node):
+    def __init__(self, ast_node=None):
+        Node.__init__(self, ast_node)
+        if ast_node != None:
+            self.extract(ast_node)
+
+    def extract(self, ast_node):
+        assert(len(ast_node.args) == 2)
+        self.operands = [ e.lp_data for e in ast_node.args ]
+        self.dim = self.operands[0].dim
+
+    def codegen(self, config):
+        self.src = ""
+        indent_level = config.indent_level
+        indent_str = config.indent_str
+        idx_var_num = config.idx_var_num
+        for dim_i in range(self.dim):
+            idx_var_num += 1
+
+            # assuming these are all consts not variables
+            lower_i = self.operands[0].slices[dim_i][0]
+            upper_i = self.operands[0].slices[dim_i][1]
+            step_i  = self.operands[0].slices[dim_i][2]
+            range_i = upper_i - lower_i
+
+            self.src += indent_str*indent_level \
+                        + "dot_i%d: for (int i%d = 0; i%d < %d; i%d += %d) {\n" %   \
+                        (idx_var_num, idx_var_num, idx_var_num, range_i, \
+                         idx_var_num, step_i)
+
+            indent_level += 1
+
+
+        config.indent_level = indent_level
+        config.idx_var_num = idx_var_num
+        # self.src += self.func.codegen(config)
+
+        for dim_i in range(self.dim):
+            indent_level -= 1
+            self.src += indent_str*indent_level + "}\n"
+            
+        config.indent_level = indent_level
+
+
+
