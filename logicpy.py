@@ -112,7 +112,7 @@ class LpAnalyzer(LpPostorderVisitor):
         node.lp_data = LambdaNode(node)
 
     def visit_Call(self, node, config=None):
-        if node.func.id == "hmap":
+        if node.func.id in {"hmap", "map"}:
             node.lp_data = HmapNode(node)
         elif node.func.id == "dot":
             node.lp_data = DotNode(node)

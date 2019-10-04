@@ -155,7 +155,6 @@ class VariableNode(Node):
 class BinOpNode(Node):
     def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
-        self.name = name
         if ast_node != None:
             self.extract(ast_node)
 
