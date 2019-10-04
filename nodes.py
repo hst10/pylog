@@ -1,17 +1,29 @@
 import ast
 
 class CodegenConfig:
-    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0):
+    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, context=None):
         self.indent_level = indent_level
         self.indent_str = indent_str
         self.idx_var_num = idx_var_num
+        self.context = context
+
+class Context:
+    def __init__(self, in_lambda=False, map_vars=None, lambda_args_map={}):
+        self.in_lambda = in_lambda
+        self.map_vars = map_vars
+        self.lambda_args_map = lambda_args_map
 
 class Node:
     def __init__(self, ast_node=None):
         self.ast_node = ast_node
         self.name = "LpNode"
+        self.codegened = False
     def __repr__(self):
         return str(self.name)
+    def set_codegened(self):
+        tmp = self.codegened
+        self.codegened = True
+        return tmp
 
 class ConstNode(Node):
     def __init__(self, ast_node=None):
@@ -58,6 +70,13 @@ class SliceNode(Node):
         else: 
             return "ExtSlice Content"
 
+    # def __getitem__(self, i):
+    #     return self.slices[i]
+
+    # def __getitem__(self, i, j):
+    #     return self.slices[i][j]
+
+
     def extract_slice(self, ast_node):
         lower = None
         upper = None
@@ -99,7 +118,10 @@ class VariableNode(Node):
             self.extract(ast_node)
 
     def __repr__(self):
-        return self.name
+        if hasattr(self, "slices") and self.slices != None:
+            return self.name + str(self.slices)
+        else:
+            return self.name
 
     def set_name(self, name):
         self.name = name
@@ -118,7 +140,7 @@ class VariableNode(Node):
             self.dim = slice_node.dim
             self.upper = slice_node.upper
             self.lower = slice_node.lower
-            self.slices = slice_node.slices
+            self.slices = slice_node.slices #TODO: error when = slice_node
         elif isinstance(self.ast_node, ast.Name):
             self.name = self.ast_node.id
             self.offset = None
@@ -131,7 +153,7 @@ class VariableNode(Node):
             raise NotImplementedError
 
 class BinOpNode(Node):
-    def __init__(self, ast_node=None, name=None, offset=None, index=None):
+    def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
         self.name = name
         if ast_node != None:
@@ -141,16 +163,14 @@ class BinOpNode(Node):
         if isinstance(self.op, ast.Mult):
             return str(self.left) + "*" + str(self.right)
 
-
     def extract(self, ast_node):
         self.left = ast_node.left.lp_data
         self.right = ast_node.right.lp_data
         self.op = ast_node.op
 
 class LambdaNode(Node):
-    def __init__(self, ast_node=None, name=None, offset=None, index=None):
+    def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
-        self.name = name
         if ast_node != None:
             self.extract(ast_node)
     def __repr__(self):
@@ -161,20 +181,27 @@ class LambdaNode(Node):
         self.body = ast_node.body.lp_data
 
     def codegen(self, config, arguments, output_var):
+        # if self.set_codegened(): return ""
         self.src = ""
         
         self.iter_vars = config.iter_vars
-        self.param2arg = dict(zip(self.args, arguments))
+        param_names = [e.name for e in self.args]
+        argum_names = [e.name for e in arguments]
+        self.param2arg = dict(zip(param_names, argum_names))
         self.output_var = output_var
 
-        self.src += config.indent_level*config.indent_str + "\n"
-        self.src += str(type(self.args))
+        curr_context = Context(in_lambda=True, lambda_args_map=self.param2arg)
+
+        new_config = config
+        new_config.context = curr_context
+
+        self.src += self.body.codegen(new_config)
+
         return self.src
 
 class HmapNode(Node):
-    def __init__(self, ast_node=None, name=None, offset=None, index=None):
+    def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
-        self.name = name
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
@@ -193,6 +220,7 @@ class HmapNode(Node):
         # print(self.data.slices)
 
     def codegen(self, config):
+        # if self.set_codegened(): return ""
         self.src = ""
         dim = self.dim
         indent_level = config.indent_level
@@ -204,7 +232,7 @@ class HmapNode(Node):
             # assuming these are all consts not variables
             lower_i = self.data[0].slices[dim_i][0]
             upper_i = self.data[0].slices[dim_i][1]
-            step_i = self.data[0].slices[dim_i][2]
+            step_i  = self.data[0].slices[dim_i][2]
             self.src += indent_str*indent_level \
                         + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
                         (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
@@ -216,6 +244,10 @@ class HmapNode(Node):
         config.indent_level = indent_level
         config.idx_var_num = idx_var_num
         config.iter_vars = self.iter_vars
+        if not hasattr(config, "context"):
+            config.context = Context()
+        # config.context.map_vars = [ VariableNode(name=var.name, index=) for var in self.data ]
+
         self.src += self.func.codegen(config, self.data, self.target)
 
         for dim_i in range(dim):
@@ -223,10 +255,12 @@ class HmapNode(Node):
             self.src += indent_str*indent_level + "}\n"
 
         config.indent_level = indent_level
-            
+
 class DotNode(Node):
+    """dot(A, B): returns the dot product of A and B"""
     def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
+        self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
 
@@ -235,11 +269,33 @@ class DotNode(Node):
         self.operands = [ e.lp_data for e in ast_node.args ]
         self.dim = self.operands[0].dim
 
+    def gen_inner_vars(self, var, config):
+        assert(hasattr(config.context, "lambda_args_map"))
+        if var.name in config.context.lambda_args_map:
+            tmp_src = config.context.lambda_args_map[var.name]
+            tmp_src += "[" + "][".join([ self.iter_vars[i]+"+"+config.iter_vars[i]+"+("+str(var.slices[i][0])+")" \
+                                         for i in range(len(self.iter_vars)) ]) + "]"
+            return tmp_src
+        else:
+            tmp_src = var.name
+            tmp_src += "[" + "][".join(self.iter_vars) + "]"
+            return tmp_src
+
     def codegen(self, config):
+        # if self.set_codegened(): return ""
         self.src = ""
+        if not hasattr(config.context, "lambda_args_map"): return self.src
+
         indent_level = config.indent_level
         indent_str = config.indent_str
         idx_var_num = config.idx_var_num
+
+        idx_var_num += 1
+        accum_var_name = "tmp" + str(idx_var_num)
+
+        self.src += indent_str*indent_level + "int " + accum_var_name + " = 0;\n"
+        
+
         for dim_i in range(self.dim):
             idx_var_num += 1
 
@@ -253,13 +309,20 @@ class DotNode(Node):
                         + "dot_i%d: for (int i%d = 0; i%d < %d; i%d += %d) {\n" %   \
                         (idx_var_num, idx_var_num, idx_var_num, range_i, \
                          idx_var_num, step_i)
+            self.iter_vars.append("i%d" % idx_var_num)
 
             indent_level += 1
 
 
+        # print loop body
+        self.src += indent_str*indent_level + accum_var_name + " += "
+        self.src += self.gen_inner_vars(self.operands[0], config)
+        self.src += " * "
+        self.src += self.gen_inner_vars(self.operands[1], config)
+        self.src += ";\n"
+
         config.indent_level = indent_level
         config.idx_var_num = idx_var_num
-        # self.src += self.func.codegen(config)
 
         for dim_i in range(self.dim):
             indent_level -= 1
@@ -267,5 +330,4 @@ class DotNode(Node):
             
         config.indent_level = indent_level
 
-
-
+        return self.src

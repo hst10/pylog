@@ -53,11 +53,11 @@ class LpPreorderVisitor(ast.NodeVisitor):
                 self.visit(value, config)
 
 class LpTester(LpPostorderVisitor):
-    # pass
-    def visit_Assign(self, node, config=None):
-        print(type(node))
-    def visit_stmt(self, node, config=None):
-        print(type(node))
+    pass
+    # def visit_Assign(self, node, config=None):
+    #     print(type(node))
+    # def visit_stmt(self, node, config=None):
+    #     print(type(node))
 
 class LpAnalyzer(LpPostorderVisitor):
 
@@ -142,7 +142,7 @@ class LpCodeGenerator(ast.NodeVisitor):
         pass
 
     def codegen_Call(self, node, config=None):
-        cc = CodegenConfig(3, "  ", 4)
+        cc = CodegenConfig(indent_level=3, indent_str="  ", idx_var_num=4)
         cc = CodegenConfig()
         node.lp_data.codegen(cc)
         print(node.lp_data.src)
@@ -163,16 +163,17 @@ if __name__ == "__main__":
     src_file.close()
 
     ast_py = ast.parse(src)
-    astpretty.pprint(ast_py)
+    # astpretty.pprint(ast_py)
 
+    # add an extra attribute pointing to parent for each node
     make_parent(ast_py) # need to be called before analyzer
 
-    print("Top module type: ", type(ast_py))
-
+    # instantiate passes
     analyzer = LpAnalyzer()
     tester   = LpTester()
     codegen  = LpCodeGenerator()
 
+    # execute passes
     analyzer.visit(ast_py)
     tester.visit(ast_py)
     codegen.codegen(ast_py)
