@@ -249,6 +249,9 @@ class HmapNode(Node):
 
         self.src += self.func.codegen(config, self.data, self.target)
 
+        self.src += indent_str*indent_level + str(self.target) + \
+                    "[" + "][".join(self.iter_vars) + "] = " + str(config.context.return_var) + "; \n"
+
         for dim_i in range(dim):
             indent_level -= 1
             self.src += indent_str*indent_level + "}\n"
@@ -291,9 +294,9 @@ class DotNode(Node):
 
         idx_var_num += 1
         accum_var_name = "tmp" + str(idx_var_num)
+        config.context.return_var = VariableNode(name=accum_var_name)
 
         self.src += indent_str*indent_level + "int " + accum_var_name + " = 0;\n"
-        
 
         for dim_i in range(self.dim):
             idx_var_num += 1
@@ -318,7 +321,7 @@ class DotNode(Node):
         self.src += self.gen_inner_vars(self.operands[0], config)
         self.src += " * "
         self.src += self.gen_inner_vars(self.operands[1], config)
-        self.src += ";\n"
+        self.src += "; \n"
 
         config.indent_level = indent_level
         config.idx_var_num = idx_var_num
