@@ -178,5 +178,5 @@ if __name__ == "__main__":
     tester.visit(ast_py)
     codegen.codegen(ast_py)
 
-    print("Input code: ")
-    print(src)
+    # print("Input code: ")
+    # print(src)
