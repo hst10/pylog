@@ -117,6 +117,18 @@ class LpAnalyzer(LpPostorderVisitor):
         elif node.func.id == "dot":
             node.lp_data = DotNode(node)
 
+    def visit_FunctionDef(self, node, config=None):
+        if node.decorator_list:
+            decorator_names = [e.id for e in node.decorator_list]
+            if "top" in decorator_names:
+                self.top_func = node.name
+        if isinstance(node.body, list):
+            for item in node.body:
+                if isinstance(item, ast.AST):
+                    self.visit(item, config)
+        elif isinstance(node.body, ast.AST):
+            self.visit(node.body, config)
+
 
 class LpCodeGenerator(ast.NodeVisitor):
     def codegen(self, node, config=None):
@@ -156,14 +168,15 @@ if __name__ == "__main__":
     if len(sys.argv) < 2: 
         print("Usage: %s test.py" % __file__ )
         # src_file = open("./tests/test2.py")
-        src_file = open("./tests/test_conv_2d.py")
+        # src_file = open("./tests/test_conv_2d.py")
+        src_file = open("./tests/func.py")
     else:
         src_file = open(sys.argv[1])
     src = src_file.read()
     src_file.close()
 
     ast_py = ast.parse(src)
-    # astpretty.pprint(ast_py)
+    astpretty.pprint(ast_py)
 
     # add an extra attribute pointing to parent for each node
     make_parent(ast_py) # need to be called before analyzer
