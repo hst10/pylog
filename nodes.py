@@ -333,3 +333,15 @@ class DotNode(Node):
         config.indent_level = indent_level
 
         return self.src
+
+
+class FuncDefNode(Node):
+    def __init__(self, ast_node=None):
+        Node.__init__(self, ast_node)
+        self.iter_vars = []
+        if ast_node != None:
+            self.extract(ast_node)
+
+    def extract(self, ast_node):
+        self.name = ast_node.name
+        
