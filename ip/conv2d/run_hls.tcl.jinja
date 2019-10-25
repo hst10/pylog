@@ -1,0 +1,13 @@
+open_project -reset hls_{{ top_func }}
+set_top {{ top_func }}
+add_files {{ top_func }}.cpp
+
+{% for i in range(num_designs) %}
+open_solution -reset "solution{{ i }}"
+set_part {xc7vx690tffg1761-2} -tool vivado
+create_clock -period 4
+source "./directives_{{ i }}.tcl"
+csynth_design
+{% endfor %}
+
+exit
