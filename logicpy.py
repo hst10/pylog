@@ -10,7 +10,7 @@ import copy
 import ast
 import astunparse
 import astpretty
-
+import inspect
 
 class LpPostorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
@@ -164,17 +164,15 @@ def make_parent(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2: 
-        print("Usage: %s test.py" % __file__ )
-        # src_file = open("./tests/test2.py")
-        # src_file = open("./tests/test_conv_2d.py")
-        src_file = open("./tests/func.py")
-    else:
-        src_file = open(sys.argv[1])
-    src = src_file.read()
-    src_file.close()
+def lp_top(func):
+    def wrap_func(*args, **kwargs):
+        source_func = inspect.getsource(func)
+        print(source_func)
+        logicpy_compile(source_func)
 
+    return wrap_func
+
+def logicpy_compile(src):
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
@@ -191,5 +189,17 @@ if __name__ == "__main__":
     tester.visit(ast_py)
     codegen.codegen(ast_py)
 
-    # print("Input code: ")
-    # print(src)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2: 
+        print("Usage: %s test.py" % __file__ )
+        # src_file = open("./tests/test2.py")
+        # src_file = open("./tests/test_conv_2d.py")
+        src_file = open("./tests/func.py")
+    else:
+        src_file = open(sys.argv[1])
+    src = src_file.read()
+    src_file.close()
+
+    logicpy_compile(src)
+
