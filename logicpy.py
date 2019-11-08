@@ -63,7 +63,11 @@ class LpTester(LpPostorderVisitor):
     # def visit_stmt(self, node, config=None):
     #     print(type(node))
 
-class LpAnalyzer(LpPostorderVisitor):
+class LpAnalyzer(LpPreorderVisitor):
+
+    def __init__(self):
+        LpPreorderVisitor.__init__(self)
+        self.args = {}
 
     def isLambdaArg(self, node):
         assert(isinstance(node, ast.Subscript))
@@ -90,32 +94,57 @@ class LpAnalyzer(LpPostorderVisitor):
         node.lp_data = VariableNode(node)
 
     def visit_UnaryOp(self, node, config=None):
+        self.visit(node.operand, config)
         node.lp_data = ConstNode(node)
 
     def visit_Slice(self, node, config=None):
+        if node.lower:
+            self.visit(node.lower, config)
+        if node.upper:
+            self.visit(node.upper, config)
+        if node.step:
+            self.visit(node.step, config)
         node.lp_data = SliceNode(node)
 
     def visit_ExtSlice(self, node, config=None):
+        for slc in node.dims:
+            self.visit(slc)
         node.lp_data = SliceNode(node)
 
     def visit_Subscript(self, node, config=None):
-        if self.isLambdaArg(node):
-            node.is_delta_node = True
+        self.visit(node.value, config)
+        self.visit(node.slice, config)
+
+        # # not used
+        # if self.isLambdaArg(node):
+        #     node.is_delta_node = True
         node.lp_data = VariableNode(node)
 
     def visit_BinOp(self, node, config=None):
+        self.visit(node.left, config)
+        self.visit(node.right, config)
         node.lp_data = BinOpNode(node)
 
     def visit_arg(self, node, config=None):
+        if node.annotation != None:
+            self.visit(node.annotation, config)
         node.lp_data = VariableNode(node)
 
     def visit_arguments(self, node, config=None):
-        node.lp_data = [ e.lp_data for e in node.args ]
+        for arg in node.args:
+            self.visit(arg, config)
+        node.lp_data = [ arg.lp_data for arg in node.args ]
 
     def visit_Lambda(self, node, config=None):
+        self.visit(node.args, config)
+        self.visit(node.body, config)
         node.lp_data = LambdaNode(node)
 
     def visit_Call(self, node, config=None):
+        self.visit(node.func, config)
+        for arg in node.args:
+            self.visit(arg, config)
+
         if node.func.id in {"hmap", "map"}:
             node.lp_data = HmapNode(node)
         elif node.func.id == "dot":
@@ -126,18 +155,29 @@ class LpAnalyzer(LpPostorderVisitor):
             node.lp_data = TypeNode(node)
             return node.lp_data.type
 
+    def visit_Assign(self, node, config=None):
+        for target in node.targets:
+            self.visit(target, config)
+        self.visit(node.value, config)
+
     def parse_func_args(self, arg_lst):
         return { arg.arg:self.visit(arg.annotation) for arg in arg_lst }
 
     def visit_FunctionDef(self, node, config=None):
+        self.visit(node.args, config)
+
         if node.decorator_list:
             decorator_names = [e.id for e in node.decorator_list]
             print(decorator_names)
             if "lp_top" in decorator_names:
                 self.top_func = node.name
                 if node.args.args:
-                    self.args = self.parse_func_args(node.args.args)
+                    self.args.update(self.parse_func_args(node.args.args))
                     print(self.args)
+
+        if config == None:
+            config = LpConfig()
+        config.var_list = self.args
 
         if isinstance(node.body, list):
             for item in node.body:
@@ -146,6 +186,9 @@ class LpAnalyzer(LpPostorderVisitor):
         elif isinstance(node.body, ast.AST):
             self.visit(node.body, config)
 
+    def visit_Module(self, node, config=None):
+        for stmt in node.body:
+            self.visit(stmt)
 
 class LpCodeGenerator(ast.NodeVisitor):
     def codegen(self, node, config=None):
@@ -171,10 +214,11 @@ class LpCodeGenerator(ast.NodeVisitor):
         pass
 
     def codegen_Call(self, node, config=None):
-        cc = CodegenConfig(indent_level=3, indent_str="  ", idx_var_num=4)
-        cc = CodegenConfig()
-        node.lp_data.codegen(cc)
-        print(node.lp_data.src)
+        if node.func.id not in {"LpType"}:
+            lc = LpConfig(indent_level=3, indent_str="  ", idx_var_num=4)
+            lc = LpConfig()
+            node.lp_data.codegen(lc)
+            print(node.lp_data.src)
 
 def make_parent(root):
     for node in ast.walk(root):

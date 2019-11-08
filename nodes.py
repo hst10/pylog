@@ -16,12 +16,13 @@ class LpType:
         else:
             return False
 
-class CodegenConfig:
-    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, context=None):
+class LpConfig:
+    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, context=None, var_list={}):
         self.indent_level = indent_level
         self.indent_str = indent_str
         self.idx_var_num = idx_var_num
         self.context = context
+        self.var_list = var_list
 
 class Context:
     def __init__(self, in_lambda=False, map_vars=None, lambda_args_map={}):
@@ -30,8 +31,9 @@ class Context:
         self.lambda_args_map = lambda_args_map
 
 class Node:
-    def __init__(self, ast_node=None):
+    def __init__(self, ast_node=None, config=None):
         self.ast_node = ast_node
+        self.config = config
         self.name = "LpNode"
         self.codegened = False
     def __repr__(self):
@@ -42,8 +44,8 @@ class Node:
         return tmp
 
 class TypeNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         if ast_node != None:
             self.extract(ast_node)
     def __repr__(self):
@@ -59,8 +61,8 @@ class TypeNode(Node):
             self.type = LpType(ast_node.args[0].id, ast_node.args[1].n)
 
 class ConstNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.value = None
         if ast_node != None:
             self.extract(ast_node)
@@ -87,8 +89,8 @@ class ConstNode(Node):
 
 
 class SliceNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.slices = []
         self.index = None
         self.dim   = None
@@ -148,8 +150,8 @@ class SliceNode(Node):
 
 
 class VariableNode(Node):
-    def __init__(self, ast_node=None, name=None, offset=None, index=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, name=None, offset=None, index=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.name = name
         self.offset = offset
         self.index = index
@@ -192,8 +194,8 @@ class VariableNode(Node):
             raise NotImplementedError
 
 class BinOpNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         if ast_node != None:
             self.extract(ast_node)
 
@@ -207,10 +209,14 @@ class BinOpNode(Node):
         self.op = ast_node.op
 
 class LambdaNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         if ast_node != None:
             self.extract(ast_node)
+
+        if config != None:
+            print(">>>>>>>>>>> Lambda Found CONFIG")
+
     def __repr__(self):
         return "LambdaNode"
 
@@ -238,11 +244,13 @@ class LambdaNode(Node):
         return self.src
 
 class HmapNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
+        if config != None:
+            print(">>>>>>>>>>> Hmap Found CONFIG")
 
     def extract(self, ast_node):
         arg_lst = [ arg.lp_data for arg in ast_node.args ]
@@ -299,11 +307,13 @@ class HmapNode(Node):
 
 class DotNode(Node):
     """dot(A, B): returns the dot product of A and B"""
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
+        if config != None:
+            print(">>>>>>>>>>> Dot Found CONFIG")
 
     def extract(self, ast_node):
         assert(len(ast_node.args) == 2)
@@ -375,11 +385,13 @@ class DotNode(Node):
 
 
 class FuncDefNode(Node):
-    def __init__(self, ast_node=None):
-        Node.__init__(self, ast_node)
+    def __init__(self, ast_node=None, config=None):
+        Node.__init__(self, ast_node, config)
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
+        if config != None:
+            print(">>>>>>>>>>> FuncDef Found CONFIG")
 
     def extract(self, ast_node):
         self.name = ast_node.name
