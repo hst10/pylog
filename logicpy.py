@@ -52,9 +52,9 @@ class LpPreorderVisitor(ast.NodeVisitor):
             if isinstance(value, list):
                 for item in value:
                     if isinstance(item, ast.AST):
-                        self.visit(item, config)
+                        return self.visit(item, config)
             elif isinstance(value, ast.AST):
-                self.visit(value, config)
+                return self.visit(value, config)
 
 class LpTester(LpPostorderVisitor):
     pass
@@ -88,14 +88,14 @@ class LpAnalyzer(LpPreorderVisitor):
         pass
 
     def visit_Num(self, node, config=None):
-        node.lp_data = ConstNode(node)
+        node.lp_data = ConstNode(node, config)
 
     def visit_Name(self, node, config=None):
-        node.lp_data = VariableNode(node)
+        node.lp_data = VariableNode(node, config)
 
     def visit_UnaryOp(self, node, config=None):
         self.visit(node.operand, config)
-        node.lp_data = ConstNode(node)
+        node.lp_data = ConstNode(node, config)
 
     def visit_Slice(self, node, config=None):
         if node.lower:
@@ -104,12 +104,12 @@ class LpAnalyzer(LpPreorderVisitor):
             self.visit(node.upper, config)
         if node.step:
             self.visit(node.step, config)
-        node.lp_data = SliceNode(node)
+        node.lp_data = SliceNode(node, config)
 
     def visit_ExtSlice(self, node, config=None):
         for slc in node.dims:
             self.visit(slc)
-        node.lp_data = SliceNode(node)
+        node.lp_data = SliceNode(node, config)
 
     def visit_Subscript(self, node, config=None):
         self.visit(node.value, config)
@@ -118,17 +118,17 @@ class LpAnalyzer(LpPreorderVisitor):
         # # not used
         # if self.isLambdaArg(node):
         #     node.is_delta_node = True
-        node.lp_data = VariableNode(node)
+        node.lp_data = VariableNode(node, config)
 
     def visit_BinOp(self, node, config=None):
         self.visit(node.left, config)
         self.visit(node.right, config)
-        node.lp_data = BinOpNode(node)
+        node.lp_data = BinOpNode(node, config)
 
     def visit_arg(self, node, config=None):
         if node.annotation != None:
             self.visit(node.annotation, config)
-        node.lp_data = VariableNode(node)
+        node.lp_data = VariableNode(node, config)
 
     def visit_arguments(self, node, config=None):
         for arg in node.args:
@@ -138,7 +138,7 @@ class LpAnalyzer(LpPreorderVisitor):
     def visit_Lambda(self, node, config=None):
         self.visit(node.args, config)
         self.visit(node.body, config)
-        node.lp_data = LambdaNode(node)
+        node.lp_data = LambdaNode(node, config)
 
     def visit_Call(self, node, config=None):
         self.visit(node.func, config)
@@ -146,13 +146,13 @@ class LpAnalyzer(LpPreorderVisitor):
             self.visit(arg, config)
 
         if node.func.id in {"hmap", "map"}:
-            node.lp_data = HmapNode(node)
+            node.lp_data = HmapNode(node, config)
         elif node.func.id == "dot":
-            node.lp_data = DotNode(node)
+            node.lp_data = DotNode(node, config)
         elif node.func.id == "LpType" and len(node.args) == 2 \
             and isinstance(node.args[0], ast.Name) \
             and isinstance(node.args[1], ast.Num):
-            node.lp_data = TypeNode(node)
+            node.lp_data = TypeNode(node, config)
             return node.lp_data.type
 
     def visit_Assign(self, node, config=None):
