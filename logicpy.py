@@ -15,6 +15,8 @@ import inspect
 class LpPostorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
         """Visit a node."""
+        if node == None:
+            return None
         # visit children first
         for field, value in ast.iter_fields(node):
             if isinstance(value, list):
@@ -38,6 +40,8 @@ class LpPostorderVisitor(ast.NodeVisitor):
 class LpPreorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
         """Visit a node."""
+        if node == None:
+            return None
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
         return visitor(node, config)
@@ -116,12 +120,25 @@ class LpAnalyzer(LpPostorderVisitor):
             node.lp_data = HmapNode(node)
         elif node.func.id == "dot":
             node.lp_data = DotNode(node)
+        elif node.func.id == "LpType" and len(node.args) == 2 \
+            and isinstance(node.args[0], ast.Name) \
+            and isinstance(node.args[1], ast.Num):
+            node.lp_data = TypeNode(node)
+            return node.lp_data.type
+
+    def parse_func_args(self, arg_lst):
+        return { arg.arg:self.visit(arg.annotation) for arg in arg_lst }
 
     def visit_FunctionDef(self, node, config=None):
         if node.decorator_list:
             decorator_names = [e.id for e in node.decorator_list]
-            if "top" in decorator_names:
+            print(decorator_names)
+            if "lp_top" in decorator_names:
                 self.top_func = node.name
+                if node.args.args:
+                    self.args = self.parse_func_args(node.args.args)
+                    print(self.args)
+
         if isinstance(node.body, list):
             for item in node.body:
                 if isinstance(item, ast.AST):
@@ -164,12 +181,19 @@ def make_parent(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
+# class lp_top:
+#     def __init__(func):
+#         self.func = func
+#     def __call__(*args, **kwargs):
+#         source_func = inspect.getsource(func)
+#         print(source_func)
+#         logicpy_compile(source_func)
+
 def lp_top(func):
     def wrap_func(*args, **kwargs):
         source_func = inspect.getsource(func)
         print(source_func)
         logicpy_compile(source_func)
-
     return wrap_func
 
 def logicpy_compile(src):

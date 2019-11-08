@@ -1,5 +1,21 @@
 import ast
 
+pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
+
+class LpType:
+    def __init__(self, ele_type="float", dim=0):
+        self.ele_type = ele_type
+        self.dim = dim
+
+    def __repr__(self):
+        return "LpType(" + self.ele_type + ", " + str(self.dim) + ")"
+
+    def __eq__(self, other):
+        if (self.ele_type == other.ele_type) and (self.dim == other.dim):
+            return True
+        else:
+            return False
+
 class CodegenConfig:
     def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, context=None):
         self.indent_level = indent_level
@@ -24,6 +40,23 @@ class Node:
         tmp = self.codegened
         self.codegened = True
         return tmp
+
+class TypeNode(Node):
+    def __init__(self, ast_node=None):
+        Node.__init__(self, ast_node)
+        if ast_node != None:
+            self.extract(ast_node)
+    def __repr__(self):
+            if self.type != None:
+                return "TypeNode(" + self.type.ele_type + ", " + str(self.type.dim) + ")"
+            else:
+                return "TypeNode()"
+    def extract(self, ast_node):
+        if ast_node == None:
+            return
+        self.ast_node = ast_node
+        if ast_node.args[0].id in pytypes:
+            self.type = LpType(ast_node.args[0].id, ast_node.args[1].n)
 
 class ConstNode(Node):
     def __init__(self, ast_node=None):
@@ -57,7 +90,8 @@ class SliceNode(Node):
     def __init__(self, ast_node=None):
         Node.__init__(self, ast_node)
         self.slices = []
-        self.dim = None
+        self.index = None
+        self.dim   = None
         self.lower = None
         self.upper = None
         self.step  = 1
@@ -78,6 +112,11 @@ class SliceNode(Node):
 
 
     def extract_slice(self, ast_node):
+        if isinstance(ast_node, ast.Index):
+            if hasattr(ast_node.value, "lp_data"):
+                return ast_node.value.lp_data
+            else:
+                return ast_node.value.n
         lower = None
         upper = None
         step  = 1

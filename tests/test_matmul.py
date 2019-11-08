@@ -7,6 +7,9 @@ b = [[2, 4, 6], [2, 4, 6], [2, 4, 6]]
 c = dot(a, b)
 print(c)
 
+c = np.asarray(a) * np.asarray(b)
+print(c)
+
 d = matmul(a, b)
 print(d)
 
