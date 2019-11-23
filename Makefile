@@ -1,2 +1,3 @@
 all:
-	python3 ./logicpy.py | tee log
+	python3 ./tests/conv.py | tee conv_log
+#	python3 ./logicpy.py | tee log

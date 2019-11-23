@@ -16,15 +16,22 @@ def LpType(ele_type, dim):
 
 
 @lp_top
-def top_func(w: LpType(float, 2), data: LpType(float, 2)) -> LpType(float, 2):
-    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
-    # c = map(lambda wi: 
-    #         hmap(lambda x: dot(x[0:16, -1:2, -1:2], wi), data[0, 1:240, 1:360]),
-    #         w)
+def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
+#    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
+    c = map(lambda wi: 
+              hmap(lambda x: 
+                dot(x[0:16, -1:2, -1:2], wi), data[0, 1:240, 1:360]),
+            w)
     return c
 
-top_func(0, 0)
+@lp_top
+def test(c):
+    # c[3]
+    c[3, 5, 2:4]
+    return 1
 
+top_func(0, 0)
+# test(24)
 
 # import numpy as np
 # w = np.random.rand(2,3,4)

@@ -35,7 +35,13 @@ class LpPostorderVisitor(ast.NodeVisitor):
 
     def generic_visit(self, node, config=None):
         """Called if no explicit visitor function exists for a node."""
-        pass
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        return self.visit(item, config)
+            elif isinstance(value, ast.AST):
+                return self.visit(value, config)
 
 class LpPreorderVisitor(ast.NodeVisitor):
     def visit(self, node, config=None):
@@ -44,7 +50,17 @@ class LpPreorderVisitor(ast.NodeVisitor):
             return None
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        return visitor(node, config)
+        visit_return = visitor(node, config)
+
+        # visit children nodes
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.visit(item, config)
+            elif isinstance(value, ast.AST):
+                self.visit(value, config)
+        return visit_return
 
     def generic_visit(self, node, config=None):
         """Called if no explicit visitor function exists for a node."""
@@ -56,12 +72,34 @@ class LpPreorderVisitor(ast.NodeVisitor):
             elif isinstance(value, ast.AST):
                 return self.visit(value, config)
 
-class LpTester(LpPostorderVisitor):
-    pass
-    # def visit_Assign(self, node, config=None):
-    #     print(type(node))
-    # def visit_stmt(self, node, config=None):
-    #     print(type(node))
+class LpTester(LpPreorderVisitor):
+    # pass
+    def visit_Module(self, node, config=None):
+        print("Tester|||>>>>", type(node))
+
+    def visit_Assign(self, node, config=None):
+        print("Tester|||>>>>", type(node))
+        self.visit(node.value, config)
+
+    def visit_Lambda(self, node, config=None):
+        print("Tester|||>>>>", type(node))
+
+class LpTyper(LpPreorderVisitor):
+    # def __init__(self):
+    #     LpPreorderVisitor.__init__(self)
+    
+    def visit_Assign(self, node, config=None):
+        print("Typer visits Assign")
+
+    def visit_Call(self, node, config=None):
+        print("Typer visits Call")
+
+    def visit_Call(self, node, config=None):
+        if node.func.id == "LpType" and len(node.args) == 2 \
+            and isinstance(node.args[0], ast.Name) \
+            and isinstance(node.args[1], ast.Num):
+            node.lp_data = TypeNode(node, config)
+            return node.lp_data.type
 
 class LpAnalyzer(LpPreorderVisitor):
 
@@ -84,6 +122,12 @@ class LpAnalyzer(LpPreorderVisitor):
             p_node = p_node.parent
         return is_lambda_arg
 
+    def assign_targets(self, assign_node):
+        """Propagate lp_targets to all downstream nodes. """
+        for node in ast.walk(root):
+            for child in ast.iter_child_nodes(node):
+                child.parent = node
+
     def visit_NoneType(self, node, config=None):
         pass
 
@@ -92,10 +136,20 @@ class LpAnalyzer(LpPreorderVisitor):
 
     def visit_Name(self, node, config=None):
         node.lp_data = VariableNode(node, config)
+        
 
     def visit_UnaryOp(self, node, config=None):
         self.visit(node.operand, config)
         node.lp_data = ConstNode(node, config)
+
+    def visit_Index(self, node, config=None):
+        self.visit(node.value, config)
+        node.lp_data = node.value.lp_data
+
+    def visit_Tuple(self, node, config=None):
+        for e in node.elts:
+            self.visit(e, config)
+        node.lp_data = [ e.lp_data for e in node.elts ]
 
     def visit_Slice(self, node, config=None):
         if node.lower:
@@ -120,6 +174,7 @@ class LpAnalyzer(LpPreorderVisitor):
         #     node.is_delta_node = True
         node.lp_data = VariableNode(node, config)
 
+
     def visit_BinOp(self, node, config=None):
         self.visit(node.left, config)
         self.visit(node.right, config)
@@ -128,7 +183,9 @@ class LpAnalyzer(LpPreorderVisitor):
     def visit_arg(self, node, config=None):
         if node.annotation != None:
             self.visit(node.annotation, config)
+
         node.lp_data = VariableNode(node, config)
+        
 
     def visit_arguments(self, node, config=None):
         for arg in node.args:
@@ -141,12 +198,22 @@ class LpAnalyzer(LpPreorderVisitor):
         node.lp_data = LambdaNode(node, config)
 
     def visit_Call(self, node, config=None):
+
+#        if (config != None) and (config.target != None):
+
+        if hasattr(node, "lp_targets"):
+            node.func.lp_targets = node.lp_targets
+
         self.visit(node.func, config)
         for arg in node.args:
             self.visit(arg, config)
 
-        if node.func.id in {"hmap", "map"}:
+        if node.func.id == "hmap":
             node.lp_data = HmapNode(node, config)
+            # node.args[0].lp_targets = 
+
+        elif node.func.id == "map":
+            node.lp_data = MapNode(node, config)
         elif node.func.id == "dot":
             node.lp_data = DotNode(node, config)
         elif node.func.id == "LpType" and len(node.args) == 2 \
@@ -158,10 +225,21 @@ class LpAnalyzer(LpPreorderVisitor):
     def visit_Assign(self, node, config=None):
         for target in node.targets:
             self.visit(target, config)
+
+        node.lp_targets = [ t.lp_data for t in node.targets ]
+        node.value.lp_targets = node.lp_targets
+
+        node.lp_data = AssignNode(node, config)
+
+        if config == None:
+            config = LpConfig()
+        config.targets = [ t.lp_data for t in node.targets ]
+        config.curr_node = node.lp_data
+
         self.visit(node.value, config)
 
-    def parse_func_args(self, arg_lst):
-        return { arg.arg:self.visit(arg.annotation) for arg in arg_lst }
+    def parse_func_args(self, arg_lst, config=None):
+        return { arg.arg:self.visit(arg.annotation, config) for arg in arg_lst }
 
     def visit_FunctionDef(self, node, config=None):
         self.visit(node.args, config)
@@ -172,7 +250,7 @@ class LpAnalyzer(LpPreorderVisitor):
             if "lp_top" in decorator_names:
                 self.top_func = node.name
                 if node.args.args:
-                    self.args.update(self.parse_func_args(node.args.args))
+                    self.args.update(self.parse_func_args(node.args.args, config))
                     print(self.args)
 
         if config == None:
@@ -188,7 +266,7 @@ class LpAnalyzer(LpPreorderVisitor):
 
     def visit_Module(self, node, config=None):
         for stmt in node.body:
-            self.visit(stmt)
+            self.visit(stmt, config)
 
 class LpCodeGenerator(ast.NodeVisitor):
     def codegen(self, node, config=None):
@@ -248,13 +326,15 @@ def logicpy_compile(src):
     make_parent(ast_py) # need to be called before analyzer
 
     # instantiate passes
+    typer    = LpTyper()
     analyzer = LpAnalyzer()
     tester   = LpTester()
     codegen  = LpCodeGenerator()
 
     # execute passes
-    analyzer.visit(ast_py)
     tester.visit(ast_py)
+    typer.visit(ast_py)
+    analyzer.visit(ast_py)
     codegen.codegen(ast_py)
 
 
