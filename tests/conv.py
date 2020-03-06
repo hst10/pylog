@@ -24,6 +24,37 @@ def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
             w)
     return c
 
+'''
+// map: iterate through w
+for (int i0 = 0; i0 < w.dim[0]; i0++)
+{
+    float ***wi = w[i0]; 
+
+    // hmap: iterate through data, 2D
+    for (int i1 = 1; i1 < 240; i1++)
+    {
+        for (int i2 = 1; i2 < 360; i2++)
+        {
+            float ***x = data; 
+            // dot
+            float tmp = 0.0; 
+            for (int i3 = 0; i3 < w.dim[1]; i3++)
+            {
+                for (int i4 = 0; i4 < 3; i4++)
+                {
+                    for (int i5 = 0; i5 < 3; i5++)
+                    {
+                        tmp += data[i3][i1+(-1)+i4][i2+(-1)+i5] * w[i0][i3][i4][i4]; 
+                    }
+                }
+            }
+            c[i0][i1-1][i2-1] = tmp; 
+        }
+    }
+}
+'''
+
+
 @lp_top
 def test(c):
     # c[3]
@@ -49,3 +80,5 @@ top_func(0, 0)
 # # c = [ map(wi, data) for wi in w ]
 # c = map(lambda wi: list(map(lambda x: x + wi, data)), w)
 # print("new new: ", list(c))
+
+

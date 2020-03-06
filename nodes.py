@@ -280,6 +280,27 @@ class LambdaNode(Node):
         return self.src
 
 
+'''
+    out = map(f, a, b, ...) 
+    =>
+    T out[a.shape(0)]; 
+    for (int i = 0; i < a.shape(0); i++)
+    {
+        T tmp = f(a[i], b[i], ...); 
+        out[i] = tmp; 
+    }
+
+
+    out = map(lambda x, y, ...: op(x, y, ...), a, b, ...) 
+    =>
+    T out[a.shape(0)]; 
+    for (int i = 0; i < a.shape(0); i++)
+    {
+        T tmp = op(a[i], b[i], c[i], ...); 
+        out[i] = tmp; 
+    }
+'''
+
 class MapNode(Node):
     def __init__(self, ast_node=None, config=None):
         Node.__init__(self, ast_node, config)
