@@ -15,7 +15,7 @@ def LpType(ele_type, dim):
         return List[LpType(ele_type, dim - 1)]
 
 
-@lp_top
+@pylog_build
 def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
 #    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
     c = map(lambda wi: 
@@ -55,13 +55,17 @@ for (int i0 = 0; i0 < w.dim[0]; i0++)
 '''
 
 
-@lp_top
+@pylog_build
 def test(c):
     # c[3]
     c[3, 5, 2:4]
     return 1
 
-top_func(0, 0)
+
+w    = np.random.uniform(size=(32, 16, 3, 3))
+data = np.random.uniform(size=(16, 240, 360))
+
+top_func(w, data)
 # test(24)
 
 # import numpy as np

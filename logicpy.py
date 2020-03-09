@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import pycgen as c
+import numpy as np
 from utils import *
 from nodes import *
 import visitors
@@ -94,6 +95,7 @@ class LpTyper(LpPreorderVisitor):
         print("Typer visits Assign")
 
     def visit_Call(self, node, config=None):
+        print("CALLLLLLLL: ", node.func)
         if node.func.id == "LpType" and len(node.args) == 2 \
             and isinstance(node.args[0], ast.Name) \
             and isinstance(node.args[1], ast.Num):
@@ -184,8 +186,10 @@ class LpAnalyzer(LpPreorderVisitor):
         
 
     def visit_arguments(self, node, config=None):
-        # for arg in node.args:
-        #     self.visit(arg, config)
+        for arg in node.args:
+            self.visit(arg, config)
+        for arg in node.args:
+            print(arg.arg)
         node.lp_data = [ arg.lp_data for arg in node.args ]
 
     def visit_Lambda(self, node, config=None):
@@ -243,7 +247,7 @@ class LpAnalyzer(LpPreorderVisitor):
         if node.decorator_list:
             decorator_names = [e.id for e in node.decorator_list]
             print(decorator_names)
-            if "lp_top" in decorator_names:
+            if "pylog_build" in decorator_names:
                 self.top_func = node.name
                 if node.args.args:
                     self.args.update(self.parse_func_args(node.args.args, config))
@@ -300,7 +304,7 @@ def make_parent(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
-# class lp_top:
+# class pylog_build:
 #     def __init__(func):
 #         self.func = func
 #     def __call__(*args, **kwargs):
@@ -308,12 +312,15 @@ def make_parent(root):
 #         print(source_func)
 #         logicpy_compile(source_func)
 
-def lp_top(func):
+def pylog_build(func):
     def wrap_func(*args, **kwargs):
-    	# TODO: the data type and dimension info should also be passed to 
-    	# PyLog compiler. Here we discard them for now. 
+        # TODO: the data type and dimension info should also be passed to
+        # PyLog compiler. Here we discard them for now.
         source_func = inspect.getsource(func)
         print(source_func)
+        for arg in args:
+            assert(isinstance(arg, (np.ndarray, np.generic)))
+            print(arg, type(arg))
         logicpy_compile(source_func)
     return wrap_func
 
@@ -348,5 +355,6 @@ if __name__ == "__main__":
     src = src_file.read()
     src_file.close()
 
+    # assuming src only contains top function and no host code
     logicpy_compile(src)
 

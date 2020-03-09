@@ -4,7 +4,7 @@ sys.path.insert(1, '/newhdd/logicpy/')
 
 from logicpy import *
 
-@lp_top
+@pylog_build
 def top_func(w, data):
     c = hmap(lambda x: dot(x[-1:2, -1:2, 0:16], w), data[1:360, 1:240, 0])
     return c
