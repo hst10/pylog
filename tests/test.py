@@ -4,15 +4,11 @@ sys.path.extend(['/home/shuang91/pylog/'])
 import numpy as np
 from pylog import *
 
-'''
-The inputs to the PyLog function should be simply regular NumPy arrays. 
-PyLog should be able to get the element data type and array dimensions 
-from the input NumPy arrays. 
-'''
-
 @pylog
 def pl_add(a, b):
-    return a + b
+
+    a = np.empty([3,5,7], float)
+    return c
 
 
 if __name__ == "__main__":

@@ -1,0 +1,59 @@
+-- PyLog's 2 builtin types: identifier, constant
+
+module PyLog
+{
+    mod = Module(stmt* body)
+
+    stmt = FunctionDef(identifier name, arguments args,
+                       stmt* body, expr* decorator_list, expr? returns)
+          | Return(expr? value)
+          | Assign(expr* targets, expr value)
+
+          -- use 'orelse' because else is a keyword in target languages
+          | For(expr target, expr iter, stmt* body, stmt* orelse)
+          | While(expr test, stmt* body, stmt* orelse)
+          | If(expr test, stmt* body, stmt* orelse)
+          | Expr(expr value)
+          | Pass | Break | Continue
+
+    expr = BoolOp(boolop op, expr* values)
+         | BinOp(expr left, operator op, expr right)
+         | UnaryOp(unaryop op, expr operand)
+         | Lambda(arguments args, expr body)
+         | IfExp(expr test, expr body, expr orelse)
+
+         -- need sequences for compare to distinguish between
+         -- x < 4 < 3 and (x < 4) < 3
+         | Compare(expr left, cmpop* ops, expr* comparators)
+         | Call(expr func, expr* args, keyword* keywords)
+         -- Constant may become Num or Str in older versions of Python
+         | Constant(constant value)
+
+         -- the following expression can appear in assignment context
+         | Attribute(expr value, identifier attr)
+         | Subscript(expr value, slice slice)
+         | Name(identifier id)
+         | List(expr* elts)
+         | Tuple(expr* elts)
+
+    slice = Slice(expr? lower, expr? upper, expr? step)
+          | ExtSlice(slice* dims)
+          | Index(expr value)
+
+    boolop = And | Or
+
+    operator = Add | Sub | Mult | MatMult | Div | Mod | Pow | LShift
+                 | RShift | BitOr | BitXor | BitAnd | FloorDiv
+
+    unaryop = Invert | Not | UAdd | USub
+
+    cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn
+
+    arguments = (arg* posonlyargs, arg* args, arg? vararg, arg* kwonlyargs,
+                 expr* kw_defaults, arg? kwarg, expr* defaults)
+
+    arg = (identifier arg, expr? annotation)
+
+    -- keyword arguments supplied to call (NULL identifier for **kwargs)
+    keyword = (identifier? arg, expr value)
+}

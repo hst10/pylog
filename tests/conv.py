@@ -1,9 +1,10 @@
 import sys
-from typing import List
-# insert at 1, 0 is the script path (or '' in REPL)
-sys.path.insert(1, '/newhdd/logicpy/')
+sys.path.extend(['/home/shuang91/pylog/'])
 
-from logicpy import *
+import numpy as np
+from pylog import *
+
+from typing import List
 
 LpArray4D = List[List[List[List[float]]]]
 def LpType(ele_type, dim):
@@ -15,7 +16,7 @@ def LpType(ele_type, dim):
         return List[LpType(ele_type, dim - 1)]
 
 
-@pylog_build
+@pylog
 def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
 #    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
     c = map(lambda wi: 
@@ -54,8 +55,13 @@ for (int i0 = 0; i0 < w.dim[0]; i0++)
 }
 '''
 
+@pylog
+def add(a, b):
+    c = map(lambda x, y: x+y, a, b)
+    return c
 
-@pylog_build
+
+@pylog
 def test(c):
     # c[3]
     c[3, 5, 2:4]
@@ -65,8 +71,13 @@ def test(c):
 w    = np.random.uniform(size=(32, 16, 3, 3))
 data = np.random.uniform(size=(16, 240, 360))
 
-top_func(w, data)
-# test(24)
+# top_func(w, data)
+a = np.random.uniform(size=(32))
+b = np.random.uniform(size=(32))
+# add(a, b)
+
+
+test(24)
 
 # import numpy as np
 # w = np.random.rand(2,3,4)

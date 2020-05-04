@@ -1,38 +1,42 @@
 import ast
 
-pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
 
-class LpType:
-    def __init__(self, ele_type="float", dim=0):
-        self.ele_type = ele_type
-        self.dim = dim
 
-    def __repr__(self):
-        return "LpType(" + self.ele_type + ", " + str(self.dim) + ")"
+def token(obj):
+    type_name = obj.__class__.__name__
+    token_map = {
+        "And": "&&",
+        "Or": "||", 
+        "Add": "+",
+        "Sub": "-",
+        "Mult": "*",
+        "MatMult": "@",
+        "Div": "/",
+        "Mod": "%",
+        "Pow": "**",
+        "LShift": "<<",
+        "RShift": ">>",
+        "BitOr": "|",
+        "BitXor": "^",
+        "BitAnd": "&",
+        "FloorDiv": "//",
+        "Invert": "~",
+        "Not": "not",
+        "UAdd": "+",
+        "USub": "-",
+        "Eq": "==",
+        "NotEq": "!=",
+        "Lt": "<",
+        "LtE": "<=",
+        "Gt": ">",
+        "GtE": ">=",
+        "Is": "is",
+        "IsNot": "is not",
+        "In": "in",
+        "NotIn": "not in"
+    }
+    return token_map.get(type_name, "Invalid token")
 
-    def __eq__(self, other):
-        if (self.ele_type == other.ele_type) and (self.dim == other.dim):
-            return True
-        else:
-            return False
-    def __add__(self, other):
-        if isinstance(other, int):
-            return LpType(self.ele_type, self.dim+other)
-        if self.ele_type != other.ele_type:
-            return LpType("float", self.dim+other.dim)
-        else:
-            return LpType(self.ele_type, self.dim+other.dim)
-
-class LpConfig:
-    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, \
-                 context=None, var_list={}, targets=None, node=None):
-        self.indent_level = indent_level
-        self.indent_str = indent_str
-        self.idx_var_num = idx_var_num
-        self.context = context
-        self.var_list = var_list
-        self.tarets = targets
-        self.curr_node = node
 
 class Context:
     def __init__(self, in_lambda=False, map_vars=None, lambda_args_map={}):
@@ -40,44 +44,50 @@ class Context:
         self.map_vars = map_vars
         self.lambda_args_map = lambda_args_map
 
-class Node:
+class PLNode:
     def __init__(self, ast_node=None, config=None):
+        self._fields = []
         self.ast_node = ast_node
         self.config = config
-        self.name = "LpNode"
         self.codegened = False
-        self.type = None # LpType("None", 0)
+        self.type = None # PLType(None, 0)
     def __repr__(self):
-        return str(self.name)
+        return str(self.__class__.__name__)
     def set_codegened(self):
         tmp = self.codegened
         self.codegened = True
         return tmp
 
-class TypeNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        if ast_node != None:
-            self.extract(ast_node)
-    def __repr__(self):
-            if self.type != None:
-                return "TypeNode(" + self.type.ele_type + ", " + str(self.type.dim) + ")"
-            else:
-                return "TypeNode()"
-    def extract(self, ast_node):
-        if ast_node == None:
-            return
-        self.ast_node = ast_node
-        if ast_node.args[0].id in pytypes:
-            self.type = LpType(ast_node.args[0].id, ast_node.args[1].n)
+
+# class TypeNode(PLNode):
+#     def __init__(self, type_val, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self._fields = ['type_val']
+#         self.type = type_val
+
+#     def __repr__(self):
+#             if self.type != None:
+#                 return "TypeNode(" + self.type.ele_type + ", " + str(self.type.dim) + ")"
+#             else:
+#                 return "TypeNode()"
+
+#     def extract(self, ast_node):
+#         if ast_node == None:
+#             return
+#         self.ast_node = ast_node
+#         if ast_node.args[0].id in pytypes:
+#             self.type = PLType(ast_node.args[0].id, ast_node.args[1].n)
 
 
-class ConstNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        self.value = None
-        if ast_node != None:
-            self.extract(ast_node)
+
+
+class PLConst(PLNode):
+    '''Constant, Num, Str, NameConstant'''
+    def __init__(self, value, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['value']
+        self.value = value
+        self.type = type(self.value)
 
     def __repr__(self):
         if self.value != None:
@@ -85,153 +95,68 @@ class ConstNode(Node):
         else:
             return "ConstNode: Unknown value"
 
-    def extract(self, ast_node):
-        if ast_node == None:
-            return
-        self.ast_node = ast_node
-        if isinstance(self.ast_node, ast.Num):
-            self.value = self.ast_node.n
-        elif isinstance(self.ast_node, ast.UnaryOp):
-            if isinstance(self.ast_node.op, ast.USub):
-                self.value = -self.ast_node.operand.n
-            elif isinstance(self.ast_node.op, ast.UAdd):
-                self.value = self.ast_node.operand.n
-        else:
-            raise NotImplementedError
+    # def extract(self, ast_node):
+    #     if ast_node == None:
+    #         return
+    #     self.ast_node = ast_node
+    #     if isinstance(self.ast_node, ast.Num):
+    #         self.value = self.ast_node.n
+    #     elif isinstance(self.ast_node, ast.UnaryOp):
+    #         if isinstance(self.ast_node.op, ast.USub):
+    #             self.value = -self.ast_node.operand.n
+    #         elif isinstance(self.ast_node.op, ast.UAdd):
+    #             self.value = self.ast_node.operand.n
+    #     else:
+    #         raise NotImplementedError
 
 
-class SliceNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        self.slices = []
-        self.index = None
-        self.dim   = None
-        self.lower = None
-        self.upper = None
-        self.step  = 1
-        if ast_node != None:
-            self.extract(ast_node)
+class PLArray(PLNode):
+    '''Array in declaration, List, Tuple. '''
+    def __init__(self, elts, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['elts']
+        self.elts = elts
 
-    def __repr__(self):
-        if self.dim == 1:
-            return str(self.lower)+":"+str(self.upper)+":"+str(self.step)
-        else: 
-            return "ExtSlice Content"
-
-    # def __getitem__(self, i):
-    #     return self.slices[i]
-
-    # def __getitem__(self, i, j):
-    #     return self.slices[i][j]
-
-
-    def extract_slice(self, ast_node):
-        if isinstance(ast_node, ast.Index):
-            if hasattr(ast_node.value, "lp_data"):
-                return ast_node.value.lp_data
-            else:
-                return ast_node.value.n
-        lower = None
-        upper = None
-        step  = 1
-
-        # TODO: assuming all values are consts, expr support to add
-        if hasattr(ast_node.lower, "lp_data"):
-            lower = ast_node.lower.lp_data.value
-        if hasattr(ast_node.upper, "lp_data"):
-            upper = ast_node.upper.lp_data.value
-        if hasattr(ast_node.step, "lp_data"):
-            step = ast_node.step.lp_data.value
-        return (lower, upper, step)
-
-    def extract(self, ast_node):
-        if ast_node == None:
-            return
-        self.ast_node = ast_node
-        if isinstance(self.ast_node, ast.Slice):
-            self.dim = 1
-            (self.lower, self.upper, self.step) = self.extract_slice(ast_node)
-            self.slices = [(self.lower, self.upper, self.step)]
-
-        elif isinstance(self.ast_node, ast.ExtSlice):
-            self.dim = len(self.ast_node.dims)
-            self.lower = None
-            self.upper = None
-            self.slices = [self.extract_slice(s) for s in self.ast_node.dims]
-
-        else:
-            raise NotImplementedError
-
-
-class VariableNode(Node):
-    """ast.Subscript, ast.Name"""
-    def __init__(self, ast_node=None, config=None, name=None, offset=None, index=None):
-        Node.__init__(self, ast_node, config)
+class PLArrayDecl(PLNode):
+    '''Array declaration'''
+    def __init__(self, ele_type, name, dims, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['ele_type', 'name', 'dims']
+        self.ele_type = ele_type
         self.name = name
-        self.offset = offset
-        self.index = index
-        if ast_node != None:
-            self.extract(ast_node)
+        self.dims = dims
 
-        if config != None:
-            if self.name in config.var_list:
-                self.type = config.var_list[self.name]
-                print("VariableNode assigns type to " + self.name +": "+str(self.type))
 
-        if hasattr(self, "slices") and self.slices != None:
-            self.type = LpType("float", len(self.slices))
-
-    def __repr__(self):
-        if hasattr(self, "slices") and self.slices != None:
-            return self.name + str(self.slices)
-        elif self.index != None:
-            return self.name + "[" + str(self.index) + "]"
-        else:
-            return self.name
-
-    def set_name(self, name):
+class PLVariable(PLNode):
+    '''Name'''
+    def __init__(self, name, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['name']
         self.name = name
-    def set_offset(self, offset):
-        self.offset = offset
-    def set_index(self, index):
-        self.index = index
 
-    def get_child_variable(self, index):
-        """x[i][j] -> x[i][j][k]"""
-        pass
 
-    def extract(self, ast_node):
-        if ast_node == None:
-            return
-        self.ast_node = ast_node
-        if isinstance(self.ast_node, ast.Subscript):
-            self.name = self.ast_node.value.id # TODO: add supports for expr[slice]
-            assert(hasattr(self.ast_node.slice, "lp_data")) # has been traversed
-            slice_node = self.ast_node.slice.lp_data
+class PLUnaryOp(PLNode):
+    '''UnaryOp'''
+    def __init__(self, op, operand, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['op', 'operand']
+        self.op = op
+        self.operand = operand
 
-            if isinstance(slice_node, SliceNode):
-                self.dim = slice_node.dim
-                self.upper = slice_node.upper
-                self.lower = slice_node.lower
-                self.slices = slice_node.slices #TODO: error when = slice_node
-            else:
-                # list, ConstNode, VariableNode, etc. 
-                self.index = slice_node
+class PLBinOp(PLNode):
+    '''BinOp, BoolOp'''
+    def __init__(self, op, left, right, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['op', 'left', 'right']
+        self.op = op
+        self.left = left
+        self.right = right
 
-        elif isinstance(self.ast_node, ast.Name):
-            self.name = self.ast_node.id
-            self.offset = None
-            self.index = None
-        elif isinstance(self.ast_node, ast.arg):
-            self.name = self.ast_node.arg
-            self.offset = None
-            self.index = None
-        else:
-            raise NotImplementedError
 
-class BinOpNode(Node):
+class BinOpNode(PLNode):
     def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
+        PLNode.__init__(self, ast_node, config)
+        self._fields = []
         if ast_node != None:
             self.extract(ast_node)
 
@@ -240,22 +165,218 @@ class BinOpNode(Node):
             return str(self.left) + "*" + str(self.right)
 
     def extract(self, ast_node):
-        self.left = ast_node.left.lp_data
-        self.right = ast_node.right.lp_data
+        self.left = ast_node.left.pl_data
+        self.right = ast_node.right.pl_data
         self.op = ast_node.op
 
-class LambdaNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        if ast_node != None:
-            self.extract(ast_node)
+
+## should use PLBinOp instead
+# class PLBoolOp(PLNode):
+#     '''BoolOp'''
+#     def __init__(self, op, values, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self.op = op
+#         self.values = values
+
+## should use PLBinOp instead
+# class PLCompare(PLNode):
+#     '''Compare'''
+#     def __init__(self, ops, values, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self.ops = ops
+#         self.values = values
+
+
+class PLCall(PLNode):
+    '''Call'''
+    def __init__(self, func, args, attr=None, attr_args=None, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['func', 'args', 'attr', 'attr_args']
+        self.func = func
+        self.args = args
+        self.attr = attr # string
+        self.attr_args = attr_args
+
+class PLPragma(PLNode):
+    '''Call'''
+    def __init__(self, pragma, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['pragma']
+        self.pragma = pragma
+
+class PLKeyword(PLNode):
+    '''keyword'''
+    pass
+
+
+class PLIfExp(PLNode):
+    '''if (exp)? a:b'''
+    def __init__(self, test, body, orelse, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['test', 'body', 'orelse']
+        self.test = test
+        self.body = body
+        self.orelse = orelse
+
+class PLAttribute(PLNode):
+    '''Attribute'''
+    def __init__(self, value, attr, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['value', 'attr']
+        self.value = value
+        self.attr = attr
+
+
+class PLSubscript(PLNode):
+    '''Subscript'''
+    def __init__(self, var, indices, ast_node=None, config=None):
+        ''' 
+            var: expr for the array name
+            indices: Python list of Slice/Expr
+        '''
+        PLNode.__init__(self, ast_node, config)
+        self._fields = [ 'var', 'indices' ]
+        self.var = var
+        self.indices = indices
 
     def __repr__(self):
-        return "LambdaNode"
+        return str(self.var) + "[" + ", ".join([ str(e) for e in self.indices]) + "]"
+
+class PLSlice(PLNode):
+    def __init__(self, lower, upper, step, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = [ 'lower', 'upper', 'step' ]
+        self.lower = lower
+        self.upper = upper
+        self.step  = step
+
+    def __repr__(self):
+        return str(self.lower)+":"+str(self.upper)+":"+str(self.step)
+
+    # def __getitem__(self, i):
+    #     return self.slices[i]
+
+    # def __getitem__(self, i, j):
+    #     return self.slices[i][j]
+
+class PLAssign(PLNode):
+    '''Assign, AugAssign'''
+    def __init__(self, op, target, value, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['op', 'target', 'value']
+        self.op = op
+        self.target = target
+        self.value = value
 
     def extract(self, ast_node):
-        self.args = ast_node.args.lp_data
-        self.body = ast_node.body.lp_data
+        self.targets = [ t.pl_data for t in ast_node.targets ]
+
+
+
+class PLIf(PLNode):
+    def __init__(self, test, body, orelse, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['test', 'body', 'orelse']
+        self.test = test
+        self.body = body
+        self.orelse = orelse
+
+class PLIterDom(PLNode):
+    '''Represents iteration domain in 'for obj in domain' '''
+    def __init__(self, expr, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['expr']
+        self.expr = expr
+        self.attr = None
+        self.attr_args = None
+        self.type = None # "range" or "expr"
+        if isinstance(self.expr, PLCall) and self.expr.func.name == "range":
+            '''coming from visit_Call -> range'''
+            self.type  = "range"
+            num_args = len(self.expr.args)
+            if num_args == 1:
+                self.start = PLConst(value=0)
+                self.op = "<"
+                self.end = self.expr.args[0]
+                self.step = PLConst(value=1)
+            elif num_args == 2:
+                self.start = self.expr.args[0]
+                self.op = "<"
+                self.end = self.expr.args[1]
+                self.step = PLConst(value=1)
+            elif num_args == 3:
+                self.start = self.expr.args[0]
+                self.end = self.expr.args[1]
+                self.step = self.expr.args[2]
+                if isinstance(self.step, PLConst) and self.step.value < 0:
+                    self.op = ">"
+                else:
+                    self.op = "<"
+                    # TODO: need to generate two versions of for, 
+                    # depending on the value of step in runtime.  
+
+
+            if self.expr.attr != None:
+                self.attr = self.expr.attr
+                self.attr_args = self.expr.attr_args
+
+        else:
+            '''Coming from visit_For, iter_dom is a PyLog expression'''
+            self.type = "expr"
+            pass
+            # TODO: need to generate separate ArrayDecl before current stmt
+
+
+
+class PLFor(PLNode):
+    def __init__(self, target, iter_dom, body, orelse, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['target', 'iter_dom', 'body', 'orelse']
+        self.target = target
+        self.iter_dom = iter_dom
+        self.body = body
+        self.orelse = orelse
+
+
+class PLWhile(PLNode):
+    def __init__(self, test, body, orelse, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['test', 'body', 'orelse']
+        self.test = test
+        self.body = body
+        self.orelse = orelse
+
+
+class PLFunctionDef(PLNode):
+    def __init__(self, name, args, body, decorator_list, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['name', 'args', 'body', 'decorator_list']
+        self.name = name
+        self.args = args
+        self.body = body
+        self.decorator_list = decorator_list
+        self.iter_vars = []
+        # if config != None:
+        #     print(">>>>>>>>>>> FuncDef Found CONFIG")
+        #     print(config.var_list)
+
+    # def extract(self, ast_node):
+    #     self.name = ast_node.name
+
+
+class PLLambda(PLNode):
+    def __init__(self, args, body, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['args', 'body']
+        self.args = args
+        self.body = body
+
+    # def __repr__(self):
+    #     return "LambdaNode"
+
+    def extract(self, ast_node):
+        self.args = ast_node.args.pl_data
+        self.body = ast_node.body.pl_data
         self.type = self.body.type
         print("LambdaNode assigns type to " + self.name +": "+str(self.type))
         print("LambdaNode body type: ", type(self.body))
@@ -280,6 +401,12 @@ class LambdaNode(Node):
         return self.src
 
 
+class PLReturn(PLNode):
+    def __init__(self, value, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['value']
+        self.value = value
+
 '''
     out = map(f, a, b, ...) 
     =>
@@ -301,9 +428,10 @@ class LambdaNode(Node):
     }
 '''
 
-class MapNode(Node):
+class PLMap(PLNode):
     def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
+        PLNode.__init__(self, ast_node, config)
+        self._fields = []
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
@@ -312,16 +440,16 @@ class MapNode(Node):
             print(config.var_list)
 
     def extract(self, ast_node):
-        arg_lst = [ arg.lp_data for arg in ast_node.args ]
+        arg_lst = [ arg.pl_data for arg in ast_node.args ]
         self.func = arg_lst[0]
         self.data = arg_lst[1:]
         self.target = None
         print("!!!!!! parent for map: ", ast_node.parent)
         if isinstance(ast_node.parent, ast.Assign):
-            self.target = ast_node.parent.targets[0].lp_data
+            self.target = ast_node.parent.targets[0].pl_data
             print("!!! Assign target for map")
-        # elif ast_node.parent.lp_data.type:
-            
+        # elif ast_node.parent.pl_data.type:
+
         self.dim = self.data[0].dim
 
         if self.func.type:
@@ -371,9 +499,10 @@ class MapNode(Node):
         config.indent_level = indent_level
 
 
-class HmapNode(Node):
+class PLHmap(PLNode):
     def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
+        PLNode.__init__(self, ast_node, config)
+        self._fields = []
         self.iter_vars = []
         if ast_node != None:
             self.extract(ast_node)
@@ -382,10 +511,10 @@ class HmapNode(Node):
             print(config.var_list)
 
     def extract(self, ast_node):
-        arg_lst = [ arg.lp_data for arg in ast_node.args ]
+        arg_lst = [ arg.pl_data for arg in ast_node.args ]
         self.func = arg_lst[0]
         self.data = arg_lst[1:]
-        self.target = ast_node.parent.targets[0].lp_data
+        self.target = ast_node.parent.targets[0].pl_data
         self.dim = self.data[0].dim
 
         print("########### ", type(self.func))
@@ -445,11 +574,12 @@ class HmapNode(Node):
 
         config.indent_level = indent_level
 
-class DotNode(Node):
+class PLDot(PLNode):
     """dot(A, B): returns the dot product of A and B"""
     """NOTE: This definition is different from NumPy. Will be upated later"""
     def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
+        PLNode.__init__(self, ast_node, config)
+        self._fields = []
         self.iter_vars = []
         self.operands = []
         if ast_node != None:
@@ -458,12 +588,12 @@ class DotNode(Node):
             print("DotNode operand types: ", self.operands[0].type)
             print("DotNode operand types: ", self.operands[1].type)
             if self.operands[0].type and self.operands[1].type: 
-                self.type = LpType(self.operands[0].type.ele_type, 0)
+                self.type = PLType(self.operands[0].type.ele_type, 0)
                 print("DotNode assigns type to " + self.name +": "+str(self.type))
 
     def extract(self, ast_node):
         assert(len(ast_node.args) == 2)
-        self.operands = [ e.lp_data for e in ast_node.args ]
+        self.operands = [ e.pl_data for e in ast_node.args ]
         self.dim = self.operands[0].dim
 
     def gen_inner_vars(self, var, config):
@@ -528,27 +658,4 @@ class DotNode(Node):
         config.indent_level = indent_level
 
         return self.src
-
-class FuncDefNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        self.iter_vars = []
-        if ast_node != None:
-            self.extract(ast_node)
-        if config != None:
-            print(">>>>>>>>>>> FuncDef Found CONFIG")
-            print(config.var_list)
-
-    def extract(self, ast_node):
-        self.name = ast_node.name
-        
-class AssignNode(Node):
-    def __init__(self, ast_node=None, config=None):
-        Node.__init__(self, ast_node, config)
-        self.node = "AssignNode"
-        if ast_node != None:
-            self.extract(ast_node)
-
-    def extract(self, ast_node):
-        self.targets = [ t.lp_data for t in ast_node.targets ]
 
