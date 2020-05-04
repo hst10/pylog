@@ -215,7 +215,8 @@ class PLCodeGenerator:
                       body=filter_none([ self.visit(stmt) for stmt in node.body ]))
 
         if node.decorator_list:
-            decorator_names = [e.name for e in node.decorator_list]
+            decorator_names = [e.name if isinstance(e, PLVariable) else e.func.name \
+                                                     for e in node.decorator_list]
             if "pylog" in decorator_names:
                 self.top_func_name = node.name
                 return fd

@@ -386,7 +386,8 @@ class PLAnalyzer(PLPostorderVisitor):
         # self.visit(node.args, config)
 
         if node.decorator_list:
-            decorator_names = [e.id for e in node.decorator_list]
+            decorator_names = [e.id if isinstance(e, ast.Name) else e.func.id \
+                                                     for e in node.decorator_list]
             # print(decorator_names)
             if "pylog" in decorator_names:
                 self.top_func = node.name
