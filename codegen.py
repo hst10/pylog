@@ -54,8 +54,9 @@ class CCode:
 
 
 class PLCodeGenerator:
-    def __init__(self):
+    def __init__(self, arg_info=None):
         self.cc = CCode()
+        self.arg_info = arg_info
 
     def codegen(self, node, config=None):
         self.cc += self.visit(node, config)
@@ -64,8 +65,8 @@ class PLCodeGenerator:
 
     def iter_fields(self, node):
         """
-        Yield a tuple of ``(fieldname, value)`` for each field in ``node._fields``
-        that is present on *node*.
+        Yield a tuple of ``(fieldname, value)`` for each field in
+        ``node._fields`` that is present on *node*.
         """
         for field in node._fields:
             try:
@@ -189,7 +190,7 @@ class PLCodeGenerator:
         if pliter_dom.attr:
             insert_pragma(compound_node=sim_for.stmt, 
                           pragma=pliter_dom.attr, 
-                          attr=(self.visit(pliter_dom.attr_args[0]) 
+                          attr=(self.visit(pliter_dom.attr_args[0])
                                     if pliter_dom.attr_args else None))
 
         return sim_for
@@ -206,8 +207,28 @@ class PLCodeGenerator:
     # TODO: correctly handle nested functions definitions
     def visit_PLFunctionDef(self, node, config=None):
 
+        arg_list = []
+
+        for arg in node.args:
+            if hasattr(arg, 'pl_type') and hasattr(arg, 'pl_shape'):
+                print()
+                if arg.pl_shape == (1,):
+                    arg_list.append(var_decl(var_type=arg.pl_type.ele_type,
+                                             name=self.visit(arg).name))
+                else:
+                    arg_list.append(array_decl(var_type=arg.pl_type.ele_type,
+                                               name=self.visit(arg).name,
+                                               dims=[ Constant('int', str(e))  \
+                                                        for e in arg.pl_shape]))
+
+            else:
+                arg_list.append(array_decl(var_type="float",
+                                           name=self.visit(arg).name,
+                                           dims=[None]*2))
+
+
         # arg_list = [ var_decl(var_type="float**", name=self.visit(arg).name) for arg in node.args  ]
-        arg_list = [ array_decl(var_type="float", name=self.visit(arg).name, dims=[None]*2) for arg in node.args  ]
+        # arg_list = [ array_decl(var_type="float", name=self.visit(arg).name, dims=[None]*2) for arg in node.args  ]
 
         fd = func_def(func_name=node.name, 
                       args=arg_list,
@@ -219,6 +240,11 @@ class PLCodeGenerator:
                                                      for e in node.decorator_list]
             if "pylog" in decorator_names:
                 self.top_func_name = node.name
+
+                if self.arg_info != None:
+                    print("~~~~~~~ >>> ", self.arg_info)
+                    max_idx = insert_interface_pragmas(fd.body, self.arg_info)
+                    self.max_idx = max_idx
                 return fd
         else:
             self.cc.append_global(fd)

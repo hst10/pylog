@@ -9,10 +9,9 @@ supported_boards = [
 ]
 
 # example config: 
-
-
 config = {
     'project_name': 'pl_matmul',
+    'project_path': '/home/shuang91/vivado_projects/pl_matmul',
     'base_path':    '/home/shuang91/vivado_projects',
     'freq':         125.00, 
     'top_name':     'matmul',
@@ -37,8 +36,8 @@ class PLSysGen:
 
         vivado_config = {
             'project_name': config['project_name'] + '_vivado',
-            'base_path':    config['base_path'] + '/' + config['project_name'],
-            'ip_repo_path': config['base_path'] + '/' + config['project_name'] + \
+            'base_path':    config['project_path'],
+            'ip_repo_path': config['project_path'] + \
                                     f"/{config['project_name']}_hls/solution1",
             'pl_freq':      config['freq'], 
             'ip_name':      config['top_name'],
@@ -47,7 +46,7 @@ class PLSysGen:
         }
 
         hls_config = {
-            'hls_base_path':    config['base_path'] + '/' + config['project_name'],
+            'hls_base_path':    config['project_path'],
             'hls_project_name': f"{config['project_name']}_hls",
             'hls_top':          config['top_name'],
             'hls_file_name':    config['top_name'] + '.cpp',
@@ -62,7 +61,7 @@ class PLSysGen:
 
         assert(config is not None)
 
-        project_path = f"{config['base_path']}/{config['project_name']}"
+        project_path = config['project_path']
         if not os.path.exists(project_path):
             os.makedirs(project_path)
         else:

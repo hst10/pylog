@@ -50,7 +50,7 @@ class PLTester(PLPostorderVisitor):
 class PLAnalyzer(PLPostorderVisitor):
 
     def __init__(self):
-        PLPreorderVisitor.__init__(self)
+        PLPostorderVisitor.__init__(self)
         self.args = {}
 
     # def isLambdaArg(self, node):

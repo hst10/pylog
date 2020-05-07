@@ -10,13 +10,21 @@ PyLog should be able to get the element data type and array dimensions
 from the input NumPy arrays. 
 '''
 
-@pylog
-def pl_add(a, b):
-    return a + b
+@pylog(path='/home/shuang91/vivado_projects')
+def pylog_add(a, b, c):
+
+    for i in range(1024).pipeline():
+        c[i] = a[i] + b[i]
+
+    return 0
 
 
 if __name__ == "__main__":
-    a = np.array([1, 3, 6, 7, 10])
-    b = np.array([1, 3, 6, 7, 10])
-    c = pl_add(a, b)
+    length = 1024
+    a = np.random.rand(length)
+    b = np.random.rand(length)
+    c = np.random.rand(length)
+    pylog_add(a, b, c)
+    print(a)
+    print(b)
     print(c)

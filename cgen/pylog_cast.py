@@ -118,8 +118,32 @@ def simple_for(iter_var, start, op, end, step, stmt_lst):
 
 def insert_pragma(compound_node, pragma=None, attr=None, pragma_str=None):
     assert(isinstance(compound_node, c_ast.Compound))
-    pragma = c_ast.Pragma(f'HLS {pragma}' + (f' factor={attr.value}' if attr else ''))
-    compound_node.block_items = [ pragma ] + compound_node.block_items
+    if pragma_str != None:
+        if isinstance(pragma_str, str):
+            pragmas = [ c_ast.Pragma('HLS ' + pragma_str) ]
+        elif isinstance(pragma_str, list):
+            pragmas = [ c_ast.Pragma('HLS ' + s) for s in pragma_str ]
+    else:
+        pragmas = [ c_ast.Pragma(f'HLS {pragma}' + (f' factor={attr.value}' if attr else '')) ]
+    compound_node.block_items = pragmas + compound_node.block_items
+
+def insert_interface_pragmas(compound_node, interface_info, num_hp_ports=4):
+    pragma_strs = []
+    data_bundle_idx = 0
+    max_bundle_idx  = 0
+    for key, val in interface_info.items():
+        type_name, shape = val
+        if shape == (1,):
+            pragma_strs.append(f'INTERFACE s_axilite register port={key} bundle=CTRL')
+        else:
+            max_bundle_idx = max(max_bundle_idx, data_bundle_idx)
+            pragma_strs.append(f'INTERFACE m_axi port={key} offset=slave bundle=DATA_{data_bundle_idx}')
+            data_bundle_idx = (data_bundle_idx + 1) % num_hp_ports
+
+    pragma_strs.append(f'INTERFACE s_axilite register port=return bundle=CTRL')
+
+    insert_pragma(compound_node, pragma_str=pragma_strs)
+    return max_bundle_idx + 1
 
 def func_decl(func_name, args, func_type):
     '''

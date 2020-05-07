@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os
 import sys
 import ast
 import astpretty
@@ -11,12 +12,13 @@ from visitors import *
 from analyzer import *
 from typer    import *
 from codegen  import *
+from sysgen   import *
 
 import numpy as np
 
-def pylog(func=None, *, synthesis=True):
+def pylog(func=None, *, synthesis=True, path='./', board='zedboard'):
     if func is None:
-        return functools.partial(pylog, synthesis=synthesis)
+        return functools.partial(pylog, synthesis=synthesis, path=path, board=board)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -27,17 +29,27 @@ def pylog(func=None, *, synthesis=True):
         for arg in args:
             assert(isinstance(arg, (np.ndarray, np.generic)))
 
-        arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape)  for i in range(len(args)) }
-        print(arg_info)
+        arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) for i in range(len(args)) }
 
-        # TODO: the data type and dimension info should also be passed to
-        # PyLog compiler. Here we discard them for now.
+        num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
+
+        project_path, top_func, max_idx = pylog_compile(source_func, arg_info, path)
+
         if synthesis:
-            pylog_compile(source_func, arg_info)
+            config = {
+                'project_name': top_func,
+                'project_path': project_path,
+                'freq':         125.00,
+                'top_name':     top_func,
+                'num_bundles':  max_idx,
+            }
+            plsysgen = PLSysGen(board=board)
+            plsysgen.generate_system(config)
+
     return wrapper
 
 
-def pylog_compile(src, arg_info):
+def pylog_compile(src, arg_info, path='./'):
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
@@ -48,7 +60,7 @@ def pylog_compile(src, arg_info):
     tester   = PLTester()
     analyzer = PLAnalyzer()
     typer    = PLTyper(arg_info)
-    codegen  = PLCodeGenerator()
+    codegen  = PLCodeGenerator(arg_info)
 
     # execute passes
     tester.visit(ast_py)
@@ -62,10 +74,20 @@ def pylog_compile(src, arg_info):
     # codegen.codegen(self.ast_py)
     print("Generated C Code:")
     print(hls_c)
-    output_file = '/home/shuang91/pylog/output_pylog.c'
+
+    project_path = f'{path}/{analyzer.top_func}/'
+
+    if not os.path.exists(project_path):
+        os.makedirs(project_path)
+    else:
+        print(f"Directory {project_path} exists! Exiting... ")
+
+    output_file = f'{project_path}/{analyzer.top_func}.cpp'
     with open(output_file, 'w') as fout:
         fout.write(hls_c)
         print(f"HLS C code written to {output_file}")
+
+    return project_path, analyzer.top_func, codegen.max_idx
 
 if __name__ == "__main__":
 

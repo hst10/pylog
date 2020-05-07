@@ -1,12 +1,13 @@
 from nodes import *
 
 
-pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
+# pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
+pytypes = ["None", "bool", "int", "float", "str"]
 
 
 class PLType:
     '''Scalars, arrays, and functions'''
-    def __init__(self, ele_type=float, dim=0):
+    def __init__(self, ele_type="float", dim=0):
         self.ele_type = ele_type
         self.dim = dim
 
@@ -27,8 +28,6 @@ class PLType:
             return PLType(self.ele_type, self.dim+other.dim)
 
 
-
-
 class PLTyper:
     def __init__(self, args_info):
         self.args_info = args_info
@@ -43,6 +42,12 @@ class PLTyper:
                 yield field, getattr(node, field)
             except AttributeError:
                 pass
+
+    def np_pl_type_map(self, type_name):
+        for pltype in pytypes:
+            if type_name.startswith(pltype):
+                return pltype
+        return "None"
 
     def visit(self, node, config=None):
         """Visit a node."""
@@ -62,3 +67,13 @@ class PLTyper:
         elif isinstance(node, list):
             for item in node:
                 self.visit(item, config)
+
+    def visit_PLFunctionDef(self, node, config=None):
+        if node.decorator_list:
+            decorator_names = [e.name if isinstance(e, PLVariable) else e.func.name \
+                                                     for e in node.decorator_list]
+            if "pylog" in decorator_names:
+                for arg in node.args:
+                    type_name, shape = self.args_info[arg.name]
+                    arg.pl_type  = PLType(ele_type=self.np_pl_type_map(type_name), dim=len(shape))
+                    arg.pl_shape = shape
