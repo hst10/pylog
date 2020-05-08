@@ -65,6 +65,7 @@ class PLSysGen:
         assert(config is not None)
 
         project_path = config['project_path']
+        project_name = config['project_name']
         if not os.path.exists(project_path):
             os.makedirs(project_path)
         else:
@@ -92,6 +93,12 @@ class PLSysGen:
 
         process = subprocess.call(f"cd {project_path}; vivado_hls -f {hls_tcl_script}; cd -;", shell=True)
         process = subprocess.call(f"cd {project_path}; vivado -mode batch -source {vivado_tcl_script}; cd -;", shell=True)
+
+        process = subprocess.call(f"cd {project_path}; cp ./{project_name}_vivado/{project_name}_vivado.runs/impl_1/design_1_wrapper.bit \
+                                    ./{project_name}.bit; cd -;", shell=True)
+
+        process = subprocess.call(f"cd {project_path}; cp ./{project_name}_vivado/{project_name}_vivado.srcs/sources_1/bd/design_1/hw_handoff/design_1.hwh \
+                                    ./{project_name}.hwh; cd -;", shell=True)
 
 if __name__ == '__main__':
     plsysgen = PLSysGen(board='ultra96')

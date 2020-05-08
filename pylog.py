@@ -7,6 +7,7 @@ import astpretty
 import inspect
 import textwrap
 import functools
+import subprocess
 
 from visitors import *
 from analyzer import *
@@ -16,11 +17,14 @@ from sysgen   import *
 
 import numpy as np
 
-PROJECT_BASE='/home/shuang91/vivado_projects/pylog_projects'
+HOST_ADDR = 'shuang91@192.168.0.108'
+HOST_BASE = '/home/shuang91/vivado_projects/pylog_projects'
+TARGET_ADDR  = 'xilinx@192.168.0.118'
+TARGET_BASE   = '/home/xilinx/pylog_projects'
 
-def pylog(func=None, *, synthesis=False, pysim_only=False, path=PROJECT_BASE, board='ultra96'):
+def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=HOST_BASE, board='ultra96'):
     if func is None:
-        return functools.partial(pylog, synthesis=synthesis, pysim_only=pysim_only, path=path, board=board)
+        return functools.partial(pylog, synthesis=synthesis, pysim_only=pysim_only, deploy=deploy, path=path, board=board)
 
     if pysim_only:
         return func
@@ -52,10 +56,17 @@ def pylog(func=None, *, synthesis=False, pysim_only=False, path=PROJECT_BASE, bo
             plsysgen = PLSysGen(board=board)
             plsysgen.generate_system(config)
 
+        if deploy:
+            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", shell=True)
+            process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.bit \
+                                       {TARGET_BASE}/{top_func}/", shell=True)
+            process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.hwh \
+                                       {TARGET_BASE}/{top_func}/", shell=True)
+
     return wrapper
 
 
-def pylog_compile(src, arg_info, path=PROJECT_BASE):
+def pylog_compile(src, arg_info, path=HOST_BASE):
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
