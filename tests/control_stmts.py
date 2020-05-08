@@ -1,5 +1,4 @@
-import sys
-sys.path.extend(['/home/shuang91/pylog/'])
+from env import *
 
 import numpy as np
 from pylog import *

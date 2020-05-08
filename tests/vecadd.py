@@ -1,5 +1,4 @@
-import sys
-sys.path.extend(['/home/xilinx/pylog/'])
+from env import *
 
 import numpy as np
 from pylog import *
@@ -10,7 +9,7 @@ PyLog should be able to get the element data type and array dimensions
 from the input NumPy arrays. 
 '''
 
-@pylog(synthesis=False, deploy=True)
+@pylog(synthesis=False, deploy=False)
 def pylog_add(a, b, c):
 
     for i in range(1024).pipeline():
