@@ -5,7 +5,11 @@ import numpy as np
 import hashlib
 import inspect
 
-DESIGN_LIB = "/home/shuang91/vivado_projects/pylog_designs/"
+from pynq import Xlnk
+from pynq import Overlay
+from pynq import allocate
+
+DESIGN_LIB = "/home/shuang91/vivado_projects/pylog_projects/"
 
 class LogicInstance:
     def __init__(self, key=None):
@@ -27,21 +31,46 @@ def pylog_go(func):
             print(arg, type(arg))
         design_key = hashlib.md5(source_func.encode("UTF-8"))
         existing_keys = load_design_keys()
-        if design_key in existing_keys:
+        # if design_key in existing_keys:
 
-        else:
-            Print("Design doesn't exist. Need to run synthesis first. ")
+        # else:
+        #     Print("Design doesn't exist. Need to run synthesis first. ")
 
     return wrap_func
 
+class PLRuntime:
+    def __init__(self, config):
+        self.workspace_base = config['workspace_base']
+        self.project_name = config['project_name']
+        self.num_bundles = config['num_bundles']
+        self.config = config
+        self.xlnk = Xlnk()
+        self.xlnk.xlnk_reset()
 
-@pylog_go
-def pl_add(a, b):
-    return a + b
+    def load_overlay(self):
+        self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/{self.project_name}.bit')
+        self.accelerator = getattr(self.overlay, f'{self.project_name}_0')
 
-if __name__ == "__main__":
-    a = np.asarray([1, 3, 6, 7, 10])
-    b = np.asarray([1, 3, 6, 7, 10])
+    def call(self, args):
+        self.load_overlay()
+        self.plrt_arrays = []
+        curr_addr = 0x18
+        for arg in args:
+            new_array = allocate(shape=arg.shape, dtype=arg.dtype)
+            np.copyto(new_array, arg)
+            new_array.sync_to_device()
+            self.accelerator.write(curr_addr, new_array.physical_address)
+            curr_addr += 8
+            self.plrt_arrays.append(new_array)
 
-    key = pl_add(a, b)
-    print(key.hexdigest())
+        print("FPGA starts. ")
+
+        self.accelerator.write(0x00, 1)
+        isready = self.accelerator.read(0x00)
+        while( isready == 1 ):
+            isready = self.accelerator.read(0x00)
+
+        for i in range(len(self.plrt_arrays)):
+            self.plrt_arrays[i].sync_from_device()
+            np.copyto(args[i], self.plrt_arrays[i])
+            self.plrt_arrays[i].close()

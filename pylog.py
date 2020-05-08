@@ -14,6 +14,7 @@ from analyzer import *
 from typer    import *
 from codegen  import *
 from sysgen   import *
+from runtime  import *
 
 import numpy as np
 
@@ -44,24 +45,33 @@ def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=HO
 
         project_path, top_func, max_idx = pylog_compile(source_func, arg_info, path)
 
+        config = {
+            'workspace_base': TARGET_BASE,
+            'project_name': top_func,
+            'project_path': project_path,
+            'freq':         125.00,
+            'top_name':     top_func,
+            'num_bundles':  max_idx,
+        }
+
         if synthesis:
             print("generating hardware ...")
-            config = {
-                'project_name': top_func,
-                'project_path': project_path,
-                'freq':         125.00,
-                'top_name':     top_func,
-                'num_bundles':  max_idx,
-            }
+
             plsysgen = PLSysGen(board=board)
             plsysgen.generate_system(config)
 
         if deploy:
             process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", shell=True)
-            process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.bit \
-                                       {TARGET_BASE}/{top_func}/", shell=True)
-            process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.hwh \
-                                       {TARGET_BASE}/{top_func}/", shell=True)
+
+            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.bit'):
+                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.bit \
+                                           {TARGET_BASE}/{top_func}/", shell=True)
+            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.hwh'):
+                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.hwh \
+                                           {TARGET_BASE}/{top_func}/", shell=True)
+
+            plrt = PLRuntime(config)
+            plrt.call(args)
 
     return wrapper
 
