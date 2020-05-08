@@ -5,8 +5,8 @@ import numpy as np
 from pysim import *
 from pylog import *
 
-@pylog
-def pl_top(a, b, c, d):
+@pylog#(pysim_only=True)
+def pl_matmul(a, b, c, d):
     
     buf = np.empty([16, 16], int)
     pragma("HLS array_partition variable=buf")
@@ -36,5 +36,5 @@ if __name__ == "__main__":
     b = np.random.rand(length, length)
     c = np.zeros((length, length))
     d = np.random.rand(1)
-    pl_top(a, b, c, d)
+    pl_matmul(a, b, c, d)
     print(c)

@@ -16,9 +16,14 @@ from sysgen   import *
 
 import numpy as np
 
-def pylog(func=None, *, synthesis=False, path='/home/shuang91/vivado_projects', board='ultra96'):
+PROJECT_BASE='/home/shuang91/vivado_projects/pylog_projects'
+
+def pylog(func=None, *, synthesis=False, pysim_only=False, path=PROJECT_BASE, board='ultra96'):
     if func is None:
-        return functools.partial(pylog, synthesis=synthesis, path=path, board=board)
+        return functools.partial(pylog, synthesis=synthesis, pysim_only=pysim_only, path=path, board=board)
+
+    if pysim_only:
+        return func
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -50,7 +55,7 @@ def pylog(func=None, *, synthesis=False, path='/home/shuang91/vivado_projects', 
     return wrapper
 
 
-def pylog_compile(src, arg_info, path='/home/shuang91/vivado_projects'):
+def pylog_compile(src, arg_info, path=PROJECT_BASE):
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 
@@ -76,7 +81,7 @@ def pylog_compile(src, arg_info, path='/home/shuang91/vivado_projects'):
     print("Generated C Code:")
     print(hls_c)
 
-    project_path = f'{path}/{analyzer.top_func}/'
+    project_path = f'{path}/{analyzer.top_func}'
 
     if not os.path.exists(project_path):
         os.makedirs(project_path)

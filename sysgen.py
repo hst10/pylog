@@ -2,6 +2,8 @@ import os
 import jinja2
 import subprocess
 
+TEMPLATE_DIR='/home/shuang91/pylog/tcl_temps/'
+
 # list of supported boards
 supported_boards = [
     'zedboard',
@@ -9,11 +11,11 @@ supported_boards = [
     'ultra96'
 ]
 
-# example config: 
+# An example config:
 config = {
     'project_name': 'pl_matmul',
-    'project_path': '/home/shuang91/vivado_projects/pl_matmul',
-    'base_path':    '/home/shuang91/vivado_projects',
+    'project_path': '/home/shuang91/vivado_projects/pylog_projects/pl_matmul',
+    'base_path':    '/home/shuang91/vivado_projects/pylog_projects',
     'freq':         125.00, 
     'top_name':     'matmul',
     'num_bundles':  3,
@@ -70,7 +72,7 @@ class PLSysGen:
 
         vivado_config, hls_config = self.gen_configs(config)
         
-        template_loader = jinja2.FileSystemLoader(searchpath="/home/shuang91/pylog/tcl_temps/")
+        template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
         template_env = jinja2.Environment(loader=template_loader)
         hls_template = f"{self.target_board}_hls.tcl.jinja"
         template = template_env.get_template(hls_template)
@@ -92,5 +94,5 @@ class PLSysGen:
         process = subprocess.call(f"cd {project_path}; vivado -mode batch -source {vivado_tcl_script}; cd -;", shell=True)
 
 if __name__ == '__main__':
-    plsysgen = PLSysGen(board='zedboard')
+    plsysgen = PLSysGen(board='ultra96')
     plsysgen.generate_system(config)
