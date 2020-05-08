@@ -16,7 +16,7 @@ from sysgen   import *
 
 import numpy as np
 
-def pylog(func=None, *, synthesis=True, path='./', board='zedboard'):
+def pylog(func=None, *, synthesis=False, path='/home/shuang91/vivado_projects', board='ultra96'):
     if func is None:
         return functools.partial(pylog, synthesis=synthesis, path=path, board=board)
 
@@ -36,6 +36,7 @@ def pylog(func=None, *, synthesis=True, path='./', board='zedboard'):
         project_path, top_func, max_idx = pylog_compile(source_func, arg_info, path)
 
         if synthesis:
+            print("generating hardware ...")
             config = {
                 'project_name': top_func,
                 'project_path': project_path,
@@ -49,7 +50,7 @@ def pylog(func=None, *, synthesis=True, path='./', board='zedboard'):
     return wrapper
 
 
-def pylog_compile(src, arg_info, path='./'):
+def pylog_compile(src, arg_info, path='/home/shuang91/vivado_projects'):
     ast_py = ast.parse(src)
     astpretty.pprint(ast_py)
 

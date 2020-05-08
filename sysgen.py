@@ -5,7 +5,8 @@ import subprocess
 # list of supported boards
 supported_boards = [
     'zedboard',
-    'pynq'
+    'pynq',
+    'ultra96'
 ]
 
 # example config: 
@@ -69,7 +70,7 @@ class PLSysGen:
 
         vivado_config, hls_config = self.gen_configs(config)
         
-        template_loader = jinja2.FileSystemLoader(searchpath="./tcl_temps/")
+        template_loader = jinja2.FileSystemLoader(searchpath="/home/shuang91/pylog/tcl_temps/")
         template_env = jinja2.Environment(loader=template_loader)
         hls_template = f"{self.target_board}_hls.tcl.jinja"
         template = template_env.get_template(hls_template)

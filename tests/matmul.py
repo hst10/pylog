@@ -2,13 +2,13 @@ import sys
 sys.path.extend(['/home/shuang91/pylog/'])
 
 import numpy as np
-from csim import *
+from pysim import *
 from pylog import *
 
 @pylog
-def pl_top(a, b, c):
+def pl_top(a, b, c, d):
     
-    buf = np.empty([3,5,7], float)
+    buf = np.empty([16, 16], int)
     pragma("HLS array_partition variable=buf")
 
     def matmul(a, b, c):
@@ -35,5 +35,6 @@ if __name__ == "__main__":
     a = np.random.rand(length, length)
     b = np.random.rand(length, length)
     c = np.zeros((length, length))
-    pl_top(a, b, c)
+    d = np.random.rand(1)
+    pl_top(a, b, c, d)
     print(c)
