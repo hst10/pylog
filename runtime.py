@@ -5,10 +5,6 @@ import numpy as np
 import hashlib
 import inspect
 
-from pynq import Xlnk
-from pynq import Overlay
-from pynq import allocate
-
 DESIGN_LIB = "/home/shuang91/vivado_projects/pylog_projects/"
 
 class LogicInstance:
@@ -40,19 +36,23 @@ def pylog_go(func):
 
 class PLRuntime:
     def __init__(self, config):
+
         self.workspace_base = config['workspace_base']
         self.project_name = config['project_name']
         self.num_bundles = config['num_bundles']
         self.config = config
+
+    def call(self, args):
+        from pynq import Xlnk
+        from pynq import Overlay
+        from pynq import allocate
+
         self.xlnk = Xlnk()
         self.xlnk.xlnk_reset()
 
-    def load_overlay(self):
         self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/{self.project_name}.bit')
         self.accelerator = getattr(self.overlay, f'{self.project_name}_0')
 
-    def call(self, args):
-        self.load_overlay()
         self.plrt_arrays = []
         curr_addr = 0x18
         for arg in args:
