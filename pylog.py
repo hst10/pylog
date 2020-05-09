@@ -18,12 +18,13 @@ from runtime  import *
 
 import numpy as np
 
-HOST_ADDR = 'shuang91@192.168.0.108'
-HOST_BASE = '/home/shuang91/vivado_projects/pylog_projects'
-TARGET_ADDR  = 'xilinx@192.168.0.118'
-TARGET_BASE   = '/home/xilinx/pylog_projects'
+HOST_ADDR   = 'shuang91@192.168.0.108'
+HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
+TARGET_ADDR = 'xilinx@192.168.0.118'
+TARGET_BASE = '/home/xilinx/pylog_projects'
+WORKSPACE   = TARGET_BASE
 
-def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=HOST_BASE, board='ultra96'):
+def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=WORKSPACE, board='ultra96'):
     if func is None:
         return functools.partial(pylog, synthesis=synthesis, pysim_only=pysim_only, deploy=deploy, path=path, board=board)
 
@@ -46,7 +47,7 @@ def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=HO
         project_path, top_func, max_idx = pylog_compile(source_func, arg_info, path)
 
         config = {
-            'workspace_base': TARGET_BASE,
+            'workspace_base': WORKSPACE,
             'project_name': top_func,
             'project_path': project_path,
             'freq':         125.00,

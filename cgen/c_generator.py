@@ -6,8 +6,8 @@
 # Eli Bendersky [https://eli.thegreenplace.net/]
 # License: BSD
 #------------------------------------------------------------------------------
-# from . import c_ast
-import c_ast
+from . import c_ast
+# import c_ast
 
 class CGenerator(object):
     """ Uses the same visitor pattern as c_ast.NodeVisitor, but modified to

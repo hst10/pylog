@@ -1,11 +1,8 @@
-from __future__ import print_function
-import sys
-sys.path.extend(['/home/shuang91/pylog/cgen'])
 
 from nodes import *
-from c_ast import *
-from pylog_cast import *
-import c_generator
+from cgen.c_ast import *
+from cgen.pylog_cast import *
+from cgen.c_generator import *
 
 def filter_none(lst):
     return list(filter(None, lst))
@@ -48,7 +45,7 @@ class CCode:
         self.update()
         print(">>>>>>>>>> Start to show C AST...")
         self.ast.show(attrnames=True, nodenames=True, showcoord=False)
-        generator = c_generator.CGenerator()
+        generator = CGenerator()
         print(">>>>>>>>>> Start to generate C Code...")
         return generator.visit(self.ast)
 

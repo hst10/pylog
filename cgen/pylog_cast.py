@@ -1,13 +1,6 @@
 
-from __future__ import print_function
-import sys
-
-# This is not required if you've installed pycparser into
-# your site-packages/ with setup.py
-sys.path.extend(['.'])
-
-import c_ast
-import c_generator
+from . import c_ast
+from . import c_generator
 
 # Constants
 
