@@ -9,7 +9,7 @@ PyLog should be able to get the element data type and array dimensions
 from the input NumPy arrays. 
 '''
 
-@pylog(synthesis=False, deploy=False)
+@pylog#(mode='deploy')
 def pylog_add(a, b, c):
 
     for i in range(1024).pipeline():

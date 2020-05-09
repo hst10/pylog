@@ -4,7 +4,7 @@ import numpy as np
 from pysim import *
 from pylog import *
 
-@pylog#(pysim_only=True)
+@pylog#(mode='pysim')
 def pl_matmul(a, b, c, d):
     
     buf = np.empty([16, 16], int)

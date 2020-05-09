@@ -22,11 +22,16 @@ HOST_ADDR   = 'shuang91@192.168.0.108'
 HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
 TARGET_ADDR = 'xilinx@192.168.0.118'
 TARGET_BASE = '/home/xilinx/pylog_projects'
-WORKSPACE   = TARGET_BASE
+WORKSPACE   = HOST_BASE
 
-def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=WORKSPACE, board='ultra96'):
+def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     if func is None:
-        return functools.partial(pylog, synthesis=synthesis, pysim_only=pysim_only, deploy=deploy, path=path, board=board)
+        return functools.partial(pylog, mode=mode, path=path, board=board)
+
+    code_gen   = ('cgen' or 'codegen') in mode
+    hwgen      = 'hwgen' in mode
+    pysim_only = 'pysim' in mode
+    deploy     = ('deploy' or 'run' or 'acc') in mode
 
     if pysim_only:
         return func
@@ -55,7 +60,7 @@ def pylog(func=None, *, synthesis=False, pysim_only=False, deploy=False, path=WO
             'num_bundles':  max_idx,
         }
 
-        if synthesis:
+        if hwgen:
             print("generating hardware ...")
 
             plsysgen = PLSysGen(board=board)
