@@ -45,7 +45,7 @@ class PLRuntime:
     def call(self, args):
         from pynq import Xlnk
         from pynq import Overlay
-        from pynq import allocate
+        # from pynq import allocate  # requires PYNQ v2.5 or newer
 
         self.xlnk = Xlnk()
         self.xlnk.xlnk_reset()
@@ -56,9 +56,11 @@ class PLRuntime:
         self.plrt_arrays = []
         curr_addr = 0x18
         for arg in args:
-            new_array = allocate(shape=arg.shape, dtype=arg.dtype)
+            # new_array = allocate(shape=arg.shape, dtype=arg.dtype) # requires PYNQ v2.5 or newer
+            new_array = self.xlnk.cma_array(shape=arg.shape, dtype=arg.dtype)
             np.copyto(new_array, arg)
-            new_array.sync_to_device()
+            # new_array.sync_to_device() # requires PYNQ v2.5 or newer
+            new_array.flush()
             self.accelerator.write(curr_addr, new_array.physical_address)
             curr_addr += 8
             self.plrt_arrays.append(new_array)
@@ -70,7 +72,10 @@ class PLRuntime:
         while( isready == 1 ):
             isready = self.accelerator.read(0x00)
 
+        print("FPGA finishes. ")
+
         for i in range(len(self.plrt_arrays)):
-            self.plrt_arrays[i].sync_from_device()
+            # self.plrt_arrays[i].sync_from_device() # requires PYNQ v2.5 or newer
+            self.plrt_arrays[i].invalidate()
             np.copyto(args[i], self.plrt_arrays[i])
             self.plrt_arrays[i].close()
