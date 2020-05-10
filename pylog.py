@@ -4,6 +4,7 @@ import os
 import sys
 import ast
 import astpretty
+import re
 import inspect
 import textwrap
 import functools
@@ -45,7 +46,22 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
         for arg in args:
             assert(isinstance(arg, (np.ndarray, np.generic)))
 
-        arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) for i in range(len(args)) }
+        arg_info = {}
+
+        for i in range(len(args)):
+            if args[i].dtype.fields is not None:
+                key_fields = ''.join(args[i].dtype.fields.keys())
+                m1 = re.search('total([0-9]*)bits', key_fields)
+                m2 = re.search('dec([0-9]*)bits', key_fields)
+                type_name = f'ap_fixed<{m1.group(1)}, {m2.group(1)}>'
+            else:
+                type_name = args[i].dtype.name
+
+            arg_info[arg_names[i]] = (type_name, args[i].shape)
+
+
+        # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) for i in range(len(args)) }
+
 
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
@@ -113,7 +129,7 @@ def pylog_compile(src, arg_info, path=HOST_BASE):
     if not os.path.exists(project_path):
         os.makedirs(project_path)
     else:
-        print(f"Directory {project_path} exists! Exiting... ")
+        print(f"Directory {project_path} exists! Overwriting... ")
 
     output_file = f'{project_path}/{analyzer.top_func}.cpp'
     with open(output_file, 'w') as fout:
@@ -132,3 +148,6 @@ if __name__ == "__main__":
         return a + b
 
     test(a, b)
+
+def pl_fixed(total_bits, dec_bits):
+    return np.dtype([(f'total{total_bits}bits', np.int32), (f'dec{dec_bits}bits', np.int32)])

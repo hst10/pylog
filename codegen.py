@@ -57,8 +57,12 @@ class PLCodeGenerator:
 
     def codegen(self, node, config=None):
         self.cc += self.visit(node, config)
-        self.ccode = self.cc.cgen()
+        self.ccode = self.include_code() + self.cc.cgen()
         return self.ccode
+
+    def include_code(self):
+        header_files = ['ap_int.h', 'ap_fixed.h']
+        return ''.join([ f'#include "{f}"\n' for f in header_files])
 
     def iter_fields(self, node):
         """
@@ -208,7 +212,6 @@ class PLCodeGenerator:
 
         for arg in node.args:
             if hasattr(arg, 'pl_type') and hasattr(arg, 'pl_shape'):
-                print()
                 if arg.pl_shape == (1,):
                     arg_list.append(var_decl(var_type=arg.pl_type.ele_type,
                                              name=self.visit(arg).name))
@@ -239,7 +242,6 @@ class PLCodeGenerator:
                 self.top_func_name = node.name
 
                 if self.arg_info != None:
-                    print("~~~~~~~ >>> ", self.arg_info)
                     max_idx = insert_interface_pragmas(fd.body, self.arg_info)
                     self.max_idx = max_idx
                 return fd
