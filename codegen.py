@@ -256,7 +256,7 @@ class PLCodeGenerator:
             self.cc.append_global(fd)
 
     def visit_PLPragma(self, node, config=None):
-        print(type(node.pragma))
+        # print(type(node.pragma))
         return Pragma(self.visit(node.pragma))
 
     '''TODO'''
