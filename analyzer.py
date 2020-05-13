@@ -49,8 +49,9 @@ class PLTester(PLPostorderVisitor):
 
 class PLAnalyzer(PLPostorderVisitor):
 
-    def __init__(self):
+    def __init__(self, debug=False):
         PLPostorderVisitor.__init__(self)
+        self.debug = debug
         self.args = {}
 
     # def isLambdaArg(self, node):
@@ -393,7 +394,7 @@ class PLAnalyzer(PLPostorderVisitor):
                 self.top_func = node.name
                 if node.args.args:
                     self.args.update(self.parse_func_args(node.args.args, config))
-                    print(self.args)
+                    if self.debug: print(self.args)
 
         if config == None:
             config = PLConfig()
@@ -424,11 +425,12 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_arguments(self, node, config=None):
         for arg in node.args:
             self.visit(arg, config)
-        for arg in node.args:
-            print(arg.arg)
+        if self.debug:
+            for arg in node.args:
+                print(arg.arg)
         node.pl_data = [ arg.pl_data for arg in node.args ]
 
-        print("PyLog arguments |||>>>>", type(node))
+        # print("PyLog arguments |||>>>>", type(node))
         return node.pl_data
 
     def visit_arg(self, node, config=None):

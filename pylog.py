@@ -33,6 +33,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     hwgen      = 'hwgen' in mode
     pysim_only = 'pysim' in mode
     deploy     = ('deploy' or 'run' or 'acc') in mode
+    debug      = 'debug' in mode
 
     if pysim_only:
         return func
@@ -40,7 +41,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         source_func = textwrap.dedent(inspect.getsource(func))
-        print(source_func)
+        if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
 
         for arg in args:
@@ -60,12 +61,13 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             arg_info[arg_names[i]] = (type_name, args[i].shape)
 
 
-        # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) for i in range(len(args)) }
-
+        # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) \
+        #                                           for i in range(len(args)) }
 
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
-        project_path, top_func, max_idx = pylog_compile(source_func, arg_info, path)
+        project_path, top_func, max_idx = pylog_compile(source_func, arg_info,
+                                                        path=path, debug=debug)
 
         config = {
             'workspace_base': WORKSPACE,
@@ -83,14 +85,19 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             plsysgen.generate_system(config)
 
         if deploy:
-            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", shell=True)
+            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
+                                      shell=True)
 
             if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.bit'):
-                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.bit \
-                                           {TARGET_BASE}/{top_func}/", shell=True)
+                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
+                                          f"{top_func}/{top_func}.bit " + \
+                                          f"{TARGET_BASE}/{top_func}/", \
+                                          shell=True)
             if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.hwh'):
-                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/{top_func}/{top_func}.hwh \
-                                           {TARGET_BASE}/{top_func}/", shell=True)
+                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
+                                          f"{top_func}/{top_func}.hwh " + \
+                                          f"{TARGET_BASE}/{top_func}/",
+                                          shell=True)
 
             plrt = PLRuntime(config)
             plrt.call(args)
@@ -98,38 +105,42 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     return wrapper
 
 
-def pylog_compile(src, arg_info, path=HOST_BASE):
+def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
     ast_py = ast.parse(src)
-    astpretty.pprint(ast_py)
+    if debug: astpretty.pprint(ast_py)
 
     # add an extra attribute pointing to parent for each node
     make_parent(ast_py) # need to be called before analyzer
 
     # instantiate passes
     tester   = PLTester()
-    analyzer = PLAnalyzer()
+    analyzer = PLAnalyzer(debug=debug)
     typer    = PLTyper(arg_info)
-    codegen  = PLCodeGenerator(arg_info)
+    codegen  = PLCodeGenerator(arg_info, debug=debug)
 
     # execute passes
-    tester.visit(ast_py)
+    if debug:
+        tester.visit(ast_py)
+
     pylog_ir = analyzer.visit(ast_py)
-    print(pylog_ir)
+
+    if debug:
+        print(pylog_ir)
 
     typer.visit(pylog_ir)
 
-    print("Code generation...")
     hls_c = codegen.codegen(pylog_ir)
-    # codegen.codegen(self.ast_py)
-    print("Generated C Code:")
-    print(hls_c)
+
+    if debug:
+        print("Generated C Code:")
+        print(hls_c)
 
     project_path = f'{path}/{analyzer.top_func}'
 
     if not os.path.exists(project_path):
         os.makedirs(project_path)
-    else:
-        print(f"Directory {project_path} exists! Overwriting... ")
+    # else:
+    #     print(f"Directory {project_path} exists! Overwriting... ")
 
     output_file = f'{project_path}/{analyzer.top_func}.cpp'
     with open(output_file, 'w') as fout:
@@ -150,4 +161,5 @@ if __name__ == "__main__":
     test(a, b)
 
 def pl_fixed(total_bits, dec_bits):
-    return np.dtype([(f'total{total_bits}bits', np.int32), (f'dec{dec_bits}bits', np.int32)])
+    return np.dtype([(f'total{total_bits}bits', np.int32), \
+                     (f'dec{dec_bits}bits', np.int32)])

@@ -8,7 +8,8 @@ def filter_none(lst):
     return list(filter(None, lst))
 
 class CCode:
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
         self.ast = None
         # Global statements, before top function
         self.global_stmt = []
@@ -43,16 +44,18 @@ class CCode:
 
     def cgen(self):
         self.update()
-        print(">>>>>>>>>> Start to show C AST...")
-        self.ast.show(attrnames=True, nodenames=True, showcoord=False)
+        if self.debug:
+            print("C AST: ")
+            self.ast.show(attrnames=True, nodenames=True, showcoord=False)
         generator = CGenerator()
-        print(">>>>>>>>>> Start to generate C Code...")
+        if self.debug:
+            print("Start C Code generation.")
         return generator.visit(self.ast)
 
 
 class PLCodeGenerator:
-    def __init__(self, arg_info=None):
-        self.cc = CCode()
+    def __init__(self, arg_info=None, debug=False):
+        self.cc = CCode(debug=debug)
         self.arg_info = arg_info
 
     def codegen(self, node, config=None):
@@ -213,10 +216,10 @@ class PLCodeGenerator:
         for arg in node.args:
             if hasattr(arg, 'pl_type') and hasattr(arg, 'pl_shape'):
                 if arg.pl_shape == (1,):
-                    arg_list.append(var_decl(var_type=arg.pl_type.ele_type,
+                    arg_list.append(var_decl(var_type=arg.pl_type.ty,
                                              name=self.visit(arg).name))
                 else:
-                    arg_list.append(array_decl(var_type=arg.pl_type.ele_type,
+                    arg_list.append(array_decl(var_type=arg.pl_type.ty,
                                                name=self.visit(arg).name,
                                                dims=[ Constant('int', str(e))  \
                                                         for e in arg.pl_shape]))
@@ -227,17 +230,21 @@ class PLCodeGenerator:
                                            dims=[None]*2))
 
 
-        # arg_list = [ var_decl(var_type="float**", name=self.visit(arg).name) for arg in node.args  ]
-        # arg_list = [ array_decl(var_type="float", name=self.visit(arg).name, dims=[None]*2) for arg in node.args  ]
+        # arg_list = [ var_decl(var_type="float**", name=self.visit(arg).name) \
+        #                                               for arg in node.args  ]
+        # arg_list = [ array_decl(var_type="float", name=self.visit(arg).name, \
+        #                                dims=[None]*2) for arg in node.args  ]
 
-        fd = func_def(func_name=node.name, 
-                      args=arg_list,
-                      func_type="int",
-                      body=filter_none([ self.visit(stmt) for stmt in node.body ]))
+        fd = func_def(
+                func_name=node.name,
+                args=arg_list,
+                func_type="int",
+                body=filter_none([ self.visit(stmt) for stmt in node.body ]))
 
         if node.decorator_list:
-            decorator_names = [e.name if isinstance(e, PLVariable) else e.func.name \
-                                                     for e in node.decorator_list]
+            decorator_names = [e.name if isinstance(e, PLVariable) \
+                                      else e.func.name \
+                                            for e in node.decorator_list]
             if "pylog" in decorator_names:
                 self.top_func_name = node.name
 

@@ -153,21 +153,21 @@ class PLBinOp(PLNode):
         self.right = right
 
 
-class BinOpNode(PLNode):
-    def __init__(self, ast_node=None, config=None):
-        PLNode.__init__(self, ast_node, config)
-        self._fields = []
-        if ast_node != None:
-            self.extract(ast_node)
+# class BinOpNode(PLNode):
+#     def __init__(self, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self._fields = []
+#         if ast_node != None:
+#             self.extract(ast_node)
 
-    def __repr__(self):
-        if isinstance(self.op, ast.Mult):
-            return str(self.left) + "*" + str(self.right)
+#     def __repr__(self):
+#         if isinstance(self.op, ast.Mult):
+#             return str(self.left) + "*" + str(self.right)
 
-    def extract(self, ast_node):
-        self.left = ast_node.left.pl_data
-        self.right = ast_node.right.pl_data
-        self.op = ast_node.op
+#     def extract(self, ast_node):
+#         self.left = ast_node.left.pl_data
+#         self.right = ast_node.right.pl_data
+#         self.op = ast_node.op
 
 
 ## should use PLBinOp instead

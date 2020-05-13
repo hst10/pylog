@@ -69,8 +69,8 @@ class PLSysGen:
         project_name = config['project_name']
         if not os.path.exists(project_path):
             os.makedirs(project_path)
-        else:
-            print(f"Directory {project_path} exists! Overwriting... ")
+        # else:
+        #     print(f"Directory {project_path} exists! Overwriting... ")
 
         vivado_config, hls_config = self.gen_configs(config)
         

@@ -1,4 +1,5 @@
 import re
+import copy
 
 from nodes import *
 
@@ -8,25 +9,25 @@ pytypes = ["None", "bool", "int", "float", "str"]
 
 class PLType:
     '''Scalars, arrays, and functions'''
-    def __init__(self, ele_type="float", dim=0):
-        self.ele_type = ele_type
+    def __init__(self, ty="float", dim=0):
+        self.ty = ty
         self.dim = dim
 
     def __repr__(self):
-        return "PLType(" + self.ele_type + ", " + str(self.dim) + ")"
+        return "PLType(" + self.ty + ", " + str(self.dim) + ")"
 
     def __eq__(self, other):
-        if (self.ele_type == other.ele_type) and (self.dim == other.dim):
+        if (self.ty == other.ty) and (self.dim == other.dim):
             return True
         else:
             return False
     def __add__(self, other):
         if isinstance(other, int):
-            return PLType(self.ele_type, self.dim+other)
-        if self.ele_type != other.ele_type:
+            return PLType(self.ty, self.dim+other)
+        if self.ty != other.ty:
             return PLType(float, self.dim+other.dim)
         else:
-            return PLType(self.ele_type, self.dim+other.dim)
+            return PLType(self.ty, self.dim+other.dim)
 
 
 class PLTyper:
@@ -35,8 +36,8 @@ class PLTyper:
 
     def iter_fields(self, node):
         """
-        Yield a tuple of ``(fieldname, value)`` for each field in ``node._fields``
-        that is present on *node*.
+        Yield a tuple of ``(fieldname, value)`` for each field in
+        ``node._fields`` that is present on *node*.
         """
         for field in node._fields:
             try:
@@ -78,12 +79,38 @@ class PLTyper:
             for item in node:
                 self.visit(item, config)
 
+    ### TODO: visit body, add return_type
     def visit_PLFunctionDef(self, node, config=None):
         if node.decorator_list:
-            decorator_names = [e.name if isinstance(e, PLVariable) else e.func.name \
-                                                     for e in node.decorator_list]
+            decorator_names = [e.name if isinstance(e, PLVariable) \
+                               else e.func.name for e in node.decorator_list]
             if "pylog" in decorator_names:
                 for arg in node.args:
                     type_name, shape = self.args_info[arg.name]
-                    arg.pl_type  = PLType(ele_type=self.np_pl_type_map(type_name), dim=len(shape))
+                    arg.pl_type  = PLType(ty=self.np_pl_type_map(type_name),
+                                          dim=len(shape))
                     arg.pl_shape = shape
+
+    def visit_PLConst(self, node, config=None):
+        node.pl_type  = PLType(ty=type(node.value).__name__, dim=0)
+        node.pl_shape = (0,)
+        node.pl_ctx   = {} # no need to maintain context
+
+        return node.pl_type, node.pl_shape, node.pl_ctx
+
+    def visit_PLArray(self, node, config=None):
+        pass
+
+    def visit_PLArrayDecl(self, node, config=None):
+        node.pl_type  = PLType(ty=node.ele_type, dim=len(node.dims))
+        node.pl_shape = tuple(node.dims)
+
+        node.pl_ctx   = copy.deepcopy(config['context']) \
+                                 if ((config is not None) and \
+                                     ('context' in config)) else {}
+        node.pl_ctx[f'{node.name}'] = (node.pl_type, node.pl_shape)
+
+        return node.pl_type, node.pl_shape, node.pl_ctx
+
+    def visit_PLVariable(self, node, config=None):
+        pass
