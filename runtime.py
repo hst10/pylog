@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
+import time
 import numpy as np
 import hashlib
 import inspect
@@ -37,6 +38,7 @@ def pylog_go(func):
 class PLRuntime:
     def __init__(self, config):
 
+        self.timing = config['timing']
         self.workspace_base = config['workspace_base']
         self.project_name = config['project_name']
         self.num_bundles = config['num_bundles']
@@ -67,12 +69,17 @@ class PLRuntime:
 
         print("FPGA starts. ")
 
+        start_time = time.time()
+
         self.accelerator.write(0x00, 1)
         isready = self.accelerator.read(0x00)
         while( isready == 1 ):
             isready = self.accelerator.read(0x00)
 
+        end_time = time.time()
+
         print("FPGA finishes. ")
+        if self.timing: print(f'FPGA Execution Time: {end_time - start_time} s. ')
 
         for i in range(len(self.plrt_arrays)):
             # self.plrt_arrays[i].sync_from_device() # requires PYNQ v2.5 or newer

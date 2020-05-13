@@ -34,6 +34,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     pysim_only = 'pysim' in mode
     deploy     = ('deploy' or 'run' or 'acc') in mode
     debug      = 'debug' in mode
+    timing     = 'timing' in mode
 
     if pysim_only:
         return func
@@ -76,6 +77,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             'freq':         125.00,
             'top_name':     top_func,
             'num_bundles':  max_idx,
+            'timing':       timing
         }
 
         if hwgen:
