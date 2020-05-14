@@ -37,7 +37,7 @@ def pylog_go(func):
 
 class PLRuntime:
     def __init__(self, config):
-
+        self.board = config['board']
         self.timing = config['timing']
         self.workspace_base = config['workspace_base']
         self.project_name = config['project_name']
@@ -52,7 +52,7 @@ class PLRuntime:
         self.xlnk = Xlnk()
         self.xlnk.xlnk_reset()
 
-        self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/{self.project_name}.bit')
+        self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/{self.project_name}_{self.board}.bit')
         self.accelerator = getattr(self.overlay, f'{self.project_name}_0')
 
         self.plrt_arrays = []

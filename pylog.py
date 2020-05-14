@@ -77,7 +77,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             'freq':         125.00,
             'top_name':     top_func,
             'num_bundles':  max_idx,
-            'timing':       timing
+            'timing':       timing,
+            'board':        board
         }
 
         if hwgen:
@@ -92,12 +93,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
 
             if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.bit'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}.bit " + \
+                                          f"{top_func}/{top_func}_{board}.bit " + \
                                           f"{TARGET_BASE}/{top_func}/", \
                                           shell=True)
             if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.hwh'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}.hwh " + \
+                                          f"{top_func}/{top_func}_{board}.hwh " + \
                                           f"{TARGET_BASE}/{top_func}/",
                                           shell=True)
 
