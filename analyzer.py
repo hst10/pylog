@@ -200,6 +200,22 @@ class PLAnalyzer(PLPostorderVisitor):
                                                    ast_node=node,
                                                    config=config)
                         node.parent.pl_data = node.pl_data
+                elif node.func.attr.startswith(('int', 'float')):
+                    if isinstance(node.parent, ast.Assign):
+                        init = node.args[0].pl_data if node.args != [] \
+                                                    else None
+
+                        if node.func.attr.startswith('float'):
+                            ty_str = 'float'
+                        elif node.func.attr.startswith('int'):
+                            ty_str = node.func.attr
+                        node.pl_data = PLVariableDecl(
+                                            ty=ty_str,
+                                            name=node.parent.targets[0].pl_data,
+                                            init=init,
+                                            ast_node=node,
+                                            config=config)
+                        node.parent.pl_data = node.pl_data
                 else:
                     raise NotImplementedError
 

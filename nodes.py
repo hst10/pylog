@@ -126,6 +126,15 @@ class PLArrayDecl(PLNode):
         self.name = name
         self.dims = dims
 
+class PLVariableDecl(PLNode):
+    '''Declare a variable with optional initial value'''
+    def __init__(self, ty, name, init, quals=[], ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = [ 'ty', 'name', 'init', 'quals' ]
+        self.ty = ty
+        self.name = name
+        self.init = init
+        self.quals = quals
 
 class PLVariable(PLNode):
     '''Name'''

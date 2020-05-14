@@ -12,7 +12,7 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_
 
 apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" }  [get_bd_cells zynq_ultra_ps_e_0]
 
-set_property -dict [list CONFIG.PSU__USE__S_AXI_GP2 {1} CONFIG.PSU__USE__S_AXI_GP3 {1} CONFIG.PSU__USE__S_AXI_GP4 {1} CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {{'{'}}{{ pl_freq }}{{'}'}}] [get_bd_cells zynq_ultra_ps_e_0]
+set_property -dict [list {% for i in range(num_hp_ports) %} CONFIG.PSU__USE__S_AXI_GP{{ i + 2 }} {1} {%- endfor %} CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {{'{'}}{{ pl_freq }}{{'}'}}] [get_bd_cells zynq_ultra_ps_e_0]
 
 
 create_bd_cell -type ip -vlnv xilinx.com:hls:{{ ip_name }}:1.0 {{ ip_name }}_0

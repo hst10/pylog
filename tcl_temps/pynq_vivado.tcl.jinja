@@ -12,7 +12,7 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_sy
 
 apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" }  [get_bd_cells processing_system7_0]
 
-set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {{'{'}}{{ pl_freq }}{{'}'}} CONFIG.PCW_USE_S_AXI_HP0 {1} CONFIG.PCW_USE_S_AXI_HP1 {1} CONFIG.PCW_USE_S_AXI_HP2 {1}] [get_bd_cells processing_system7_0]
+set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {{'{'}}{{ pl_freq }}{{'}'}} {% for i in range(num_hp_ports) %} CONFIG.PCW_USE_S_AXI_HP{{i}} {1} {%- endfor %} ] [get_bd_cells processing_system7_0]
 
 
 create_bd_cell -type ip -vlnv xilinx.com:hls:{{ ip_name }}:1.0 {{ ip_name }}_0

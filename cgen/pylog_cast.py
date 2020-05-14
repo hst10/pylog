@@ -29,13 +29,14 @@ def var_decl(var_type, name, init=None):
     '''
         var_type: string
         name:     string
-        init:     string
+        init:     AST Node
     '''
     type_decl = c_ast.TypeDecl(declname=name, type=c_ast.IdentifierType(names=[var_type]))
     if init == None:
         decl = c_ast.Decl(name=name, type=type_decl)
     else:
-        decl = c_ast.Decl(name=name, type=type_decl, init=c_ast.Constant(type=var_type, value=init))
+        # decl = c_ast.Decl(name=name, type=type_decl, init=c_ast.Constant(type=var_type, value=init))
+        decl = c_ast.Decl(name=name, type=type_decl, init=init)
 
     return decl
 

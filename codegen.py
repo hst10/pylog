@@ -131,6 +131,12 @@ class PLCodeGenerator:
                           dims=dims)
                           # dims=self.visit(node.dims))
 
+    def visit_PLVariableDecl(self, node, config=None):
+        var = var_decl(var_type=node.ty,
+                       name=self.visit(node.name).name,
+                       init=self.visit(node.init))
+        return var
+
     def visit_PLVariable(self, node, config=None):
         return ID(node.name)
 
