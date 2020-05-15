@@ -91,14 +91,17 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
                                       shell=True)
 
-            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.bit'):
+            bit_file = f'{top_func}/{top_func}_{board}.bit'
+            hwh_file = f'{top_func}/{top_func}_{board}.hwh'
+
+            if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}_{board}.bit " + \
+                                          f"{bit_file} " + \
                                           f"{TARGET_BASE}/{top_func}/", \
                                           shell=True)
-            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.hwh'):
+            if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}_{board}.hwh " + \
+                                          f"{hwh_file} " + \
                                           f"{TARGET_BASE}/{top_func}/",
                                           shell=True)
 
