@@ -118,7 +118,9 @@ class PLArray(PLNode):
         self.elts = elts
 
 class PLArrayDecl(PLNode):
-    '''Array declaration'''
+    '''Array declaration
+       ele_type: string
+    '''
     def __init__(self, ele_type, name, dims, ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['ele_type', 'name', 'dims']

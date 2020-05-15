@@ -1,5 +1,6 @@
-from visitors import *
+from utils import *
 from nodes import *
+from visitors import *
 
 def make_parent(root):
     for node in ast.walk(root):
@@ -194,11 +195,21 @@ class PLAnalyzer(PLPostorderVisitor):
             elif node.func.value.id == 'np':
                 if node.func.attr == 'empty':
                     if isinstance(node.parent, ast.Assign):
-                        node.pl_data = PLArrayDecl(ele_type=node.args[1].pl_data,
-                                                   name=node.parent.targets[0].pl_data,
-                                                   dims=node.args[0].pl_data,
-                                                   ast_node=node,
-                                                   config=config)
+                        print(f"node.args[1].pl_data: {type(node.args[1].pl_data)}")
+                        print(f"node.args[1].pl_data: {node.args[1].pl_data}")
+                        if isinstance(node.args[1].pl_data, PLConst):
+                            ele_type = node.args[1].pl_data.value
+                        else:
+                            ty = node.args[1].pl_data.name
+                            if ty.startswith("pl_"):
+                                ty = np_pl_type_map(ty[3:])
+                            ele_type = ty
+                        node.pl_data = PLArrayDecl(
+                                        ele_type=ele_type,
+                                        name=node.parent.targets[0].pl_data,
+                                        dims=node.args[0].pl_data,
+                                        ast_node=node,
+                                        config=config)
                         node.parent.pl_data = node.pl_data
                 elif node.func.attr.startswith(('int', 'float')):
                     if isinstance(node.parent, ast.Assign):
@@ -223,6 +234,40 @@ class PLAnalyzer(PLPostorderVisitor):
 
         elif node.func.id == "pragma":
             node.pl_data = PLPragma(node.args[0].pl_data, node, config)
+
+        elif node.func.id == "pl_fixed":
+            if isinstance(node.parent, ast.Assign):
+                init = None# PLConst(value=0)
+
+                node.pl_data = PLVariableDecl(
+                                ty=f'ap_fixed<{node.args[0].pl_data.value}, '+\
+                                            f'{node.args[1].pl_data.value}>',
+                                name=node.parent.targets[0].pl_data,
+                                init=init,
+                                ast_node=node,
+                                config=config)
+                node.parent.pl_data = node.pl_data
+            else:
+                node.pl_data = PLConst(
+                    value=f'ap_fixed<{node.args[0].pl_data.value}, '+\
+                                   f'{node.args[1].pl_data.value}>')
+
+        elif node.func.id.startswith(("pl_int", "pl_float")):
+            if isinstance(node.parent, ast.Assign):
+                init = node.args[0].pl_data if node.args != [] \
+                                                    else None
+                ty = np_pl_type_map(node.func.id[3:])
+                node.pl_data = PLVariableDecl(
+                                ty=ty,
+                                name=node.parent.targets[0].pl_data,
+                                init=init,
+                                ast_node=node,
+                                config=config)
+                node.parent.pl_data = node.pl_data
+            else:
+                node.pl_data = PLConst(
+                    value=np_pl_type_map(node.func.id[3:]))
+
         elif node.func.id == "hmap":
             node.pl_data = PLHmap(node, config)
             # node.args[0].pl_targets = 

@@ -126,7 +126,7 @@ class PLCodeGenerator:
 
     def visit_PLArrayDecl(self, node, config=None):
         dims = [ self.visit(e) for e in node.dims.elts ]
-        return array_decl(var_type=self.visit(node.ele_type).name,
+        return array_decl(var_type=node.ele_type, # string
                           name=self.visit(node.name).name,
                           dims=dims)
                           # dims=self.visit(node.dims))
