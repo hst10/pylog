@@ -195,8 +195,6 @@ class PLAnalyzer(PLPostorderVisitor):
             elif node.func.value.id == 'np':
                 if node.func.attr == 'empty':
                     if isinstance(node.parent, ast.Assign):
-                        print(f"node.args[1].pl_data: {type(node.args[1].pl_data)}")
-                        print(f"node.args[1].pl_data: {node.args[1].pl_data}")
                         if isinstance(node.args[1].pl_data, PLConst):
                             ele_type = node.args[1].pl_data.value
                         else:
