@@ -74,6 +74,13 @@ def iter_fields(node):
             except AttributeError:
                 pass
 
+        for field in ['pl_type', 'pl_shape', 'pl_ctx']: 
+            try:
+                yield field, str(getattr(node, field))
+            except AttributeError:
+                pass
+
+
 def iter_child_nodes(node):
     """
     Yield all direct child nodes of *node*, that is, all fields that are nodes
