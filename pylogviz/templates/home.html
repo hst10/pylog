@@ -60,7 +60,7 @@
 
             {% for node in nodes %}
                 nodes.push({id: {{node.id}}, label: "{{node.name}}", fields: "{{node.fields}}"});
-                edges.push({from: {{node.id}}, to: {{node.parent}}});
+                edges.push({from: {{node.id}}, to: {{node.parent}}, label: "{{node.edge_label}}", font: {align: 'horizontal'}});
                 nodeData.set({{node.id}}, {{node.data}});
             {% endfor %}
 

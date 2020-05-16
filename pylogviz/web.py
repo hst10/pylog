@@ -81,15 +81,15 @@ def iter_child_nodes(node):
     """
     if isinstance(node, list):
         for item in node:
-            yield item
+            yield ('list_item', item)
     elif isinstance(node, PLNode):
         for name, field in iter_fields(node):
             if isinstance(field, PLNode):
-                yield field
+                yield (name, field)
             elif isinstance(field, list):
                 for item in field:
                     if isinstance(item, PLNode):
-                        yield item
+                        yield (name, field)
 
 
 def node_properties(node):
@@ -106,18 +106,22 @@ def node_properties(node):
     return d
 
 
-def node_to_dict(node, parent):
+def node_to_dict(node, parent, attr):
+    print(type(node).__name__)
+    if isinstance(node, PLNode):
+        print(node.__dict__)
     i = []
     children = list(iter_child_nodes(node))
     if len(children) > 0:
-        for n in children:
-            i.extend(node_to_dict(n, node))
+        for label, child in children:
+            i.extend(node_to_dict(child, node, label))
 
     d = node_properties(node)
 
     i.append(
         {
             "id": id(node),
+            "edge_label": attr,
             "name": type(node).__name__,
             "parent": id(parent),
             "data": json.dumps(d, skipkeys=True),
@@ -132,7 +136,7 @@ def show_pylog_object(src, plnode_root):
     """
     global data
 
-    nodes = node_to_dict(plnode_root, None)
+    nodes = node_to_dict(plnode_root, None, 'root')
     data["nodes"] = dedupe_nodes(nodes)
     data["src"] = src
     data["last_line"] = src.count('\n')
