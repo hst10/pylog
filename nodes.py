@@ -120,6 +120,7 @@ class PLArray(PLNode):
 class PLArrayDecl(PLNode):
     '''Array declaration
        ele_type: string
+       dims: PLArray
     '''
     def __init__(self, ele_type, name, dims, ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)

@@ -35,6 +35,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     deploy     = ('deploy' or 'run' or 'acc') in mode
     debug      = 'debug' in mode
     timing     = 'timing' in mode
+    viz        = 'viz' in mode
 
     if pysim_only:
         return func
@@ -68,7 +69,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
         project_path, top_func, max_idx = pylog_compile(source_func, arg_info,
-                                                        path=path, debug=debug)
+                                                        path=path, debug=debug,
+                                                        viz=viz)
 
         config = {
             'workspace_base': WORKSPACE,
@@ -111,7 +113,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     return wrapper
 
 
-def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
+def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
 
@@ -134,6 +136,10 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
         print(pylog_ir)
 
     typer.visit(pylog_ir)
+
+    if viz:
+        import pylogviz
+        pylogviz.show(src, pylog_ir)
 
     hls_c = codegen.codegen(pylog_ir)
 

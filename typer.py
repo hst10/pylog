@@ -43,29 +43,28 @@ class PLTyper:
             except AttributeError:
                 pass
 
-
-
-    def visit(self, node, config=None):
+    def visit(self, node, ctx={}):
         """Visit a node."""
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        visit_return = visitor(node, config)
-        if config == "DEBUG":
-            print(node.__class__.__name__+": ", node)
+        visit_return = visitor(node, ctx)
+
         return visit_return
 
-    def generic_visit(self, node, config=None):
+    def generic_visit(self, node, ctx={}):
         """Called if no explicit visitor function exists for a node."""
         # visit children
         if isinstance(node, PLNode):
             for field, value in self.iter_fields(node):
-                self.visit(value, config)
+                self.visit(value, ctx)
         elif isinstance(node, list):
             for item in node:
-                self.visit(item, config)
+                self.visit(item, ctx)
 
     ### TODO: visit body, add return_type
-    def visit_PLFunctionDef(self, node, config=None):
+    def visit_PLFunctionDef(self, node, ctx={}):
+        in_ctx = copy.deepcopy(ctx)
+
         if node.decorator_list:
             decorator_names = [e.name if isinstance(e, PLVariable) \
                                else e.func.name for e in node.decorator_list]
@@ -75,27 +74,49 @@ class PLTyper:
                     arg.pl_type  = PLType(ty=np_pl_type_map(type_name),
                                           dim=len(shape))
                     arg.pl_shape = shape
+                    ctx[arg.name] = (arg.pl_type, arg.pl_shape)
 
-    def visit_PLConst(self, node, config=None):
+        for stmt in node.body:
+            self.visit(stmt, ctx)
+
+    def visit_PLConst(self, node, ctx={}):
         node.pl_type  = PLType(ty=type(node.value).__name__, dim=0)
         node.pl_shape = (0,)
         node.pl_ctx   = {} # no need to maintain context
 
         return node.pl_type, node.pl_shape, node.pl_ctx
 
-    def visit_PLArray(self, node, config=None):
+    def visit_PLArray(self, node, ctx={}):
         pass
 
-    def visit_PLArrayDecl(self, node, config=None):
-        node.pl_type  = PLType(ty=node.ele_type, dim=len(node.dims))
-        node.pl_shape = tuple(node.dims)
+    def visit_PLArrayDecl(self, node, ctx={}):
+        dims = ()
+        for e in node.dims.elts:
+            dims += (e.value,)
 
-        node.pl_ctx   = copy.deepcopy(config['context']) \
-                                 if ((config is not None) and \
-                                     ('context' in config)) else {}
-        node.pl_ctx[f'{node.name}'] = (node.pl_type, node.pl_shape)
+        node.pl_type  = PLType(ty=node.ele_type, dim=len(dims))
+        node.pl_shape = dims
+
+        node.pl_ctx   = copy.deepcopy(ctx)
+        node.pl_ctx[node.name] = (node.pl_type, node.pl_shape)
 
         return node.pl_type, node.pl_shape, node.pl_ctx
 
-    def visit_PLVariable(self, node, config=None):
+    def visit_PLVariableDecl(self, node, ctx={}):
+        node.pl_type = PLType(ty=node.ty, dim=0)
+        node.pl_shape = (0,)
+        node.pl_ctx   = copy.deepcopy(ctx)
+        node.pl_ctx[node.name] = (node.pl_type, node.pl_shape)
+
+        return node.pl_type, node.pl_shape, node.pl_ctx
+
+    def visit_PLVariable(self, node, ctx={}):
         pass
+
+    def visit_PLUnaryOp(self, node, ctx={}):
+        node.pl_type  = node.operand.pl_type
+        node.pl_shape = node.operand.pl_shape
+        node.pl_ctx   = node.operand.pl_ctx
+
+        return node.pl_type, node.pl_shape, node.pl_ctx
+
