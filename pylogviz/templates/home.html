@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PyLog PLNode Object Visualizer</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        {{style}}
+    </style>
+        <style type="text/css">
+        body {
+            font: 12pt sans;
+        }
+
+        #mynetwork {
+            width: 95%;
+            height: 800px;
+            border: none;
+        }
+    </style>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css" rel="stylesheet" type="text/css"/>
+    <link href="static/json2html.css" rel="stylesheet" type="text/css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.4.1/json2html.js"></script>
+    <script src="static/node.js"></script>
+    <script type="text/javascript">
+        function showLine(line){
+            el = document.getElementById('src-'+line)
+            if (el !== undefined) {
+                el.classList.add('hll')
+            }
+        }
+        function unshowLine(line){
+            el = document.getElementById('src-'+line)
+            if (el !== undefined) {
+                el.classList.remove('hll')
+            }
+        }
+    </script>
+     <script type="text/javascript">
+        var nodes = null;
+        var nodeData = new Map();
+        var edges = null;
+        var network = null;
+        var directionInput = document.getElementById("direction");
+
+        function destroy() {
+            if (network !== null) {
+                network.destroy();
+                network = null;
+            }
+        }
+
+        function draw() {
+            destroy();
+            nodes = [];
+            edges = [];
+
+            {% for node in nodes %}
+                nodes.push({id: {{node.id}}, label: "{{node.name}}", fields: "{{node.fields}}"});
+                edges.push({from: {{node.id}}, to: {{node.parent}}, label: "{{node.edge_label}}", font: {align: 'horizontal'}});
+                nodeData.set({{node.id}}, {{node.data}});
+            {% endfor %}
+
+            // create a network
+            var container = document.getElementById('mynetwork');
+            var data = {
+                nodes: nodes,
+                edges: edges
+            };
+
+            var options = {
+                edges: {
+                    smooth: {
+                        type: 'cubicBezier',
+                        forceDirection: (directionInput.value == "UD" || directionInput.value == "DU") ? 'vertical' : 'horizontal',
+                        roundness: 0.4
+                    }
+                },
+                layout: {
+                    hierarchical: {
+                        direction: directionInput.value
+                    }
+                },
+                physics:false
+            };
+            network = new vis.Network(container, data, options);
+
+            // add event listeners
+            network.on('select', function (params) {
+                var d = nodeData.get(params.nodes[0]);
+                visualize(d);
+
+            });
+            network.on('deselectNode', function (params) {
+
+            });
+        }
+
+    </script>
+</head>
+
+<body class="container-fluid" onload="draw();">
+    <h1>PyLog PLNode Object Visualizer</h1>
+
+        <div class="row">
+            <div class="col-md-12">
+                {{code}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <p>
+                    Graph direction:
+                    <input type="button" id="btn-UD" value="Up-Down">
+                    <input type="button" id="btn-DU" value="Down-Up">
+                    <input type="button" id="btn-LR" value="Left-Right">
+                    <input type="button" id="btn-RL" value="Right-Left">
+                    <input type="hidden" id='direction' value="UD">
+                </p>
+                <div id="mynetwork"></div>
+            </div>
+            <div class="col-md-4">
+                <h2>Node Properties</h2>
+                <i>Select a node on the graph to see properties.</i>
+                <p id="selection"></p>
+            </div>
+        </div>
+    <script type="text/javascript">
+        var directionInput = document.getElementById("direction");
+        var btnUD = document.getElementById("btn-UD");
+        btnUD.onclick = function () {
+            directionInput.value = "UD";
+            draw();
+        };
+        var btnDU = document.getElementById("btn-DU");
+        btnDU.onclick = function () {
+            directionInput.value = "DU";
+            draw();
+        };
+        var btnLR = document.getElementById("btn-LR");
+        btnLR.onclick = function () {
+            directionInput.value = "LR";
+            draw();
+        };
+        var btnRL = document.getElementById("btn-RL");
+        btnRL.onclick = function () {
+            directionInput.value = "RL";
+            draw();
+        };
+    </script>
+</body>
+</html>

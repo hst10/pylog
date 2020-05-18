@@ -1,6 +1,6 @@
 import re
 
-# pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
+#pytypes = {"None": None, "bool": bool, "int": int, "float": float, "str": str}
 pytypes = ["None", "bool", "int", "float", "str"]
 
 def np_pl_type_map(type_name):

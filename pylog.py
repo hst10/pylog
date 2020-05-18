@@ -35,6 +35,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     deploy     = ('deploy' or 'run' or 'acc') in mode
     debug      = 'debug' in mode
     timing     = 'timing' in mode
+    viz        = 'viz' in mode
 
     if pysim_only:
         return func
@@ -68,7 +69,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
         project_path, top_func, max_idx = pylog_compile(source_func, arg_info,
-                                                        path=path, debug=debug)
+                                                        path=path, debug=debug,
+                                                        viz=viz)
 
         config = {
             'workspace_base': WORKSPACE,
@@ -91,14 +93,17 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
             process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
                                       shell=True)
 
-            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.bit'):
+            bit_file = f'{top_func}/{top_func}_{board}.bit'
+            hwh_file = f'{top_func}/{top_func}_{board}.hwh'
+
+            if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}_{board}.bit " + \
+                                          f"{bit_file} " + \
                                           f"{TARGET_BASE}/{top_func}/", \
                                           shell=True)
-            if not os.path.exists(f'{TARGET_BASE}/{top_func}/{top_func}.hwh'):
+            if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
                 process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{top_func}/{top_func}_{board}.hwh " + \
+                                          f"{hwh_file} " + \
                                           f"{TARGET_BASE}/{top_func}/",
                                           shell=True)
 
@@ -108,7 +113,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     return wrapper
 
 
-def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
+def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
 
@@ -118,7 +123,7 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
     # instantiate passes
     tester   = PLTester()
     analyzer = PLAnalyzer(debug=debug)
-    typer    = PLTyper(arg_info)
+    typer    = PLTyper(arg_info, debug=debug)
     codegen  = PLCodeGenerator(arg_info, debug=debug)
 
     # execute passes
@@ -149,6 +154,11 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False):
     with open(output_file, 'w') as fout:
         fout.write(hls_c)
         print(f"HLS C code written to {output_file}")
+
+    if viz:
+        import pylogviz
+        pylogviz.show(src, pylog_ir)
+
 
     return project_path, analyzer.top_func, codegen.max_idx
 

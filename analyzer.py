@@ -57,7 +57,8 @@ class PLAnalyzer(PLPostorderVisitor):
 
     # def isLambdaArg(self, node):
     #     assert(isinstance(node, ast.Subscript))
-    #     """Check if Subscript node is lambda argument, which represents delta/offset. """
+    #     """Check if Subscript node is lambda argument,
+    #        which represents delta/offset. """
     #     is_lambda_arg = False
     #     p_node = node.parent
     #     while (not isinstance(p_node, ast.Module)):
@@ -132,9 +133,13 @@ class PLAnalyzer(PLPostorderVisitor):
             isinstance(node.operand.pl_data, PLConst) and \
             isinstance(node.op, (ast.USub, ast.UAdd)):
             if isinstance(node.op, ast.USub):
-                node.pl_data = PLConst(-node.operand.pl_data.value, node, config)
+                node.pl_data = PLConst(value=-node.operand.pl_data.value,
+                                       ast_node=node,
+                                       config=config)
             elif isinstance(node.op, ast.UAdd):
-                node.pl_data = PLConst(node.operand.pl_data.value, node, config)
+                node.pl_data = PLConst(value=node.operand.pl_data.value,
+                                       ast_node=node,
+                                       config=config)
         else:
             node.pl_data = PLUnaryOp(op=token(node.op), 
                                      operand=node.operand.pl_data, 
@@ -185,12 +190,13 @@ class PLAnalyzer(PLPostorderVisitor):
 
         if isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Call):
-                node.pl_data = PLCall(func=node.func.value.func.pl_data,
-                                      args=[ e.pl_data for e in node.func.value.args ],
-                                      attr=node.func.attr,
-                                      attr_args=[ e.pl_data for e in node.args ],
-                                      ast_node=node,
-                                      config=config)
+                node.pl_data = PLCall(
+                        func=node.func.value.func.pl_data,
+                        args=[ e.pl_data for e in node.func.value.args ],
+                        attr=node.func.attr,
+                        attr_args=[ e.pl_data for e in node.args ],
+                        ast_node=node,
+                        config=config)
 
             elif node.func.value.id == 'np':
                 if node.func.attr == 'empty':
@@ -445,14 +451,18 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_FunctionDef(self, node, config=None):
         # self.visit(node.args, config)
 
+        pl_top = False
+
         if node.decorator_list:
             decorator_names = [e.id if isinstance(e, ast.Name) else e.func.id \
-                                                     for e in node.decorator_list]
+                                            for e in node.decorator_list]
             # print(decorator_names)
             if "pylog" in decorator_names:
+                pl_top = True
                 self.top_func = node.name
                 if node.args.args:
-                    self.args.update(self.parse_func_args(node.args.args, config))
+                    self.args.update(
+                        self.parse_func_args(node.args.args, config))
                     if self.debug: print(self.args)
 
         if config == None:
@@ -466,19 +476,24 @@ class PLAnalyzer(PLPostorderVisitor):
         # elif isinstance(node.body, ast.AST):
         #     self.visit(node.body, config)
 
-        node.pl_data = PLFunctionDef(name=node.name,
-                                     args=node.args.pl_data,
-                                     body=[stmt.pl_data for stmt in node.body],
-                                     decorator_list=[e.pl_data for e in node.decorator_list],
-                                     ast_node=node,
-                                     config=config)
+        node.pl_data = PLFunctionDef(
+                        name=node.name,
+                        args=node.args.pl_data,
+                        body=[stmt.pl_data for stmt in node.body],
+                        decorator_list=[e.pl_data for e in node.decorator_list],
+                        pl_top=pl_top,
+                        ast_node=node,
+                        config=config)
 
         return node.pl_data
 
     def visit_Lambda(self, node, config=None):
         # self.visit(node.args, config)
         # self.visit(node.body, config)
-        node.pl_data = LambdaNode(node, config)
+        node.pl_data = PLLambda(args=node.args.pl_data,
+                                body=node.body.pl_data,
+                                ast_node=node,
+                                config=config)
         return node.pl_data
 
     def visit_arguments(self, node, config=None):
