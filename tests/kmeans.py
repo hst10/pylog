@@ -3,6 +3,8 @@ import random
 import math
 #import numpy as np
 
+
+#Based on heterocl/samples/kmeans/kmeans_main.py
 @pylog#(mode='pysim')
 def pl_kmeans(points, means, labels):#, num_point, dim, num_cluster, num_iter):
     dim=32
