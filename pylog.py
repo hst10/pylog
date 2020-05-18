@@ -123,7 +123,7 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
     # instantiate passes
     tester   = PLTester()
     analyzer = PLAnalyzer(debug=debug)
-    typer    = PLTyper(arg_info)
+    typer    = PLTyper(arg_info, debug=debug)
     codegen  = PLCodeGenerator(arg_info, debug=debug)
 
     # execute passes
@@ -136,10 +136,6 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
         print(pylog_ir)
 
     typer.visit(pylog_ir)
-
-    if viz:
-        import pylogviz
-        pylogviz.show(src, pylog_ir)
 
     hls_c = codegen.codegen(pylog_ir)
 
@@ -158,6 +154,11 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
     with open(output_file, 'w') as fout:
         fout.write(hls_c)
         print(f"HLS C code written to {output_file}")
+
+    if viz:
+        import pylogviz
+        pylogviz.show(src, pylog_ir)
+
 
     return project_path, analyzer.top_func, codegen.max_idx
 

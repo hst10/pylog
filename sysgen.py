@@ -50,11 +50,11 @@ class PLSysGen:
         }
 
         hls_config = {
-        'hls_base_path':    config['project_path'],
-        'hls_project_name': f"{config['project_name']}_{self.target_board}_hls",
-        'hls_top':          config['top_name'],
-        'hls_file_name':    config['top_name'] + '.cpp',
-        'hls_freq':         config['freq']
+        'hls_base_path':   config['project_path'],
+        'hls_project_name':f"{config['project_name']}_{self.target_board}_hls",
+        'hls_top':         config['top_name'],
+        'hls_file_name':   config['top_name'] + '.cpp',
+        'hls_freq':        config['freq']
         }
 
         return vivado_config, hls_config

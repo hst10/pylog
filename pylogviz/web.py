@@ -114,9 +114,9 @@ def node_properties(node):
 
 
 def node_to_dict(node, parent, attr):
-    print(type(node).__name__)
-    if isinstance(node, PLNode):
-        print(node.__dict__)
+    # print(type(node).__name__)
+    # if isinstance(node, PLNode):
+    #     print(node.__dict__)
     i = []
     children = list(iter_child_nodes(node))
     if len(children) > 0:
@@ -147,8 +147,6 @@ def show_pylog_object(src, plnode_root):
     data["nodes"] = dedupe_nodes(nodes)
     data["src"] = src
     data["last_line"] = src.count('\n')
-
-    print(data['nodes'])
 
     start()
 

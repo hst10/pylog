@@ -177,6 +177,17 @@ class PLCodeGenerator:
                           lvalue=self.visit(node.target),
                           rvalue=self.visit(node.value))
         return asgm
+        # raise NotImplementedError
+        # if node.is_decl:
+        #     var = var_decl(var_type=node.ty,
+        #                    name=self.visit(node.name).name,
+        #                    init=self.visit(node.init))
+        #     return var
+        # else:
+        #     asgm = Assignment(op=node.op,
+        #                       lvalue=self.visit(node.target),
+        #                       rvalue=self.visit(node.value))
+        #     return asgm
 
     def visit_PLIf(self, node, config=None):
         if_body   = Compound(block_items=self.visit(node.body))
@@ -225,10 +236,11 @@ class PLCodeGenerator:
                     arg_list.append(var_decl(var_type=arg.pl_type.ty,
                                              name=self.visit(arg).name))
                 else:
-                    arg_list.append(array_decl(var_type=arg.pl_type.ty,
-                                               name=self.visit(arg).name,
-                                               dims=[ Constant('int', str(e))  \
-                                                        for e in arg.pl_shape]))
+                    arg_list.append(
+                        array_decl(var_type=arg.pl_type.ty,
+                                   name=self.visit(arg).name,
+                                   dims=[ Constant('int', str(e))  \
+                                            for e in arg.pl_shape]))
 
             else:
                 arg_list.append(array_decl(var_type="float",
@@ -236,9 +248,9 @@ class PLCodeGenerator:
                                            dims=[None]*2))
 
 
-        # arg_list = [ var_decl(var_type="float**", name=self.visit(arg).name) \
+        # arg_list = [var_decl(var_type="float**", name=self.visit(arg).name) \
         #                                               for arg in node.args  ]
-        # arg_list = [ array_decl(var_type="float", name=self.visit(arg).name, \
+        # arg_list = [array_decl(var_type="float", name=self.visit(arg).name, \
         #                                dims=[None]*2) for arg in node.args  ]
 
         fd = func_def(

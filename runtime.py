@@ -52,13 +52,15 @@ class PLRuntime:
         self.xlnk = Xlnk()
         self.xlnk.xlnk_reset()
 
-        self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/{self.project_name}_{self.board}.bit')
+        self.overlay = Overlay(f'{self.workspace_base}/{self.project_name}/'+\
+                               f'{self.project_name}_{self.board}.bit')
         self.accelerator = getattr(self.overlay, f'{self.project_name}_0')
 
         self.plrt_arrays = []
         curr_addr = 0x18
         for arg in args:
-            # new_array = allocate(shape=arg.shape, dtype=arg.dtype) # requires PYNQ v2.5 or newer
+            # "allocate" requires PYNQ v2.5 or newer
+            # new_array = allocate(shape=arg.shape, dtype=arg.dtype)
             new_array = self.xlnk.cma_array(shape=arg.shape, dtype=arg.dtype)
             np.copyto(new_array, arg)
             # new_array.sync_to_device() # requires PYNQ v2.5 or newer
@@ -79,10 +81,11 @@ class PLRuntime:
         end_time = time.time()
 
         print("FPGA finishes. ")
-        if self.timing: print(f'FPGA Execution Time: {end_time - start_time} s')
+        if self.timing:print(f'FPGA Execution Time: {end_time - start_time} s')
 
         for i in range(len(self.plrt_arrays)):
-            # self.plrt_arrays[i].sync_from_device() # requires PYNQ v2.5 or newer
+            # "sync_from_device" only available starting PYNQ v2.5
+            # self.plrt_arrays[i].sync_from_device()
             self.plrt_arrays[i].invalidate()
             np.copyto(args[i], self.plrt_arrays[i])
             self.plrt_arrays[i].close()
