@@ -1,8 +1,10 @@
 from pylog import *
 #import numpy as np
 
-N=100
+# Based on polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.c
+N=1000
 NUM_ITER=20
+#definition follows STANDARD_DATASERT in polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.h
 
 @pylog
 def pl_jacobi2D(input, temp, output):
