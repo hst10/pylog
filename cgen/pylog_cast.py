@@ -56,7 +56,7 @@ def array_decl(var_type, name, dims=[]):
 
 def subscript(array_name, subscripts):
     obj = array_name
-    for index in subscripts[::-1]:
+    for index in subscripts:
         obj = c_ast.ArrayRef(name=obj, subscript=index)
     return obj
 

@@ -405,10 +405,6 @@ class PLTyper:
                 print(f'Type: >>>>>>>>>>>> {type(node.indices)}')
                 print(f'Type: >>>>>>>>>>>> {len(node.indices)}')
 
-            if isinstance(node.indices[0], PLArray):
-                node.indices = node.indices[0].elts[::-1]
-
-
             if not lambda_arg:
                 # allow an extra dimension for bit access
                 assert(subscript_dim < (array_dims + 1))

@@ -188,13 +188,13 @@ class PLCodeGenerator:
                             subs.append(ID(f'i_bop_{i}'))
 
                 target = subscript(array_name=array_name,
-                                   subscripts=subs[::-1])
+                                   subscripts=subs)
 
             else:
                 array_name = ID(op_node.name)
                 subs = [ ID(f'i_bop_{i}') for i in range(target_shape) ]
                 target = subscript(array_name=array_name,
-                                   subscripts=subs[::-1])
+                                   subscripts=subs)
 
             return target
 
@@ -261,7 +261,13 @@ class PLCodeGenerator:
 
     '''TODO'''
     def visit_PLSlice(self, node, config=None):
-        pass
+        # assuming slice has been parsed by other module and the final
+        # length is equal to 1 (always return the first nubmer)
+        if node.lower:
+            return self.visit(node.lower)
+        else:
+            return int32(0)
+
 
     def visit_PLAssign(self, node, config=None):
 

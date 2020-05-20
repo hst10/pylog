@@ -330,6 +330,10 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_Subscript(self, node, config=None):
         var = node.value.pl_data
         indices =  node.slice.pl_data
+
+        if isinstance(indices, PLArray):
+            indices = indices.elts
+
         if not isinstance(indices, list):
             indices = [ indices ]
 
