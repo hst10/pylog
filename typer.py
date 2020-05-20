@@ -75,10 +75,13 @@ class PLTyper:
 
     def visit_PLFunctionDef(self, node, ctx={}):
 
+        if hasattr(node, 'type_infer_done'):
+            return# node.pl_type, node.pl_shape, node.pl_ctx
+
         node.pl_type  = PLType('pl_func', 0)
         node.pl_shape = None
         ctx[node.name] = (node.pl_type, node.pl_shape, node)
-        node.pl_ctx   = copy.deepcopy(ctx)
+        # node.pl_ctx   = copy.deepcopy(ctx)
 
         local_ctx = copy.deepcopy(ctx)
 
@@ -101,14 +104,16 @@ class PLTyper:
                     node.return_type  = stmt.pl_type
                     node.return_shape = stmt.pl_shape
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+            node.type_infer_done = True
+
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLConst(self, node, ctx={}):
         node.pl_type  = PLType(ty=type(node.value).__name__, dim=0)
         node.pl_shape = ()
-        node.pl_ctx   = {} # no need to maintain context
+        # node.pl_ctx   = {} # no need to maintain context
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLArray(self, node, ctx={}):
         dim = len(node.elts)
@@ -128,27 +133,27 @@ class PLTyper:
         node.pl_type  = PLType(ty=node.ele_type, dim=len(dims))
         node.pl_shape = dims
 
-        node.pl_ctx   = copy.deepcopy(ctx)
+        # node.pl_ctx   = copy.deepcopy(ctx)
 
         # node.name is a PLVariable object
-        node.pl_ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
+        # node.pl_ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
         ctx[node.name.name]         = (node.pl_type, node.pl_shape, node)
         # if self.debug:
         #     print(type(node).__name__, node.pl_ctx)
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLVariableDecl(self, node, ctx={}):
         node.pl_type = PLType(ty=node.ty, dim=0)
         node.pl_shape = ()
-        node.pl_ctx   = copy.deepcopy(ctx)
-        node.pl_ctx[node.name] = (node.pl_type, node.pl_shape, node)
+        # node.pl_ctx   = copy.deepcopy(ctx)
+        # node.pl_ctx[node.name] = (node.pl_type, node.pl_shape, node)
         ctx[node.name]         = (node.pl_type, node.pl_shape, node)
 
-        if self.debug:
-            print(type(node).__name__, node.pl_ctx)
+        # if self.debug:
+        #     print(type(node).__name__, node.pl_ctx)
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLVariable(self, node, ctx={}):
 
@@ -156,23 +161,23 @@ class PLTyper:
             if node.name in ctx:
                 node.pl_type  = ctx[node.name][0]
                 node.pl_shape = ctx[node.name][1]
-                node.pl_ctx   = {}
+                # node.pl_ctx   = {}
             else:
                 print(node.name)
                 raise NameError
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLUnaryOp(self, node, ctx={}):
         self.visit(node.operand, ctx)
         node.pl_type  = node.operand.pl_type
         node.pl_shape = node.operand.pl_shape
-        node.pl_ctx   = node.operand.pl_ctx
+        # node.pl_ctx   = node.operand.pl_ctx
 
-        if self.debug:
-            print(type(node).__name__, node.pl_ctx)
+        # if self.debug:
+        #     print(type(node).__name__, node.pl_ctx)
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLBinOp(self, node, ctx={}):
 
@@ -288,12 +293,12 @@ class PLTyper:
         self.visit(node.value, ctx)
         node.pl_type  = node.value.pl_type
         node.pl_shape = node.value.pl_shape
-        node.pl_ctx   = ctx
+        # node.pl_ctx   = ctx
 
         if self.debug:
-            print(type(node).__name__, node.pl_ctx)
+            print(type(node).__name__, ctx)
 
-        return node.pl_type, node.pl_shape, node.pl_ctx
+        # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLFor(self, node, ctx={}):
         node.target.pl_type  = PLType('int', 0)
@@ -304,13 +309,13 @@ class PLTyper:
         for stmt in node.body:
             self.visit(stmt, ctx)
 
-        node.pl_ctx = copy.deepcopy(ctx)
+        # node.pl_ctx = copy.deepcopy(ctx)
 
     def visit_PLWhile(self, node, ctx={}):
         for stmt in node.body:
             self.visit(stmt, ctx)
 
-        node.pl_ctx = copy.deepcopy(ctx)
+        # node.pl_ctx = copy.deepcopy(ctx)
 
     def visit_PLIf(self, node, ctx={}):
         for stmt in node.body:
