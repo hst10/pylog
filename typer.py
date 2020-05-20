@@ -79,7 +79,7 @@ class PLTyper:
             return# node.pl_type, node.pl_shape, node.pl_ctx
 
         node.pl_type  = PLType('pl_func', 0)
-        node.pl_shape = None
+        node.pl_shape = ()
         ctx[node.name] = (node.pl_type, node.pl_shape, node)
         # node.pl_ctx   = copy.deepcopy(ctx)
 
@@ -246,9 +246,8 @@ class PLTyper:
 
         for obj in (node.lower, node.upper, node.step):
             if (obj is not None) and (not isinstance(obj, PLConst)):
-                print('RETURN!!! ')
                 node.pl_type = PLType('slice', 0)
-                node.pl_shape = None
+                node.pl_shape = ()
                 return
 
         lower = node.lower.value if node.lower else None
@@ -267,27 +266,34 @@ class PLTyper:
     def visit_PLAssign(self, node, ctx={}):
         self.visit(node.value, ctx)
 
-        if not hasattr(node.target, 'pl_type'):
-            self.is_decl = True
-            if not isinstance(node.target, PLSubscript):
-                if node.target.name in ctx:
-                    ctx_type, ctx_shape, _ = ctx[node.target.name]
-                    if ctx_type  == node.value.pl_type and \
-                       ctx_shape == node.value.pl_shape:
-                        self.is_decl = False
-            else:
-                self.is_decl = False
-
-            node.target.pl_type  = node.value.pl_type
-            node.target.pl_shape = node.value.pl_shape
-
         node.pl_type  = node.value.pl_type
         node.pl_shape = node.value.pl_shape
 
-        if self.is_decl:
+        node.is_decl = True
+        if isinstance(node.target, PLSubscript):
+            node.is_decl = False
+        else:
+            if node.target.name in ctx:
+                ctx_type, ctx_shape, _ = ctx[node.target.name]
+                if ctx_shape == node.value.pl_shape:
+                    # allow types to be different (implicit type cast)
+                    node.is_decl = False
+
+        if node.is_decl:
+            node.target.pl_shape = self.actual_shape(node.value.pl_shape)
+            node.target.pl_type  = PLType(ty=node.value.pl_type.ty,\
+                                          dim=len(node.target.pl_shape))
+
             ctx[node.target.name] = (node.target.pl_type, \
                                      node.target.pl_shape,\
                                      node)
+        else:
+            self.visit(node.target, ctx)
+            target_type  = node.target.pl_type
+            target_shape = node.target.pl_shape
+
+            assert((self.actual_shape(node.value.pl_shape) == \
+                    self.actual_shape(target_shape)))
 
     def visit_PLReturn(self, node, ctx={}):
         self.visit(node.value, ctx)
@@ -411,7 +417,7 @@ class PLTyper:
     def visit_PLLambda(self, node, ctx={}):
 
         node.pl_type  = PLType('pl_lambda', 0)
-        node.pl_shape = None
+        node.pl_shape = ()
 
         if all(hasattr(arg, 'pl_type') for arg in node.args):
             local_ctx = copy.deepcopy(ctx)
@@ -426,16 +432,11 @@ class PLTyper:
 
     def visit_PLMap(self, node, ctx={}):
 
-        # assuming target is an existing variable
-
-        self.visit(node.target, ctx)
         for array in node.arrays:
             self.visit(array, ctx)
 
         iter_dom_type  = node.arrays[0].pl_type
         iter_dom_shape = node.arrays[0].pl_shape
-        target_type    = node.target.pl_type
-        target_shape   = node.target.pl_shape
 
         if self.debug:
             print(f'iter_dom_shape: {iter_dom_shape}')
@@ -458,19 +459,6 @@ class PLTyper:
         map_return_type  = node.func.return_type + \
                                     len(self.actual_shape(iter_dom_shape))
         map_return_shape = node.func.return_shape + iter_dom_shape
-
-        if self.debug:
-            print(f'shape: {map_return_shape}')
-            print(f'shape: {target_shape}')
-
-            print(f'actual shape: {self.actual_shape(map_return_shape)}')
-            print(f'actual shape: {self.actual_shape(target_shape)}')
-
-            print(f'return type: {map_return_type}')
-            print(f'target type: {target_type}')
-
-        assert((self.actual_shape(map_return_shape) == \
-                self.actual_shape(target_shape)))
 
         if self.debug:
             print(f'plmap: return type : {map_return_type}')

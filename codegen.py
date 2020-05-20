@@ -106,7 +106,15 @@ class PLCodeGenerator:
         return node
 
     def visit_list(self, node, config=None):
-        return filter_none([ self.visit(e) for e in node ])
+        stmt_list = []
+
+        for e in node:
+            stmt = self.visit(e)
+            if isinstance(stmt, list):
+                stmt_list += stmt
+            else:
+                stmt_list.append(stmt)
+        return filter_none(stmt_list)
 
     '''TODO: other constant types'''
     def visit_PLConst(self, node, config=None):
@@ -173,21 +181,33 @@ class PLCodeGenerator:
         pass
 
     def visit_PLAssign(self, node, config=None):
-        asgm = Assignment(op=node.op, 
-                          lvalue=self.visit(node.target),
-                          rvalue=self.visit(node.value))
-        return asgm
-        # raise NotImplementedError
-        # if node.is_decl:
-        #     var = var_decl(var_type=node.ty,
-        #                    name=self.visit(node.name).name,
-        #                    init=self.visit(node.init))
-        #     return var
-        # else:
-        #     asgm = Assignment(op=node.op,
-        #                       lvalue=self.visit(node.target),
-        #                       rvalue=self.visit(node.value))
-        #     return asgm
+        if node.is_decl:
+            if node.target.pl_shape == ():
+                var = var_decl(var_type=node.target.pl_type.ty,
+                               name=self.visit(node.target).name,
+                               init=self.visit(node.value))
+                return var
+            elif len(node.target.pl_shape) > 0:
+                target_c_obj = self.visit(node.target)
+                dims = [ int32(s) for s in node.target.pl_shape ]
+
+                arr = array_decl(var_type=node.target.pl_type.ty,
+                                 name=target_c_obj.name,
+                                 dims=dims)
+
+                asgm = Assignment(op=node.op,
+                                  lvalue=target_c_obj,
+                                  rvalue=self.visit(node.value))
+
+                return [arr, asgm]
+            else:
+                raise NotImplementedError
+        else:
+            asgm = Assignment(op=node.op,
+                              lvalue=self.visit(node.target),
+                              rvalue=self.visit(node.value))
+
+            return asgm
 
     def visit_PLIf(self, node, config=None):
         if_body   = Compound(block_items=self.visit(node.body))
@@ -206,7 +226,7 @@ class PLCodeGenerator:
                              op=pliter_dom.op,
                              end=self.visit(pliter_dom.end),
                              step=self.visit(pliter_dom.step),
-                             stmt_lst=[ self.visit(s) for s in node.body ])
+                             stmt_lst=self.visit(node.body))
 
         if pliter_dom.attr:
             insert_pragma(compound_node=sim_for.stmt, 
@@ -239,8 +259,7 @@ class PLCodeGenerator:
                     arg_list.append(
                         array_decl(var_type=arg.pl_type.ty,
                                    name=self.visit(arg).name,
-                                   dims=[ Constant('int', str(e))  \
-                                            for e in arg.pl_shape]))
+                                   dims=[ int32(e) for e in arg.pl_shape]))
 
             else:
                 arg_list.append(array_decl(var_type="float",
@@ -257,7 +276,7 @@ class PLCodeGenerator:
                 func_name=node.name,
                 args=arg_list,
                 func_type="int",
-                body=filter_none([ self.visit(stmt) for stmt in node.body ]))
+                body=self.visit(node.body))
 
         if node.decorator_list:
             decorator_names = [e.name if isinstance(e, PLVariable) \

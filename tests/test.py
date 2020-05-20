@@ -3,11 +3,19 @@ from env import *
 import numpy as np
 from pylog import *
 
-@pylog
+@pylog(mode='debug')
 def pl_test(a, b):
 
     a = np.empty([3,5,7], float)
-    return c
+
+    if 10 > 4:
+        c = 4
+    else:
+        c = 9
+
+    b = 10 + c
+
+    return b
 
 
 if __name__ == "__main__":
