@@ -153,10 +153,79 @@ class PLCodeGenerator:
                        expr=self.visit(node.operand))
 
     def visit_PLBinOp(self, node, config=None):
-        binop = BinaryOp(op=node.op,
-                         left=self.visit(node.left),
-                         right=self.visit(node.right))
-        return binop
+
+        def get_subscript(op_node):
+
+            target_shape = len(op_node.pl_shape)
+
+            if isinstance(op_node, PLSubscript):
+                array_name = self.visit(op_node.var)
+                subs       = []
+                for i in range(len(op_node.pl_shape)):
+                    if op_node.pl_shape[i] == 1:
+                        if isinstance(op_node.indices[i], PLSlice):
+                            idx, _, _ = op_node.indices[i].updated_slice
+                            subs.append(int32(idx))
+                        else:
+                            subs.append(self.visit(op_node.indices[i]))
+                    else:
+                        if isinstance(op_node.indices[i], PLSlice):
+                            bounds = op_node.indices[i].updated_slice
+                            lower, upper, step = bounds
+                            subs.append(ID(f'({lower}+i_bop_{i}*({step}))'))
+                        else:
+                            subs.append(ID(f'i_bop_{i}'))
+
+                target = subscript(array_name=array_name,
+                                   subscripts=subs[::-1])
+
+            else:
+                array_name = ID(op_node.name)
+                subs = [ ID(f'i_bop_{i}') for i in range(target_shape) ]
+                target = subscript(array_name=array_name,
+                                   subscripts=subs[::-1])
+
+            return target
+
+        if (not hasattr(node, 'pl_shape')) or (node.pl_shape == ()):
+            binop = BinaryOp(op=node.op,
+                             left=self.visit(node.left),
+                             right=self.visit(node.right))
+            return binop
+        elif len(node.pl_shape) > 0:
+            # loop body
+
+            target = get_subscript(node.assign_target)
+            if node.left.pl_shape != ():
+                lvalue = get_subscript(node.left)
+            else:
+                lvalue = self.visit(node.left)
+
+            if node.right.pl_shape != ():
+                rvalue = get_subscript(node.right)
+            else:
+                rvalue = self.visit(node.right)
+
+            nd_binop = BinaryOp(op=node.op,
+                                left=lvalue,
+                                right=rvalue)
+
+            stmt = [ Assignment(op=node.assign_op, \
+                                lvalue=target,     \
+                                rvalue=nd_binop) ]
+
+            for i in range(len(node.pl_shape)-1, -1, -1):
+                stmt = [ simple_for(iter_var=f'i_bop_{i}',
+                                    start=int32(0),
+                                    op='<',
+                                    end=int32(node.pl_shape[i]),
+                                    step=int32(1),
+                                    stmt_lst=stmt) ]
+
+            return stmt[0]
+        else:
+            raise NotImplementedError
+
 
     def visit_PLCall(self, node, config=None):
         el = ExprList(exprs=[ self.visit(e) for e in node.args ])
@@ -170,48 +239,64 @@ class PLCodeGenerator:
         return top
 
     def visit_PLSubscript(self, node, config=None):
-        obj = self.visit(node.var)
-        for index in node.indices:
-            obj = ArrayRef(name=obj, subscript=self.visit(index))
+        sub = subscript(array_name=self.visit(node.var),
+                        subscripts=[ self.visit(idx) for idx in node.indices ])
+        return sub
+        # obj = self.visit(node.var)
+        # for index in node.indices:
+        #     obj = ArrayRef(name=obj, subscript=self.visit(index))
 
-        return obj
+        # return obj
 
     '''TODO'''
     def visit_PLSlice(self, node, config=None):
         pass
 
     def visit_PLAssign(self, node, config=None):
+
+        target_c_obj = self.visit(node.target)
+        assign_dim = node.target.pl_type.dim
+        decl = None
+
         if node.is_decl:
-            if node.target.pl_shape == ():
-                var = var_decl(var_type=node.target.pl_type.ty,
-                               name=self.visit(node.target).name,
-                               init=self.visit(node.value))
-                return var
-            elif len(node.target.pl_shape) > 0:
-                target_c_obj = self.visit(node.target)
+            if assign_dim == 0:
+                decl = var_decl(var_type=node.target.pl_type.ty,
+                                name=target_c_obj.name,
+                                init=self.visit(node.value))
+                return decl
+
+            elif assign_dim > 0:
                 dims = [ int32(s) for s in node.target.pl_shape ]
 
-                arr = array_decl(var_type=node.target.pl_type.ty,
-                                 name=target_c_obj.name,
-                                 dims=dims)
+                decl = array_decl(var_type=node.target.pl_type.ty,
+                                  name=target_c_obj.name,
+                                  dims=dims)
 
-                asgm = Assignment(op=node.op,
-                                  lvalue=target_c_obj,
-                                  rvalue=self.visit(node.value))
-
-                return [arr, asgm]
             else:
                 raise NotImplementedError
-        else:
-            asgm = Assignment(op=node.op,
-                              lvalue=self.visit(node.target),
-                              rvalue=self.visit(node.value))
 
+        if assign_dim == 0:
+            asgm = Assignment(op=node.op,
+                              lvalue=target_c_obj,
+                              rvalue=self.visit(node.value))
+        elif assign_dim > 0:
+            node.value.assign_target = node.target
+            node.value.assign_op     = node.op
+            asgm = self.visit(node.value)
+
+        else:
+            raise NotImplementedError
+
+        if decl:
+            return [decl, asgm]
+        else:
             return asgm
 
     def visit_PLIf(self, node, config=None):
-        if_body   = Compound(block_items=self.visit(node.body))
-        if_orelse = Compound(block_items=self.visit(node.orelse))
+        obj_body = self.visit(node.body)
+        obj_orelse = self.visit(node.orelse)
+        if_body   = Compound(block_items=obj_body)   if obj_body else None
+        if_orelse = Compound(block_items=obj_orelse) if obj_orelse else None
         if_stmt = If(cond=self.visit(node.test),
                      iftrue=if_body,
                      iffalse=if_orelse)

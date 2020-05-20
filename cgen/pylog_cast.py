@@ -54,6 +54,12 @@ def array_decl(var_type, name, dims=[]):
 
     return decl
 
+def subscript(array_name, subscripts):
+    obj = array_name
+    for index in subscripts[::-1]:
+        obj = c_ast.ArrayRef(name=obj, subscript=index)
+    return obj
+
 # def unaryop(op, expr):
 #     '''
 #         op:   string

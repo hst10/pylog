@@ -6,14 +6,11 @@ from pylog import *
 @pylog(mode='debug')
 def pl_test(a, b):
 
+    d = a[3::-2] + 3.5
+
     a = np.empty([3,5,7], float)
 
-    if 10 > 4:
-        c = 4
-    else:
-        c = 9
-
-    b = 10 + c
+    b = 10 + a
 
     return b
 

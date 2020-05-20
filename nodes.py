@@ -289,8 +289,8 @@ class PLAssign(PLNode):
         self.target = target
         self.value = value
 
-    def extract(self, ast_node):
-        self.targets = [ t.pl_data for t in ast_node.targets ]
+    # def extract(self, ast_node):
+    #     self.targets = [ t.pl_data for t in ast_node.targets ]
 
 
 

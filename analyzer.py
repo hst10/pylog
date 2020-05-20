@@ -277,6 +277,8 @@ class PLAnalyzer(PLPostorderVisitor):
                 self.visit(node.parent.targets[0])
                 target = node.parent.targets[0].pl_data
             else:
+                # assuming plmap is only used in assignment
+                # TODO: use plmap as an expression
                 target = None
             node.pl_data = PLMap(target=target,
                                  func=node.args[0].pl_data,

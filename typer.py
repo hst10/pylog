@@ -137,7 +137,7 @@ class PLTyper:
 
         # node.name is a PLVariable object
         # node.pl_ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
-        ctx[node.name.name]         = (node.pl_type, node.pl_shape, node)
+        ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
         # if self.debug:
         #     print(type(node).__name__, node.pl_ctx)
 
@@ -185,24 +185,41 @@ class PLTyper:
         self.visit(node.left, ctx)
         self.visit(node.right, ctx)
 
-        node.pl_type  = node.left.pl_type
-        node.pl_shape = node.left.pl_shape
+        left_shape  = self.actual_shape(node.left.pl_shape)
+        right_shape = self.actual_shape(node.right.pl_shape)
+
+        if (left_shape != ()) and (right_shape != ()):
+            assert(left_shape == right_shape)
+            node.pl_type  = PLType(node.left.pl_type.ty, len(left_shape))
+            node.pl_shape = left_shape
+        else:
+            if left_shape != ():
+                node.pl_type  = PLType(node.left.pl_type.ty, len(left_shape))
+                node.pl_shape = left_shape
+            else:
+                node.pl_type  = PLType(node.right.pl_type.ty, len(right_shape))
+                node.pl_shape = right_shape
 
     def get_slice_length(self, lower=None, upper=None, step=None,
                          total_len=None):
         # assuming all are constants (for now)
+        if step is None:
+            step = 1
+
         if lower is None:
             lower = 0
         if upper is None:
-            if total_len is None:
-                return None
+            if step > 0:
+                if total_len is None:
+                    return None, None
+                else:
+                    upper = total_len
             else:
-                upper = total_len
-        if step is None:
-            step = 1
+                upper = 0
+
         if total_len is None:
             if (lower < 0) or (upper < 0):
-                return None
+                return None, None
 
         if lower < 0:
             if lower < -total_len:
@@ -221,16 +238,18 @@ class PLTyper:
         elif (total_len is not None) and (upper > total_len):
             upper = total_len
 
+        updated_slice = (lower, upper, step)
+
         if step < 0:
             if lower > upper:
-                return (lower - upper + (-step) - 1)  // (-step)
+                return (lower - upper + (-step) - 1)  // (-step), updated_slice
             else:
-                return 0
+                return 0, updated_slice
         else:
             if lower < upper:
-                return (upper - lower + step - 1) // step
+                return (upper - lower + step - 1) // step, updated_slice
             else:
-                return 0
+                return 0, updated_slice
 
     def visit_PLSlice(self, node, ctx={}):
         if hasattr(node, 'dim_length'):
@@ -254,10 +273,13 @@ class PLTyper:
         upper = node.upper.value if node.upper else None
         step  = node.step.value  if node.step  else None
 
-        length = self.get_slice_length(lower=lower,
-                                       upper=upper,
-                                       step=step,
-                                       total_len=dim_length)
+        length, updated_slice = self.get_slice_length(
+                                        lower=lower,
+                                        upper=upper,
+                                        step=step,
+                                        total_len=dim_length)
+
+        node.updated_slice = updated_slice
 
         node.pl_type = PLType('slice', 0)
         node.pl_shape = (length,)

@@ -3,10 +3,10 @@ from env import *
 import numpy as np
 from pylog import *
 
-@pylog# (mode='debug, viz')
+@pylog(mode='debug, viz')
 def pl_type_infer(a, b):
 
-    f = lambda x: x + 1
+    # f = lambda x: x + 1
 
     list_a = np.empty((10,20,40), pl_fixed(8,3))
     list_b = np.empty((10,20,40,10), float32)
@@ -27,13 +27,13 @@ def pl_type_infer(a, b):
 
         return [1,3,4,4]
 
-    c = a + b
+    c = a + b[:-1]
 
     d = vecadd(a, b, c)
 
     # a = np.empty([3,5,7], float)
 
-    return d
+    return c
 
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
