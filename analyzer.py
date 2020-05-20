@@ -225,11 +225,11 @@ class PLAnalyzer(PLPostorderVisitor):
                         elif node.func.attr.startswith('int'):
                             ty_str = node.func.attr
                         node.pl_data = PLVariableDecl(
-                                            ty=ty_str,
-                                            name=node.parent.targets[0].pl_data,
-                                            init=init,
-                                            ast_node=node,
-                                            config=config)
+                                        ty=ty_str,
+                                        name=node.parent.targets[0].pl_data,
+                                        init=init,
+                                        ast_node=node,
+                                        config=config)
                         node.parent.pl_data = node.pl_data
                 else:
                     raise NotImplementedError
@@ -272,12 +272,25 @@ class PLAnalyzer(PLPostorderVisitor):
                 node.pl_data = PLConst(
                     value=np_pl_type_map(node.func.id[3:]))
 
-        elif node.func.id == "hmap":
-            node.pl_data = PLHmap(node, config)
-            # node.args[0].pl_targets = 
+        elif node.func.id == "plmap":
+            if isinstance(node.parent, ast.Assign):
+                self.visit(node.parent.targets[0])
+                target = node.parent.targets[0].pl_data
+            else:
+                target = None
+            node.pl_data = PLMap(target=target,
+                                 func=node.args[0].pl_data,
+                                 arrays=[ a.pl_data for a in node.args[1:] ],
+                                 ast_node=node,
+                                 config=config)
 
-        elif node.func.id == "map":
-            node.pl_data = PLMap(node, config)
+        # elif node.func.id == "hmap":
+        #     node.pl_data = PLHmap(
+        #                       func=node.args[0].pl_data,
+        #                       arrays=[ a.pl_data for a in node.args[1:] ],
+        #                       ast_node=node,
+        #                       config=config)
+
         elif node.func.id == "dot":
             node.pl_data = PLDot(node, config)
         elif node.func.id == "PLType" and len(node.args) == 2 \
@@ -446,7 +459,7 @@ class PLAnalyzer(PLPostorderVisitor):
     ######## Function and class definitions ########
 
     def parse_func_args(self, arg_lst, config=None):
-        return { arg.arg:self.visit(arg.annotation, config) for arg in arg_lst }
+        return {arg.arg:self.visit(arg.annotation, config) for arg in arg_lst}
 
     def visit_FunctionDef(self, node, config=None):
         # self.visit(node.args, config)
@@ -477,13 +490,13 @@ class PLAnalyzer(PLPostorderVisitor):
         #     self.visit(node.body, config)
 
         node.pl_data = PLFunctionDef(
-                        name=node.name,
-                        args=node.args.pl_data,
-                        body=[stmt.pl_data for stmt in node.body],
-                        decorator_list=[e.pl_data for e in node.decorator_list],
-                        pl_top=pl_top,
-                        ast_node=node,
-                        config=config)
+                    name=node.name,
+                    args=node.args.pl_data,
+                    body=[stmt.pl_data for stmt in node.body],
+                    decorator_list=[e.pl_data for e in node.decorator_list],
+                    pl_top=pl_top,
+                    ast_node=node,
+                    config=config)
 
         return node.pl_data
 

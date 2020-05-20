@@ -24,6 +24,11 @@ def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
             w)
     return c
 
+@pylog
+def new_conv_for(c, w, data):
+    for i in range(w.shape[0]):
+        c[i] = plmap(lambda x:dot(x[0:16, -1:2, -1:2], w[i]), data[0, 1:240, 1:360])
+
 '''
 // map: iterate through w
 for (int i0 = 0; i0 < w.dim[0]; i0++)

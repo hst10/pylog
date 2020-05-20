@@ -114,6 +114,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
 
 
 def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
+    print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
 

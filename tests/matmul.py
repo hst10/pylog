@@ -4,7 +4,7 @@ import numpy as np
 from pysim import *
 from pylog import *
 
-@pylog#(mode='pysim')
+@pylog(mode='debug')#(mode='pysim')
 def pl_matmul(a, b, c, d):
     
     buf = np.empty([16, 16], int)
@@ -19,12 +19,13 @@ def pl_matmul(a, b, c, d):
                 c[i][j] = tmp
 
 
-    def vecadd(a, b, c):
-        for i in range(32):
-            c[i] = a[i] + b[i]
+    # def vecadd(a, b, c):
+    #     for i in range(32):
+    #         c[i] = a[i] + b[i]
 
 
     matmul(a, b, c)
+    # vecadd(a, b, c)
 
     return 0
 

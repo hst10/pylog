@@ -80,8 +80,10 @@ class PLRuntime:
 
         end_time = time.time()
 
+        fpga_time = end_time - start_time
+
         print("FPGA finishes. ")
-        if self.timing:print(f'FPGA Execution Time: {end_time - start_time} s')
+        if self.timing:print(f'FPGA Execution Time: {fpga_time:.10f} s')
 
         for i in range(len(self.plrt_arrays)):
             # "sync_from_device" only available starting PYNQ v2.5

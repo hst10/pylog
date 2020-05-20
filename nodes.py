@@ -252,7 +252,7 @@ class PLSubscript(PLNode):
     def __init__(self, var, indices, ast_node=None, config=None):
         ''' 
             var: expr for the array name
-            indices: Python list of Slice/Expr
+            indices: Python list of PLSlice/Expr
         '''
         PLNode.__init__(self, ast_node, config)
         self._fields = [ 'var', 'indices' ]
@@ -395,6 +395,10 @@ class PLFunctionDef(PLNode):
 
 
 class PLLambda(PLNode):
+    '''
+        args: list of PLVariable
+        body: a single expression
+    '''
     def __init__(self, args, body, ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['args', 'body']
@@ -458,7 +462,18 @@ class PLReturn(PLNode):
     }
 '''
 
-
+class PLMap(PLNode):
+    ''' plmap
+        target: PLNode (PLVariable or PLSubscript)
+        func:   PLLambda
+        arrays: list of arrays (PLVariable or PLSubscript)
+    '''
+    def __init__(self, target, func, arrays, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['target', 'func', 'arrays']
+        self.target = target
+        self.func   = func
+        self.arrays = arrays
 
 # class PLMap(PLNode):
 #     def __init__(self, ast_node=None, config=None):
@@ -471,145 +486,145 @@ class PLReturn(PLNode):
 #             print(">>>>>>>>>>> Map Found CONFIG")
 #             print(config.var_list)
 
-    # def extract(self, ast_node):
-    #     arg_lst = [ arg.pl_data for arg in ast_node.args ]
-    #     self.func = arg_lst[0]
-    #     self.data = arg_lst[1:]
-    #     self.target = None
-    #     print("!!!!!! parent for map: ", ast_node.parent)
-    #     if isinstance(ast_node.parent, ast.Assign):
-    #         self.target = ast_node.parent.targets[0].pl_data
-    #         print("!!! Assign target for map")
-    #     # elif ast_node.parent.pl_data.type:
+#     def extract(self, ast_node):
+#         arg_lst = [ arg.pl_data for arg in ast_node.args ]
+#         self.func = arg_lst[0]
+#         self.data = arg_lst[1:]
+#         self.target = None
+#         print("!!!!!! parent for map: ", ast_node.parent)
+#         if isinstance(ast_node.parent, ast.Assign):
+#             self.target = ast_node.parent.targets[0].pl_data
+#             print("!!! Assign target for map")
+#         # elif ast_node.parent.pl_data.type:
 
-    #     self.dim = self.data[0].dim
+#         self.dim = self.data[0].dim
 
-    #     if self.func.type:
-    #         print("############# lambda type: ", self.func.type)
+#         if self.func.type:
+#             print("############# lambda type: ", self.func.type)
 
-    #     self.type = self.func.type + 1
-    #     print(">>>>>>>>>>>> Map assigns type to " + self.name +": "+\
-    #                                                         str(self.type))
+#         self.type = self.func.type + 1
+#         print(">>>>>>>>>>>> Map assigns type to " + self.name +": "+\
+#                                                             str(self.type))
 
-    # def codegen(self, config):
-    #     # if self.set_codegened(): return ""
-    #     self.src = ""
-    #     dim = self.dim
-    #     indent_level = config.indent_level
-    #     indent_str = config.indent_str
-    #     idx_var_num = config.idx_var_num
-    #     for dim_i in range(dim):
-    #         idx_var_num += 1
+#     def codegen(self, config):
+#         # if self.set_codegened(): return ""
+#         self.src = ""
+#         dim = self.dim
+#         indent_level = config.indent_level
+#         indent_str = config.indent_str
+#         idx_var_num = config.idx_var_num
+#         for dim_i in range(dim):
+#             idx_var_num += 1
             
-    #         # assuming these are all consts not variables
-    #         lower_i = self.data[0].slices[dim_i][0]
-    #         upper_i = self.data[0].slices[dim_i][1]
-    #         step_i  = self.data[0].slices[dim_i][2]
-    #         self.src += indent_str*indent_level \
-    #            + "map_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
-    #            (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
-    #             idx_var_num, step_i)
-    #         self.iter_vars.append("i%d" % idx_var_num)
+#             # assuming these are all consts not variables
+#             lower_i = self.data[0].slices[dim_i][0]
+#             upper_i = self.data[0].slices[dim_i][1]
+#             step_i  = self.data[0].slices[dim_i][2]
+#             self.src += indent_str*indent_level \
+#                + "map_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
+#                (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
+#                 idx_var_num, step_i)
+#             self.iter_vars.append("i%d" % idx_var_num)
 
-    #         indent_level += 1
+#             indent_level += 1
 
-    #     config.indent_level = indent_level
-    #     config.idx_var_num = idx_var_num
-    #     config.iter_vars = self.iter_vars
-    #     if not hasattr(config, "context"):
-    #         config.context = Context()
-    #     # config.context.map_vars = [ VariableNode(name=var.name, index=) \
-    #                                                    for var in self.data ]
+#         config.indent_level = indent_level
+#         config.idx_var_num = idx_var_num
+#         config.iter_vars = self.iter_vars
+#         if not hasattr(config, "context"):
+#             config.context = Context()
+#         # config.context.map_vars = [ VariableNode(name=var.name, index=) \
+#                                                        for var in self.data ]
 
-    #     self.src += self.func.codegen(config, self.data, self.target)
+#         self.src += self.func.codegen(config, self.data, self.target)
 
-    #     self.src += indent_str*indent_level + str(self.target) + \
-    #                 "[" + "][".join(self.iter_vars) + "] = " + \
-    #                                  str(config.context.return_var) + "; \n"
+#         self.src += indent_str*indent_level + str(self.target) + \
+#                     "[" + "][".join(self.iter_vars) + "] = " + \
+#                                      str(config.context.return_var) + "; \n"
 
-    #     for dim_i in range(dim):
-    #         indent_level -= 1
-    #         self.src += indent_str*indent_level + "}\n"
+#         for dim_i in range(dim):
+#             indent_level -= 1
+#             self.src += indent_str*indent_level + "}\n"
 
-    #     config.indent_level = indent_level
+#         config.indent_level = indent_level
 
 
-class PLHmap(PLNode):
-    def __init__(self, ast_node=None, config=None):
-        PLNode.__init__(self, ast_node, config)
-        self._fields = []
-        self.iter_vars = []
-        if ast_node != None:
-            self.extract(ast_node)
-        if config != None:
-            print(">>>>>>>>>>> Hmap Found CONFIG")
-            print(config.var_list)
+# class PLHmap(PLNode):
+#     def __init__(self, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self._fields = []
+#         self.iter_vars = []
+#         if ast_node != None:
+#             self.extract(ast_node)
+#         if config != None:
+#             print(">>>>>>>>>>> Hmap Found CONFIG")
+#             print(config.var_list)
 
-    def extract(self, ast_node):
-        arg_lst = [ arg.pl_data for arg in ast_node.args ]
-        self.func = arg_lst[0]
-        self.data = arg_lst[1:]
-        self.target = ast_node.parent.targets[0].pl_data
-        self.dim = self.data[0].dim
+#     def extract(self, ast_node):
+#         arg_lst = [ arg.pl_data for arg in ast_node.args ]
+#         self.func = arg_lst[0]
+#         self.data = arg_lst[1:]
+#         self.target = ast_node.parent.targets[0].pl_data
+#         self.dim = self.data[0].dim
 
-        print("########### ", type(self.func))
+#         print("########### ", type(self.func))
 
-        if arg_lst[0].type:
-            print("############# lambda type: ", arg_lst[0].type)
-        if arg_lst[1].type:
-            print("############# data: ", arg_lst[1].type)
+#         if arg_lst[0].type:
+#             print("############# lambda type: ", arg_lst[0].type)
+#         if arg_lst[1].type:
+#             print("############# data: ", arg_lst[1].type)
 
-        self.type = arg_lst[1].type + arg_lst[0].type
-        print(">>>>>>>>>>>> HmapNode assigns type to " + self.name +": "+\
-                                                                str(self.type))
+#         self.type = arg_lst[1].type + arg_lst[0].type
+#         print(">>>>>>>>>>>> HmapNode assigns type to " + self.name +": "+\
+#                                                                 str(self.type))
 
-        # print("hmap_func   = ", self.func)
-        # print("hmap_data   = ", self.data)
-        # print("hmap_target = ", self.target)
+#         # print("hmap_func   = ", self.func)
+#         # print("hmap_data   = ", self.data)
+#         # print("hmap_target = ", self.target)
 
-        # print(self.data.dim)
-        # print(self.data.slices)
+#         # print(self.data.dim)
+#         # print(self.data.slices)
 
-    def codegen(self, config):
-        # if self.set_codegened(): return ""
-        self.src = ""
-        dim = self.dim
-        indent_level = config.indent_level
-        indent_str = config.indent_str
-        idx_var_num = config.idx_var_num
-        for dim_i in range(dim):
-            idx_var_num += 1
+#     def codegen(self, config):
+#         # if self.set_codegened(): return ""
+#         self.src = ""
+#         dim = self.dim
+#         indent_level = config.indent_level
+#         indent_str = config.indent_str
+#         idx_var_num = config.idx_var_num
+#         for dim_i in range(dim):
+#             idx_var_num += 1
             
-            # assuming these are all consts not variables
-            lower_i = self.data[0].slices[dim_i][0]
-            upper_i = self.data[0].slices[dim_i][1]
-            step_i  = self.data[0].slices[dim_i][2]
-            self.src += indent_str*indent_level \
-                + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
-                (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
-                 idx_var_num, step_i)
-            self.iter_vars.append("i%d" % idx_var_num)
+#             # assuming these are all consts not variables
+#             lower_i = self.data[0].slices[dim_i][0]
+#             upper_i = self.data[0].slices[dim_i][1]
+#             step_i  = self.data[0].slices[dim_i][2]
+#             self.src += indent_str*indent_level \
+#                 + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
+#                 (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
+#                  idx_var_num, step_i)
+#             self.iter_vars.append("i%d" % idx_var_num)
 
-            indent_level += 1
+#             indent_level += 1
 
-        config.indent_level = indent_level
-        config.idx_var_num = idx_var_num
-        config.iter_vars = self.iter_vars
-        if not hasattr(config, "context"):
-            config.context = Context()
-        # config.context.map_vars = [ VariableNode(name=var.name, index=) for var in self.data ]
+#         config.indent_level = indent_level
+#         config.idx_var_num = idx_var_num
+#         config.iter_vars = self.iter_vars
+#         if not hasattr(config, "context"):
+#             config.context = Context()
+#         # config.context.map_vars = [ VariableNode(name=var.name, index=) for var in self.data ]
 
-        self.src += self.func.codegen(config, self.data, self.target)
+#         self.src += self.func.codegen(config, self.data, self.target)
 
-        self.src += indent_str*indent_level + str(self.target) + \
-                    "[" + "][".join(self.iter_vars) + "] = " + \
-                                    str(config.context.return_var) + "; \n"
+#         self.src += indent_str*indent_level + str(self.target) + \
+#                     "[" + "][".join(self.iter_vars) + "] = " + \
+#                                     str(config.context.return_var) + "; \n"
 
-        for dim_i in range(dim):
-            indent_level -= 1
-            self.src += indent_str*indent_level + "}\n"
+#         for dim_i in range(dim):
+#             indent_level -= 1
+#             self.src += indent_str*indent_level + "}\n"
 
-        config.indent_level = indent_level
+#         config.indent_level = indent_level
 
 class PLDot(PLNode):
     """dot(A, B): returns the dot product of A and B"""
