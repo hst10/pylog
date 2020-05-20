@@ -3,13 +3,20 @@ from env import *
 import numpy as np
 from pylog import *
 
-@pylog(mode='debug, viz')
+@pylog# (mode='debug')
 def pl_type_infer(a, b):
 
     # f = lambda x: x + 1
 
     list_a = np.empty((10,20,40), pl_fixed(8,3))
     list_b = np.empty((10,20,40,10), float32)
+
+    out1 = list_a + list_b[:,:,:,2]
+    out2 = list_a[:5][ :3, :6] + list_b[::2, ::7, 3:9, 2]
+    out1 = list_a[:5][ :3, :6] + list_b[::2, ::7, 3:9, 2]
+
+    res = list_a[3,5,1] + list_b[4,1,9,4]
+    res = list_a[3][5][1] + list_b[4][1][9][4]
 
     # out1 = np.empty((10,20,40,), int)
     out1 = plmap(lambda x, y: x + y, list_a, list_b[:,:,:,2])

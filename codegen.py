@@ -172,7 +172,18 @@ class PLCodeGenerator:
                         if isinstance(op_node.indices[i], PLSlice):
                             bounds = op_node.indices[i].updated_slice
                             lower, upper, step = bounds
-                            subs.append(ID(f'({lower}+i_bop_{i}*({step}))'))
+
+                            if lower == 0:
+                                if step == 1:
+                                    subs.append(ID(f'i_bop_{i}'))
+                                else:
+                                    subs.append(ID(f'(i_bop_{i}*({step}))'))
+                            else:
+                                if step == 1:
+                                    subs.append(ID(f'({lower}+i_bop_{i})'))
+                                else:
+                                    subs.append(ID(f'({lower}+i_bop_{i}*' + \
+                                                                f'({step}))'))
                         else:
                             subs.append(ID(f'i_bop_{i}'))
 

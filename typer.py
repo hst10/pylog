@@ -188,6 +188,12 @@ class PLTyper:
         left_shape  = self.actual_shape(node.left.pl_shape)
         right_shape = self.actual_shape(node.right.pl_shape)
 
+        if self.debug:
+            print(f'original left_shape = {node.left.pl_shape}')
+            print(f'original right_shape = {node.right.pl_shape}')
+            print(f'left_shape = {left_shape}')
+            print(f'right_shape = {right_shape}')
+
         if (left_shape != ()) and (right_shape != ()):
             assert(left_shape == right_shape)
             node.pl_type  = PLType(node.left.pl_type.ty, len(left_shape))
@@ -394,6 +400,15 @@ class PLTyper:
 
             subscript_dim = len(node.indices)
 
+            if self.debug:
+                print(f'Type: >>>>>>>>>>>> {type(node.indices[0])}')
+                print(f'Type: >>>>>>>>>>>> {type(node.indices)}')
+                print(f'Type: >>>>>>>>>>>> {len(node.indices)}')
+
+            if isinstance(node.indices[0], PLArray):
+                node.indices = node.indices[0].elts[::-1]
+
+
             if not lambda_arg:
                 # allow an extra dimension for bit access
                 assert(subscript_dim < (array_dims + 1))
@@ -411,10 +426,15 @@ class PLTyper:
                 shape = ()
                 indices = node.indices
                 is_empty = False
+                if self.debug:
+                    print(">>>>>>>>>>>>>>>>")
                 for i in range(len(indices)):
                     indices[i].parent = node
                     # the length along that dimension
                     indices[i].dim_length = array_shape[i]
+                    if self.debug:
+                        print('VISITING INDICS')
+                        print(f'{type(indices[i])}')
                     self.visit(indices[i], ctx)
                     idx_shape = indices[i].pl_shape
                     if idx_shape == (0,):
@@ -423,7 +443,8 @@ class PLTyper:
                         shape += (1,)
                     else:
                         shape += indices[i].pl_shape
-
+                if self.debug:
+                    print("<<<<<<<<<<<<<<<<<<<")
                 if is_empty:
                     node.pl_type  = PLType(ctx[array_name][0].ty, None)
                     node.pl_shape = None
