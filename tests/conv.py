@@ -3,18 +3,6 @@ from env import *
 import numpy as np
 from pylog import *
 
-from typing import List
-
-LpArray4D = List[List[List[List[float]]]]
-def LpType(ele_type, dim):
-    if dim == 0:
-        return ele_type
-    elif dim == 1:
-        return List[ele_type]
-    else:
-        return List[LpType(ele_type, dim - 1)]
-
-
 @pylog
 def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
 #    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
@@ -81,23 +69,4 @@ b = np.random.uniform(size=(32))
 # add(a, b)
 
 
-test(24)
-
-# import numpy as np
-# w = np.random.rand(2,3,4)
-
-# data = np.random.rand(2,3,4)
-
-# print(data)
-# print(list(map(lambda x: x+1, data[:,:,:])))
-
-# print("original: ", data)
-
-# data1 = [1, 3, 4]
-# print("new: ", list(map(lambda x: x+1, data1)))
-
-# # c = [ map(wi, data) for wi in w ]
-# c = map(lambda wi: list(map(lambda x: x + wi, data)), w)
-# print("new new: ", list(c))
-
-
+# test(24)

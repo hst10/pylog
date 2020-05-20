@@ -4,7 +4,7 @@ import numpy as np
 from pylog import *
 
 @pylog(mode='hwgen')
-def pl_fixe_types(lst_a, lst_b):
+def pl_fixed_types(lst_a, lst_b):
 
     a = pl_fixed(16, 3)
 
@@ -22,5 +22,5 @@ def pl_fixe_types(lst_a, lst_b):
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
     b = np.array([1, 3, 6, 7, 10])
-    c = pl_fixe_types(a, b)
+    c = pl_fixed_types(a, b)
     print(c)

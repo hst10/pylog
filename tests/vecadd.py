@@ -10,7 +10,7 @@ from the input NumPy arrays.
 '''
 
 @pylog(mode='debug, viz')
-def pylog_tmp_test_add(a, b, c):
+def pl_vecadd(a, b, c):
 
     for i in range(1024).pipeline():
         c[i] = a[i] + b[i]
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # print(b)
     # print(c)
 
-    pylog_tmp_test_add(a, b, c)
+    pl_vecadd(a, b, c)
     # print("result arrays: ")
     # print(a)
     # print(b)

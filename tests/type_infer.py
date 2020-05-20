@@ -4,7 +4,7 @@ import numpy as np
 from pylog import *
 
 @pylog#(mode='debug, viz')
-def pl_add(a, b):
+def pl_type_infer(a, b):
 
     f = lambda x: x + 1
 
@@ -36,5 +36,5 @@ def pl_add(a, b):
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
     b = np.array([1, 3, 6, 7, 10, 13])
-    c = pl_add(a, b)
+    c = pl_type_infer(a, b)
     print(c)
