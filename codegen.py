@@ -402,6 +402,9 @@ class PLCodeGenerator:
     # TODO: correctly handle nested functions definitions
     def visit_PLFunctionDef(self, node, config=None):
 
+        if not hasattr(node, 'type_infer_done'):
+            return
+
         arg_list = []
 
         for arg in node.args:
