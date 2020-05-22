@@ -43,7 +43,9 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        source_func = textwrap.dedent(inspect.getsource(func))
+
+        builtins = open('builtin.py').read()
+        source_func = builtins + textwrap.dedent(inspect.getsource(func))
         if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
 

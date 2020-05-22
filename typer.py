@@ -70,9 +70,8 @@ class PLTyper:
         node.pl_type  = PLType('pl_func', 0)
         node.pl_shape = ()
         ctx[node.name] = (node.pl_type, node.pl_shape, node)
-        # node.pl_ctx   = copy.deepcopy(ctx)
 
-        local_ctx = copy.deepcopy(ctx)
+        local_ctx = copy.copy(ctx)
 
         if node.pl_top:
             for arg in node.args:
@@ -122,7 +121,7 @@ class PLTyper:
         node.pl_type  = PLType(ty=node.ele_type, dim=len(dims))
         node.pl_shape = dims
 
-        # node.pl_ctx   = copy.deepcopy(ctx)
+        # node.pl_ctx   = copy.copy(ctx)
 
         # node.name is a PLVariable object
         # node.pl_ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
@@ -135,7 +134,7 @@ class PLTyper:
     def visit_PLVariableDecl(self, node, ctx={}):
         node.pl_type = PLType(ty=node.ty, dim=0)
         node.pl_shape = ()
-        # node.pl_ctx   = copy.deepcopy(ctx)
+        # node.pl_ctx   = copy.copy(ctx)
         # node.pl_ctx[node.name] = (node.pl_type, node.pl_shape, node)
         ctx[node.name]         = (node.pl_type, node.pl_shape, node)
 
@@ -337,13 +336,13 @@ class PLTyper:
         for stmt in node.body:
             self.visit(stmt, ctx)
 
-        # node.pl_ctx = copy.deepcopy(ctx)
+        # node.pl_ctx = copy.copy(ctx)
 
     def visit_PLWhile(self, node, ctx={}):
         for stmt in node.body:
             self.visit(stmt, ctx)
 
-        # node.pl_ctx = copy.deepcopy(ctx)
+        # node.pl_ctx = copy.copy(ctx)
 
     def visit_PLIf(self, node, ctx={}):
         for stmt in node.body:
@@ -363,7 +362,6 @@ class PLTyper:
         func_name = node.func.name
         if func_name in ctx:
             func_def_node = ctx[func_name][2]
-
         else:
             print(f'Function {func_name} called before definition!')
             raise NameError
@@ -453,7 +451,7 @@ class PLTyper:
         node.pl_shape = ()
 
         if all(hasattr(arg, 'pl_type') for arg in node.args):
-            local_ctx = copy.deepcopy(ctx)
+            local_ctx = copy.copy(ctx)
             for arg in node.args:
                 arg.lambda_node = node
 
@@ -500,3 +498,8 @@ class PLTyper:
         node.pl_type  = map_return_type
         node.pl_shape = map_return_shape
 
+
+    # def visit_PLAttribute(self, node, ctx={}):
+
+    #     if node.attr = 'shape':
+    #         node.
