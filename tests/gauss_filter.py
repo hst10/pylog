@@ -2,23 +2,23 @@ from pylog import *
 #import numpy as np
 
 #Based on polybench2.0/image-processing/gauss-filter/gauss-filter.c
-N=1080
-M=1920
-T=1920
+N = 1080
+M = 1920
+T = 1920
 
 @pylog
 def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
     def init_array(in_image,Gauss):
-        for i in range(N):
-            for j in range(M):
-                in_image[i,j]=(i*j+0.0)/M
+        for i in range(1080):#TODO: replace hard coded with N
+            for j in range(1920):#TODO: replace hard coded with M
+                in_image[i,j]=(i*j+0.0)/1920#TODO: replace hard coded with M
         for i in range(4):
             Gauss[i]=i
 
     def compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
-        t=T
-        m=M
-        n=N
+        t=1920#TODO: replace hard coded with T
+        m=1920#TODO: replace hard coded with M
+        n=1080#TODO: replace hard coded with N
         tot[0]=0
         for k in range(t-1,t+2):
             tot[k+2-t]=tot[k+1-t]+Gauss[k-t+1]
@@ -40,11 +40,20 @@ def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
     compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image)
 
 if __name__=="__main__":
-    tot=np.zeros(4,dtype=np.single)
-    Gauss=np.zeros(4,dtype=np.single)
-    g_tmp_image=np.zeros([N,M],dtype=np.single)
-    g_acc1=np.zeros([N,M,4],dtype=np.single)
-    g_acc2=np.zeros([N,M,4],dtype=np.single)
-    in_image=np.zeros([N,M],dtype=np.single)
-    gauss_image=np.zeros([N,M],dtype=np.single)
+
+    tot = np.empty(4, dtype=np.float)
+    Gauss = np.empty(4, dtype=np.float)
+    g_tmp_image = np.empty([N, M], dtype=np.float)
+    g_acc1 = np.empty([N, M, 4], dtype=np.float)
+    g_acc2 = np.empty([N, M, 4], dtype=np.float)
+    in_image = np.empty([N, M], dtype=np.float)
+    gauss_image = np.empty([N, M], dtype=np.float)
+    #TODO: Adding support np.single. np.zeros
+    # tot=np.zeros(4,dtype=np.single)
+    # Gauss=np.zeros(4,dtype=np.single)
+    # g_tmp_image=np.zeros([N,M],dtype=np.single)
+    # g_acc1=np.zeros([N,M,4],dtype=np.single)
+    # g_acc2=np.zeros([N,M,4],dtype=np.single)
+    # in_image=np.zeros([N,M],dtype=np.single)
+    # gauss_image=np.zeros([N,M],dtype=np.single)
     pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
