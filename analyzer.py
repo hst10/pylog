@@ -7,16 +7,16 @@ def ast_link_parent(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
-class PLConfig:
-    def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, \
-                 context=None, var_list={}, targets=None, node=None):
-        self.indent_level = indent_level
-        self.indent_str = indent_str
-        self.idx_var_num = idx_var_num
-        self.context = context
-        self.var_list = var_list
-        self.targets = targets
-        self.curr_node = node
+# class PLConfig:
+#     def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, \
+#                  context=None, var_list={}, targets=None, node=None):
+#         self.indent_level = indent_level
+#         self.indent_str = indent_str
+#         self.idx_var_num = idx_var_num
+#         self.context = context
+#         self.var_list = var_list
+#         self.targets = targets
+#         self.curr_node = node
 
 class PLTester(PLPostorderVisitor):
     # pass
