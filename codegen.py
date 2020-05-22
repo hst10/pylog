@@ -325,10 +325,34 @@ class PLCodeGenerator:
                               lvalue=target_c_obj,
                               rvalue=self.visit(node.value, config))
         elif assign_dim > 0:
-            node.value.assign_target = node.target
-            node.value.assign_op     = node.op
-            asgm = self.visit(node.value, config)
-            # not explicitly generate Assignment
+            if isinstance(node.value, (PLConst, PLVariable)):
+
+                if isinstance(node.value, PLVariable):
+                    rvalue = self.get_subscript(node.value, 'i_asg_', config)
+                else:
+                    rvalue = self.visit(node.value, config)
+
+                lvalue = self.get_subscript(node.target, 'i_asg_', config)
+
+                stmt = [ Assignment(op=node.op,
+                                    lvalue=lvalue,
+                                    rvalue=rvalue) ]
+
+                for i in range(len(node.pl_shape)-1, -1, -1):
+                    stmt = [ simple_for(iter_var=f'i_asg_{i}',
+                                        start=int32(0),
+                                        op='<',
+                                        end=int32(node.pl_shape[i]),
+                                        step=int32(1),
+                                        stmt_lst=stmt) ]
+
+                asgm = stmt[0]
+
+            else:
+                node.value.assign_target = node.target
+                node.value.assign_op     = node.op
+                asgm = self.visit(node.value, config)
+                # not explicitly generate Assignment
         else:
             raise NotImplementedError
 

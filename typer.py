@@ -283,9 +283,6 @@ class PLTyper:
     def visit_PLAssign(self, node, ctx={}):
         self.visit(node.value, ctx)
 
-        node.pl_type  = node.value.pl_type
-        node.pl_shape = node.value.pl_shape
-
         node.is_decl = True
         if isinstance(node.target, PLSubscript):
             node.is_decl = False
@@ -309,8 +306,16 @@ class PLTyper:
             target_type  = node.target.pl_type
             target_shape = node.target.pl_shape
 
-            assert((self.actual_shape(node.value.pl_shape) == \
-                    self.actual_shape(target_shape)))
+            if node.value.pl_shape != ():
+                assert((self.actual_shape(node.value.pl_shape) == \
+                        self.actual_shape(target_shape)))
+
+        if node.is_decl:
+            node.pl_type  = node.value.pl_type
+            node.pl_shape = node.value.pl_shape
+        else:
+            node.pl_type  = node.target.pl_type
+            node.pl_shape = node.target.pl_shape
 
     def visit_PLReturn(self, node, ctx={}):
         self.visit(node.value, ctx)
