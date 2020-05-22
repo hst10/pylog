@@ -10,12 +10,13 @@ import textwrap
 import functools
 import subprocess
 
-from visitors import *
-from analyzer import *
-from typer    import *
-from codegen  import *
-from sysgen   import *
-from runtime  import *
+from visitors  import *
+from analyzer  import *
+from typer     import *
+from optimizer import *
+from codegen   import *
+from sysgen    import *
+from runtime   import *
 
 import numpy as np
 
@@ -108,34 +109,38 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
                                           shell=True)
 
             plrt = PLRuntime(config)
-            plrt.call(args)
+            return plrt.call(args)
 
     return wrapper
 
 
 def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
+    print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
 
     # add an extra attribute pointing to parent for each node
-    make_parent(ast_py) # need to be called before analyzer
+    ast_link_parent(ast_py) # need to be called before analyzer
 
     # instantiate passes
-    tester   = PLTester()
-    analyzer = PLAnalyzer(debug=debug)
-    typer    = PLTyper(arg_info, debug=debug)
-    codegen  = PLCodeGenerator(arg_info, debug=debug)
+    tester    = PLTester()
+    analyzer  = PLAnalyzer(debug=debug)
+    typer     = PLTyper(arg_info, debug=debug)
+    optimizer = PLOptimizer(debug=debug)
+    codegen   = PLCodeGenerator(arg_info, debug=debug)
 
     # execute passes
     if debug:
         tester.visit(ast_py)
 
     pylog_ir = analyzer.visit(ast_py)
+    plnode_link_parent(pylog_ir)
 
     if debug:
         print(pylog_ir)
 
     typer.visit(pylog_ir)
+    # optimizer.visit(pylog_ir)
 
     hls_c = codegen.codegen(pylog_ir)
 

@@ -4,7 +4,7 @@ import numpy as np
 from pylog import *
 
 @pylog
-def pl_add(a, b):
+def pl_subscript(a, b):
 
     for i in range(4, 15, 2):
         a[b[i]][f(a * b + 13)][csdf*w34 - 1] = b
@@ -15,5 +15,5 @@ def pl_add(a, b):
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
     b = np.array([1, 3, 6, 7, 10])
-    c = pl_add(a, b)
+    c = pl_subscript(a, b)
     print(c)

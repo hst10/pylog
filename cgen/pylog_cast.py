@@ -31,11 +31,13 @@ def var_decl(var_type, name, init=None):
         name:     string
         init:     AST Node
     '''
-    type_decl = c_ast.TypeDecl(declname=name, type=c_ast.IdentifierType(names=[var_type]))
+    type_decl = c_ast.TypeDecl(declname=name,
+                               type=c_ast.IdentifierType(names=[var_type]))
     if init == None:
         decl = c_ast.Decl(name=name, type=type_decl)
     else:
-        # decl = c_ast.Decl(name=name, type=type_decl, init=c_ast.Constant(type=var_type, value=init))
+        # decl = c_ast.Decl(name=name, type=type_decl,\
+        #                   init=c_ast.Constant(type=var_type, value=init))
         decl = c_ast.Decl(name=name, type=type_decl, init=init)
 
     return decl
@@ -46,13 +48,20 @@ def array_decl(var_type, name, dims=[]):
         name:     string; 
         dims:     list of AST nodes, outermost to innermost
     '''
-    type_decl = c_ast.TypeDecl(declname=name, type=c_ast.IdentifierType(names=[var_type]))
+    type_decl = c_ast.TypeDecl(declname=name,
+                               type=c_ast.IdentifierType(names=[var_type]))
     for i in range(len(dims)-1, -1, -1):
         type_decl = c_ast.ArrayDecl(type=type_decl, dim=dims[i], dim_quals=[])
 
     decl = c_ast.Decl(name=name, type=type_decl)
 
     return decl
+
+def subscript(array_name, subscripts):
+    obj = array_name
+    for index in subscripts:
+        obj = c_ast.ArrayRef(name=obj, subscript=index)
+    return obj
 
 # def unaryop(op, expr):
 #     '''
@@ -102,13 +111,16 @@ def simple_for(iter_var, start, op, end, step, stmt_lst):
                     type=c_ast.TypeDecl(
                         declname=iter_var, 
                         quals=[], 
-                        type=c_ast.IdentifierType(names=['int']) # assuming iter var is an int
-                    ), 
+                        type=c_ast.IdentifierType(names=['int'])
+                    ), # assuming iter var is an int
                     init=start)
     for_init = c_ast.DeclList([iter_decl])
     for_cond = c_ast.BinaryOp(op=op, left=c_ast.ID(iter_var), right=end)
-    for_next = c_ast.Assignment(op='+=', lvalue=c_ast.ID(iter_var), rvalue=step)
-    return c_ast.For(init=for_init, cond=for_cond, next=for_next, stmt=c_ast.Compound(block_items=stmt_lst))
+    for_next = c_ast.Assignment(op='+=',
+                                lvalue=c_ast.ID(iter_var),
+                                rvalue=step)
+    return c_ast.For(init=for_init, cond=for_cond, next=for_next,
+                     stmt=c_ast.Compound(block_items=stmt_lst))
 
 def insert_pragma(compound_node, pragma=None, attr=None, pragma_str=None):
     assert(isinstance(compound_node, c_ast.Compound))
@@ -118,7 +130,8 @@ def insert_pragma(compound_node, pragma=None, attr=None, pragma_str=None):
         elif isinstance(pragma_str, list):
             pragmas = [ c_ast.Pragma('HLS ' + s) for s in pragma_str ]
     else:
-        pragmas = [ c_ast.Pragma(f'HLS {pragma}' + (f' factor={attr.value}' if attr else '')) ]
+        pragmas = [ c_ast.Pragma(f'HLS {pragma}' + (f' factor={attr.value}' \
+                                                           if attr else '')) ]
     compound_node.block_items = pragmas + compound_node.block_items
 
 def insert_interface_pragmas(compound_node, interface_info, num_hp_ports=4):
@@ -128,11 +141,13 @@ def insert_interface_pragmas(compound_node, interface_info, num_hp_ports=4):
     for key, val in interface_info.items():
         type_name, shape = val
         if shape in {(1,), ()}:
-            pragma_strs.append(f'INTERFACE s_axilite register port={key} bundle=CTRL')
+            pragma_strs.append(f'INTERFACE s_axilite register port={key} '+\
+                               f'bundle=CTRL')
         else:
             data_bundle_idx = (data_bundle_idx + 1) % num_hp_ports
             max_bundle_idx = max(max_bundle_idx, data_bundle_idx)
-            pragma_strs.append(f'INTERFACE m_axi port={key} offset=slave bundle=DATA_{data_bundle_idx}')
+            pragma_strs.append(f'INTERFACE m_axi port={key} offset=slave '+\
+                               f'bundle=DATA_{data_bundle_idx}')
 
     pragma_strs.append(f'INTERFACE s_axilite register port=return bundle=CTRL')
 
@@ -145,10 +160,12 @@ def func_decl(func_name, args, func_type):
         args:      list of Decl's
         func_type: string
     '''
-    type_decl = c_ast.TypeDecl(declname=func_name, type=c_ast.IdentifierType(names=[func_type]))
+    type_decl = c_ast.TypeDecl(declname=func_name,
+                               type=c_ast.IdentifierType(names=[func_type]))
     arg_list = c_ast.ParamList(params=args)
     function_decl = c_ast.FuncDecl(args=arg_list, type=type_decl)
-    decl = c_ast.Decl(name=func_name, quals=[], storage=[], funcspec=[], type=function_decl)
+    decl = c_ast.Decl(name=func_name, quals=[], storage=[], funcspec=[], \
+                      type=function_decl)
     return decl
 
 def func_def(func_name, args, func_type, body=[]):
@@ -158,8 +175,12 @@ def func_def(func_name, args, func_type, body=[]):
         func_type: string
         body:      list of statements
     '''
-    function_decl = func_decl(func_name=func_name, args=args, func_type=func_type)
-    return c_ast.FuncDef(decl=function_decl, param_decls=[], body=c_ast.Compound(block_items=body))
+    function_decl = func_decl(func_name=func_name,
+                              args=args,
+                              func_type=func_type)
+    return c_ast.FuncDef(decl=function_decl,
+                         param_decls=[],
+                         body=c_ast.Compound(block_items=body))
 
 # def return_stmt(expr):
 #     return c_ast.Return(expr=expr)
