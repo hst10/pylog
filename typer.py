@@ -40,17 +40,6 @@ class PLTyper:
         self.args_info = args_info
         self.debug = debug
 
-    def iter_fields(self, node):
-        """
-        Yield a tuple of ``(fieldname, value)`` for each field in
-        ``node._fields`` that is present on *node*.
-        """
-        for field in node._fields:
-            try:
-                yield field, getattr(node, field)
-            except AttributeError:
-                pass
-
     def visit(self, node, ctx={}):
         """Visit a node."""
 
@@ -67,7 +56,7 @@ class PLTyper:
         """Called if no explicit visitor function exists for a node."""
         # visit children
         if isinstance(node, PLNode):
-            for field, value in self.iter_fields(node):
+            for field, value in iter_fields(node):
                 self.visit(value, ctx)
         elif isinstance(node, list):
             for item in node:
@@ -425,7 +414,7 @@ class PLTyper:
                 if self.debug:
                     print(">>>>>>>>>>>>>>>>")
                 for i in range(len(indices)):
-                    indices[i].parent = node
+                    # indices[i].parent = node
                     # the length along that dimension
                     indices[i].dim_length = array_shape[i]
                     if self.debug:

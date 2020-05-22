@@ -91,3 +91,5 @@ class PLRuntime:
             self.plrt_arrays[i].invalidate()
             np.copyto(args[i], self.plrt_arrays[i])
             self.plrt_arrays[i].close()
+
+        return self.accelerator.read(0x10)

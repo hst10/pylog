@@ -1,6 +1,49 @@
 import ast
 
 
+def iter_fields(node):
+
+    if isinstance(node, list):
+        for item in node:
+            if isinstance(item, PLNode):
+                yield item
+
+    for field in node._fields:
+        try:
+            yield field, getattr(node, field)
+        except AttributeError:
+            pass
+
+def iter_child_nodes(node):
+    if isinstance(node, list):
+        for item in node:
+            if isinstance(item, PLNode):
+                yield item
+
+    for name, field in iter_fields(node):
+        if isinstance(field, PLNode):
+            yield field
+        elif isinstance(field, list):
+            for item in field:
+                if isinstance(item, PLNode):
+                    yield item
+
+def plnode_walk(node):
+    from collections import deque
+    if isinstance(node, list):
+        todo = deque(node)
+    else:
+        todo = deque([node])
+    while todo:
+        node = todo.popleft()
+        todo.extend(iter_child_nodes(node))
+        yield node
+
+def plnode_link_parent(root):
+    for node in plnode_walk(root):
+        for child in iter_child_nodes(node):
+            child.parent = node
+
 
 def token(obj):
     type_name = obj.__class__.__name__
@@ -304,48 +347,55 @@ class PLIf(PLNode):
 
 class PLIterDom(PLNode):
     '''Represents iteration domain in 'for obj in domain' '''
-    def __init__(self, expr, ast_node=None, config=None):
+    def __init__(self, expr=None, start=PLConst(0), op='<', end=PLConst(128),
+                 step=PLConst(1), ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
-        self._fields = ['expr']
+        self._fields = ['start', 'op', 'end', 'step']
         self.expr = expr
+        self.start = start
+        self.op = op
+        self.end = end
+        self.step = step
         self.attr = None
         self.attr_args = None
         self.type = None # "range" or "expr"
-        if isinstance(self.expr, PLCall) and self.expr.func.name == "range":
-            '''coming from visit_Call -> range'''
-            self.type  = "range"
-            num_args = len(self.expr.args)
-            if num_args == 1:
-                self.start = PLConst(value=0)
-                self.op = "<"
-                self.end = self.expr.args[0]
-                self.step = PLConst(value=1)
-            elif num_args == 2:
-                self.start = self.expr.args[0]
-                self.op = "<"
-                self.end = self.expr.args[1]
-                self.step = PLConst(value=1)
-            elif num_args == 3:
-                self.start = self.expr.args[0]
-                self.end = self.expr.args[1]
-                self.step = self.expr.args[2]
-                if isinstance(self.step, PLConst) and self.step.value < 0:
-                    self.op = ">"
-                else:
+        if expr is not None:
+            if isinstance(self.expr, PLCall) and \
+                                            self.expr.func.name == "range":
+                '''coming from visit_Call -> range'''
+                self.type  = "range"
+                num_args = len(self.expr.args)
+                if num_args == 1:
+                    self.start = PLConst(value=0)
                     self.op = "<"
-                    # TODO: need to generate two versions of for, 
-                    # depending on the value of step in runtime.  
+                    self.end = self.expr.args[0]
+                    self.step = PLConst(value=1)
+                elif num_args == 2:
+                    self.start = self.expr.args[0]
+                    self.op = "<"
+                    self.end = self.expr.args[1]
+                    self.step = PLConst(value=1)
+                elif num_args == 3:
+                    self.start = self.expr.args[0]
+                    self.end = self.expr.args[1]
+                    self.step = self.expr.args[2]
+                    if isinstance(self.step, PLConst) and self.step.value < 0:
+                        self.op = ">"
+                    else:
+                        self.op = "<"
+                        # TODO: need to generate two versions of for,
+                        # depending on the value of step in runtime.
 
 
-            if self.expr.attr != None:
-                self.attr = self.expr.attr
-                self.attr_args = self.expr.attr_args
+                if self.expr.attr != None:
+                    self.attr = self.expr.attr
+                    self.attr_args = self.expr.attr_args
 
-        else:
-            '''Coming from visit_For, iter_dom is a PyLog expression'''
-            self.type = "expr"
-            pass
-            # TODO: need to generate separate ArrayDecl before current stmt
+            else:
+                '''Coming from visit_For, iter_dom is a PyLog expression'''
+                self.type = "expr"
+                pass
+                # TODO: need to generate separate ArrayDecl before current stmt
 
 
 
@@ -425,7 +475,8 @@ class PLLambda(PLNode):
     #     self.param2arg = dict(zip(param_names, argum_names))
     #     self.output_var = output_var
 
-    #     curr_context = Context(in_lambda=True, lambda_args_map=self.param2arg)
+    #     curr_context = Context(in_lambda=True,
+    #                             lambda_args_map=self.param2arg)
 
     #     new_config = config
     #     new_config.context = curr_context
@@ -576,7 +627,7 @@ class PLMap(PLNode):
 
 #         self.type = arg_lst[1].type + arg_lst[0].type
 #         print(">>>>>>>>>>>> HmapNode assigns type to " + self.name +": "+\
-#                                                                 str(self.type))
+#                                                              str(self.type))
 
 #         # print("hmap_func   = ", self.func)
 #         # print("hmap_data   = ", self.data)
@@ -600,7 +651,7 @@ class PLMap(PLNode):
 #             upper_i = self.data[0].slices[dim_i][1]
 #             step_i  = self.data[0].slices[dim_i][2]
 #             self.src += indent_str*indent_level \
-#                 + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
+#                 + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" % \
 #                 (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
 #                  idx_var_num, step_i)
 #             self.iter_vars.append("i%d" % idx_var_num)
@@ -612,7 +663,8 @@ class PLMap(PLNode):
 #         config.iter_vars = self.iter_vars
 #         if not hasattr(config, "context"):
 #             config.context = Context()
-#         # config.context.map_vars = [ VariableNode(name=var.name, index=) for var in self.data ]
+#         # config.context.map_vars = [ VariableNode(name=var.name, index=)\
+#         #                                          for var in self.data ]
 
 #         self.src += self.func.codegen(config, self.data, self.target)
 
@@ -626,90 +678,90 @@ class PLMap(PLNode):
 
 #         config.indent_level = indent_level
 
-class PLDot(PLNode):
-    """dot(A, B): returns the dot product of A and B"""
-    """NOTE: This definition is different from NumPy. Will be upated later"""
-    def __init__(self, ast_node=None, config=None):
-        PLNode.__init__(self, ast_node, config)
-        self._fields = []
-        self.iter_vars = []
-        self.operands = []
-        if ast_node != None:
-            self.extract(ast_node)
-        if len(self.operands) == 2:
-            print("DotNode operand types: ", self.operands[0].type)
-            print("DotNode operand types: ", self.operands[1].type)
-            if self.operands[0].type and self.operands[1].type: 
-                self.type = PLType(self.operands[0].type.ele_type, 0)
-                print("DotNode assigns type to " + self.name +": "+\
-                                                            str(self.type))
+# class PLDot(PLNode):
+#     """dot(A, B): returns the dot product of A and B"""
+#     """NOTE: This definition is different from NumPy. Will be upated later"""
+#     def __init__(self, ast_node=None, config=None):
+#         PLNode.__init__(self, ast_node, config)
+#         self._fields = []
+#         self.iter_vars = []
+#         self.operands = []
+#         if ast_node != None:
+#             self.extract(ast_node)
+#         if len(self.operands) == 2:
+#             print("DotNode operand types: ", self.operands[0].type)
+#             print("DotNode operand types: ", self.operands[1].type)
+#             if self.operands[0].type and self.operands[1].type:
+#                 self.type = PLType(self.operands[0].type.ele_type, 0)
+#                 print("DotNode assigns type to " + self.name +": "+\
+#                                                             str(self.type))
 
-    def extract(self, ast_node):
-        assert(len(ast_node.args) == 2)
-        self.operands = [ e.pl_data for e in ast_node.args ]
-        self.dim = self.operands[0].dim
+#     def extract(self, ast_node):
+#         assert(len(ast_node.args) == 2)
+#         self.operands = [ e.pl_data for e in ast_node.args ]
+#         self.dim = self.operands[0].dim
 
-    def gen_inner_vars(self, var, config):
-        assert(hasattr(config.context, "lambda_args_map"))
-        if var.name in config.context.lambda_args_map:
-            tmp_src = config.context.lambda_args_map[var.name]
-            tmp_src += "[" + "][".join([ self.iter_vars[i]+"+"+\
-                            config.iter_vars[i]+"+("+str(var.slices[i][0])+")" \
-                            for i in range(len(self.iter_vars)) ]) + "]"
-            return tmp_src
-        else:
-            tmp_src = var.name
-            tmp_src += "[" + "][".join(self.iter_vars) + "]"
-            return tmp_src
+#     def gen_inner_vars(self, var, config):
+#         assert(hasattr(config.context, "lambda_args_map"))
+#         if var.name in config.context.lambda_args_map:
+#             tmp_src = config.context.lambda_args_map[var.name]
+#             tmp_src += "[" + "][".join([ self.iter_vars[i]+"+"+\
+#                         config.iter_vars[i]+"+("+str(var.slices[i][0])+")" \
+#                         for i in range(len(self.iter_vars)) ]) + "]"
+#             return tmp_src
+#         else:
+#             tmp_src = var.name
+#             tmp_src += "[" + "][".join(self.iter_vars) + "]"
+#             return tmp_src
 
-    def codegen(self, config):
-        # if self.set_codegened(): return ""
-        self.src = ""
-        if not hasattr(config.context, "lambda_args_map"): return self.src
+#     def codegen(self, config):
+#         # if self.set_codegened(): return ""
+#         self.src = ""
+#         if not hasattr(config.context, "lambda_args_map"): return self.src
 
-        indent_level = config.indent_level
-        indent_str = config.indent_str
-        idx_var_num = config.idx_var_num
+#         indent_level = config.indent_level
+#         indent_str = config.indent_str
+#         idx_var_num = config.idx_var_num
 
-        idx_var_num += 1
-        accum_var_name = "tmp" + str(idx_var_num)
-        config.context.return_var = VariableNode(name=accum_var_name)
+#         idx_var_num += 1
+#         accum_var_name = "tmp" + str(idx_var_num)
+#         config.context.return_var = VariableNode(name=accum_var_name)
 
-        self.src += indent_str*indent_level + "int " + accum_var_name+" = 0;\n"
+#         self.src += indent_str*indent_level + "int " + accum_var_name+" = 0;\n"
 
-        for dim_i in range(self.dim):
-            idx_var_num += 1
+#         for dim_i in range(self.dim):
+#             idx_var_num += 1
 
-            # assuming these are all consts not variables
-            lower_i = self.operands[0].slices[dim_i][0]
-            upper_i = self.operands[0].slices[dim_i][1]
-            step_i  = self.operands[0].slices[dim_i][2]
-            range_i = upper_i - lower_i
+#             # assuming these are all consts not variables
+#             lower_i = self.operands[0].slices[dim_i][0]
+#             upper_i = self.operands[0].slices[dim_i][1]
+#             step_i  = self.operands[0].slices[dim_i][2]
+#             range_i = upper_i - lower_i
 
-            self.src += indent_str*indent_level \
-                + "dot_i%d: for (int i%d = 0; i%d < %d; i%d += %d) {\n" %   \
-                (idx_var_num, idx_var_num, idx_var_num, range_i, \
-                 idx_var_num, step_i)
-            self.iter_vars.append("i%d" % idx_var_num)
+#             self.src += indent_str*indent_level \
+#                 + "dot_i%d: for (int i%d = 0; i%d < %d; i%d += %d) {\n" %   \
+#                 (idx_var_num, idx_var_num, idx_var_num, range_i, \
+#                  idx_var_num, step_i)
+#             self.iter_vars.append("i%d" % idx_var_num)
 
-            indent_level += 1
+#             indent_level += 1
 
 
-        # print loop body
-        self.src += indent_str*indent_level + accum_var_name + " += "
-        self.src += self.gen_inner_vars(self.operands[0], config)
-        self.src += " * "
-        self.src += self.gen_inner_vars(self.operands[1], config)
-        self.src += "; \n"
+#         # print loop body
+#         self.src += indent_str*indent_level + accum_var_name + " += "
+#         self.src += self.gen_inner_vars(self.operands[0], config)
+#         self.src += " * "
+#         self.src += self.gen_inner_vars(self.operands[1], config)
+#         self.src += "; \n"
 
-        config.indent_level = indent_level
-        config.idx_var_num = idx_var_num
+#         config.indent_level = indent_level
+#         config.idx_var_num = idx_var_num
 
-        for dim_i in range(self.dim):
-            indent_level -= 1
-            self.src += indent_str*indent_level + "}\n"
+#         for dim_i in range(self.dim):
+#             indent_level -= 1
+#             self.src += indent_str*indent_level + "}\n"
             
-        config.indent_level = indent_level
+#         config.indent_level = indent_level
 
-        return self.src
+#         return self.src
 

@@ -2,7 +2,7 @@ from utils import *
 from nodes import *
 from visitors import *
 
-def make_parent(root):
+def ast_link_parent(root):
     for node in ast.walk(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
@@ -15,7 +15,7 @@ class PLConfig:
         self.idx_var_num = idx_var_num
         self.context = context
         self.var_list = var_list
-        self.tarets = targets
+        self.targets = targets
         self.curr_node = node
 
 class PLTester(PLPostorderVisitor):
@@ -286,13 +286,6 @@ class PLAnalyzer(PLPostorderVisitor):
                                  ast_node=node,
                                  config=config)
 
-        # elif node.func.id == "hmap":
-        #     node.pl_data = PLHmap(
-        #                       func=node.args[0].pl_data,
-        #                       arrays=[ a.pl_data for a in node.args[1:] ],
-        #                       ast_node=node,
-        #                       config=config)
-
         elif node.func.id == "dot":
             node.pl_data = PLDot(node, config)
         elif node.func.id == "PLType" and len(node.args) == 2 \
@@ -400,10 +393,10 @@ class PLAnalyzer(PLPostorderVisitor):
                                 ast_node=node, 
                                 config=config)
 
-        if config == None:
-            config = PLConfig()
-        config.targets = [ t.pl_data for t in node.targets ]
-        config.curr_node = node.pl_data
+        # if config == None:
+        #     config = PLConfig()
+        # config.targets = [ t.pl_data for t in node.targets ]
+        # config.curr_node = node.pl_data
 
 
 
@@ -484,9 +477,9 @@ class PLAnalyzer(PLPostorderVisitor):
                         self.parse_func_args(node.args.args, config))
                     if self.debug: print(self.args)
 
-        if config == None:
-            config = PLConfig()
-        config.var_list = self.args
+        # if config == None:
+        #     config = PLConfig()
+        # config.var_list = self.args
 
         # if isinstance(node.body, list):
         #     for item in node.body:
