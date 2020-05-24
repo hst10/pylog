@@ -142,14 +142,16 @@ def insert_interface_pragmas(compound_node, interface_info, num_mem_ports=4):
         type_name, shape = val
         if shape in {(1,), ()}:
             pragma_strs.append(f'INTERFACE s_axilite register port={key} '+\
-                               f'bundle=CTRL')
+                               f'bundle=ctrl')
         else:
             data_bundle_idx = (data_bundle_idx + 1) % num_mem_ports
             max_bundle_idx = max(max_bundle_idx, data_bundle_idx)
             pragma_strs.append(f'INTERFACE m_axi port={key} offset=slave '+\
-                               f'bundle=DATA_{data_bundle_idx}')
+                               f'bundle=data{data_bundle_idx}')
+            pragma_strs.append(f'INTERFACE s_axilite register port={key} '+\
+                               f'bundle=ctrl')
 
-    pragma_strs.append(f'INTERFACE s_axilite register port=return bundle=CTRL')
+    pragma_strs.append(f'INTERFACE s_axilite register port=return bundle=ctrl')
 
     insert_pragma(compound_node, pragma_str=pragma_strs)
     return max_bundle_idx + 1

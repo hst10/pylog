@@ -20,7 +20,7 @@ create_bd_cell -type ip -vlnv xilinx.com:hls:{{ ip_name }}:1.0 {{ ip_name }}_0
 {% for i in range(num_hp_ports) %}
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/{{ ip_name }}_0/m_axi_{{ bundle[i] }}} Slave {/processing_system7_0/S_AXI_HP{{ i }}} intc_ip {Auto} master_apm {0}}  [get_bd_intf_pins processing_system7_0/S_AXI_HP{{ i }}]
 {%- endfor %}
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/{{ ip_name }}_0/s_axi_CTRL} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins {{ ip_name }}_0/s_axi_CTRL]
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/{{ ip_name }}_0/s_axi_ctrl} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins {{ ip_name }}_0/s_axi_ctrl]
 
 validate_bd_design
 save_bd_design

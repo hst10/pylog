@@ -5,7 +5,7 @@ import time
 import jinja2
 import subprocess
 
-TEMPLATE_DIR='/home/shuang91/pylog/tcl_temps/'
+TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
 
 # list of supported boards
 supported_boards = [
@@ -56,7 +56,7 @@ class PLSysGen:
         'pl_freq':      config['freq'],
         'ip_name':      config['top_name'],
         'num_hp_ports': config['num_bundles'],
-        'bundle':       [ f'DATA_{i}' for i in range(config['num_bundles']) ]
+        'bundle':       [ f'data{i}' for i in range(config['num_bundles']) ]
         }
 
         hls_config = {
@@ -156,6 +156,9 @@ class PLSysGen:
 
         else:
             if self.target_board == 'aws_f1':
+                if 'RELEASE_VER' not in os.environ:
+                    print('Please source vitis_setup.sh first.')
+                    exit(-1)
                 if 'AWS_PLATFORM' in os.environ:
                     platform = os.environ['AWS_PLATFORM']
                 else:
