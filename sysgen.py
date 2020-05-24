@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import time
 import jinja2
 import subprocess
 
@@ -202,15 +203,15 @@ class PLSysGen:
 
                 print("Start creating Amazon FPGA Image (AFI)...")
                 process = subprocess.call(
-                    f"cd {project_path}; " + \
-                    f"{vitis_dir}/tools/create_vitis_afi.sh " + \
-                    f"-xclbin={project_name}.xclbin" + \
-                    f"-o={project_name}" + \
-                    f"-s3_bucket={s3_bucket} -s3_dcp_key={s3_dcp} " + \
-                    f"-s3_logs_key={s3_logs} cd -;",
+                    f" cd {project_path}; " + \
+                    f" {vitis_dir}/tools/create_vitis_afi.sh " + \
+                    f" -xclbin={project_name}.xclbin " + \
+                    f" -o={project_name} " + \
+                    f" -s3_bucket={s3_bucket} -s3_dcp_key={s3_dcp} " + \
+                    f" -s3_logs_key={s3_logs}; cd -;",
                     shell=True)
 
-                print("Amazon FPGA Image (AFI) creation done. ")
+                print("Amazon FPGA Image (AFI) creation requested. ")
 
                 list_of_files = glob.glob(f'{project_path}/*_afi_id.txt')
                 latest_afi = max(list_of_files, key=os.path.getctime)
@@ -218,9 +219,16 @@ class PLSysGen:
                 afi_id = self.get_afi_id(latest_afi)
                 status = self.get_afi_status(afi_id)
 
+                print("Waiting for Amazon FPGA Image (AFI) creation... ")
+
                 while status == 'pending':
-                    sleep(10)
+                    time.sleep(10)
                     status = self.get_afi_status(afi_id)
+
+                if status == 'available':
+                    print("Amazon FPGA Image (AFI) creation done. ")
+                else:
+                    print(f"Error in AFI creation. Status: {status}. ")
 
 if __name__ == '__main__':
     plsysgen = PLSysGen(board='ultra96')

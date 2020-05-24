@@ -64,7 +64,8 @@ class PLCodeGenerator:
 
     def codegen(self, node, config=None):
         self.cc += self.visit(node, config)
-        self.ccode = self.include_code() + self.cc.cgen()
+        self.ccode = self.include_code() + 'extern "C" {\n' + \
+                                            self.cc.cgen()+'\n}\n'
         return self.ccode
 
     def include_code(self):
