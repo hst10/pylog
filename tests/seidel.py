@@ -1,13 +1,12 @@
 from pylog import *
 #import numpy as np
 
-# Based on polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.c
+# Based on polybench/stencils/seidel/seidel.c
 N=1000
 NUM_ITER=20
-#definition follows STANDARD_DATASERT in polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.h
 
-@pylog(mode='hwgen',board='zedboard')
-def pl_jacobi2D(input, temp, output):
+@pylog
+def pl_seidel(input, temp, output):
 
     def init_array(A, B, C):
         for i in range(1000):#TODO: replace hard coded with N
@@ -16,14 +15,18 @@ def pl_jacobi2D(input, temp, output):
                 B[i, j] = (i * (j + 2) + 2 + 0.0) / 1000#TODO: replace hard coded with N
                 C[i, j] = (i * (j + 2) + 2 + 0.0) / 1000#TODO: replace hard coded with N
 
-
     def kernel_jacobi_2d(A, B):
         for i in range(1,1000-1):#TODO: replace hard coded with N
             for j in range(1,1000-1):#TODO: replace hard coded with N
                 B[i,j]=0.2*(A[i,j]+A[i,j-1]+A[i,j+1]+A[i+1,j]+A[i-1,j])
 
     def kernel_jacobi_2d_slicing(A, B):
-        B[1:1000-1,1:1000-1]=0.2*(A[1:1000-1,1:1000-1]+A[1:1000-1,1-1:1000-1-1]+A[1:1000-1,1+1:1000-1+1]+A[1+1:1000-1+1,1:1000-1]+A[1-1:1000-1-1,1:1000-1])#TODO: replace hard coded with N
+        B[1:1000 - 1, 1:1000 - 1] = 0.2 * (A[1:1000 - 1, 1:1000 - 1] + A[1:1000 - 1, 1 - 1:1000 - 1 - 1] + A[1:1000 - 1,
+                                                                                                           1 + 1:1000 - 1 + 1] + A[
+                                                                                                                                 1 + 1:1000 - 1 + 1,
+                                                                                                                                 1:1000 - 1] + A[
+                                                                                                                                               1 - 1:1000 - 1 - 1,
+                                                                                                                                               1:1000 - 1])  # TODO: replace hard coded with N
 
     def kernel_seidel_2d(A, B):
         for i in range(2,1000-2):#TODO: replace hard coded with N
@@ -38,17 +41,17 @@ def pl_jacobi2D(input, temp, output):
     if 20==0:#TODO: replace hard coded with NUM_ITER
         return 0
     if 20%2==0:#TODO: replace hard coded with NUM_ITER
-        kernel_jacobi_2d(input, temp)
-        kernel_jacobi_2d(temp, output)
+        kernel_seidel_2d(input, temp)
+        kernel_seidel_2d(temp, output)
         for idx_iter in range(2,20):#TODO: replace hard coded with NUM_ITER
-            kernel_jacobi_2d(output, temp)
-            kernel_jacobi_2d(temp, output)
+            kernel_seidel_2d(output, temp)
+            kernel_seidel_2d(temp, output)
         return 0
     else:
-        kernel_jacobi_2d(input,output)
+        kernel_seidel_2d(input,output)
         for idx_iter in range(1,20):#TODO: replace hard coded with NUM_ITER
-            kernel_jacobi_2d(output, temp)
-            kernel_jacobi_2d(temp,output)
+            kernel_seidel_2d(output, temp)
+            kernel_seidel_2d(temp,output)
         return 0
 
 if __name__=="__main__":
@@ -60,7 +63,7 @@ if __name__=="__main__":
     # temp=np.zeros([N,N],dtype=np.single)
     # output=np.zeros([N,N],dtype=np.single)
 
-    pl_jacobi2D(input, temp, output)
+    pl_seidel(input, temp, output)
     # import seaborn as sns
     # import matplotlib.pylab as plt
     #

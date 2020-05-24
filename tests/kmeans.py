@@ -5,8 +5,8 @@ import math
 
 
 #Based on heterocl/samples/kmeans/kmeans_main.py
-@pylog#(mode='pysim')
-def pl_kmeans(points, means, labels):#, num_point, dim, num_cluster, num_iter):
+@pylog(mode='hwgen',board='zedboard')
+def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_point, dim, num_cluster, num_iter):
     dim=32
     num_point=40
     num_cluster=5
@@ -22,21 +22,30 @@ def pl_kmeans(points, means, labels):#, num_point, dim, num_cluster, num_iter):
         for idx in range(num_cluster):
             cluster_num_element[idx]=0
 
+    def clear1D_float(tmp_distance, dim):
+        for idx in range(dim):
+            tmp_distance[idx]=0.0
+
     def clear2D(means,num_cluster,dim):
         for idx_cluster in range(num_cluster):
             for idx_dim in range(dim):
                 means[idx_cluster,idx_dim]=0.0
 
-    tmp_distance=np.zeros(dim,dtype=np.single)
-    cluster_num_element=np.zeros(num_cluster,dtype=np.int32)
+
 
     for idx_iter in range(num_iter):
         #assign cluster
         for idx_point in range(num_point):
             label = -1
-            min_dist = math.inf
+            min_dist = 3.402823466e+38#TODO:Support math.inf
             for idx_cluster in range(num_cluster):
-                curr_dist = dist(points[idx_point],means[idx_cluster],tmp_distance,dim)
+                #curr_dist = dist(points[idx_point,:],means[idx_cluster,:],tmp_distance,dim)#TODO: remove the redundant ",:"
+                #TODO: use dist instead
+                curr_dist = 0.0
+                for idx in range(dim):
+                    tmp_distance[idx] = points[idx_point,idx] - means[idx_cluster,idx]
+                    curr_dist += tmp_distance[idx] * tmp_distance[idx]#TODO: support **2
+                #TODO: use dist instead end
                 if curr_dist<min_dist:
                     min_dist=curr_dist
                     label=idx_cluster
@@ -68,5 +77,10 @@ if __name__=="__main__":
     num_cluster = 5
     points=np.random.rand(num_point,dim).astype(np.single)
     means=points[random.sample(range(num_point),num_cluster),:]
-    labels = np.zeros(num_point,dtype=np.int32)
-    pl_kmeans(points, means, labels)#, num_point,dim,num_cluster,num_iter)
+    #labels = np.zeros(num_point,dtype=np.int32)#TODO: use np.zeros instead
+    labels = np.empty(num_point, dtype=np.int32)
+    # tmp_distance=np.zeros(dim,dtype=np.single)#TODO: use np.zeros instead
+    # cluster_num_element=np.zeros(num_cluster,dtype=np.int32)#TODO: use np.zeros instead
+    tmp_distance = np.empty(dim, dtype=np.float)  # TODO: use np.single instead
+    cluster_num_element = np.empty(num_cluster, dtype=np.int32)
+    pl_kmeans(points, means, labels, tmp_distance, cluster_num_element)#, num_point,dim,num_cluster,num_iter)
