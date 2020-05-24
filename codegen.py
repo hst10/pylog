@@ -55,10 +55,12 @@ class CCode:
 
 
 class PLCodeGenerator:
-    def __init__(self, arg_info=None, debug=False):
+    def __init__(self, arg_info=None, board='ultra96', debug=False):
         self.cc = CCode(debug=debug)
         self.arg_info = arg_info
         self.debug = debug
+        self.board = board
+        self.num_mem_ports = 4
 
     def codegen(self, node, config=None):
         self.cc += self.visit(node, config)
@@ -438,7 +440,10 @@ class PLCodeGenerator:
                 self.top_func_name = node.name
 
                 if self.arg_info != None:
-                    max_idx = insert_interface_pragmas(fd.body, self.arg_info)
+                    max_idx = insert_interface_pragmas(
+                                    compound_node=fd.body,
+                                    interface_info=self.arg_info,
+                                    num_mem_ports=self.num_mem_ports)
                     self.max_idx = max_idx
                 return fd
         else:

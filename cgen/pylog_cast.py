@@ -134,7 +134,7 @@ def insert_pragma(compound_node, pragma=None, attr=None, pragma_str=None):
                                                            if attr else '')) ]
     compound_node.block_items = pragmas + compound_node.block_items
 
-def insert_interface_pragmas(compound_node, interface_info, num_hp_ports=4):
+def insert_interface_pragmas(compound_node, interface_info, num_mem_ports=4):
     pragma_strs = []
     data_bundle_idx = -1
     max_bundle_idx  = -1
@@ -144,7 +144,7 @@ def insert_interface_pragmas(compound_node, interface_info, num_hp_ports=4):
             pragma_strs.append(f'INTERFACE s_axilite register port={key} '+\
                                f'bundle=CTRL')
         else:
-            data_bundle_idx = (data_bundle_idx + 1) % num_hp_ports
+            data_bundle_idx = (data_bundle_idx + 1) % num_mem_ports
             max_bundle_idx = max(max_bundle_idx, data_bundle_idx)
             pragma_strs.append(f'INTERFACE m_axi port={key} offset=slave '+\
                                f'bundle=DATA_{data_bundle_idx}')

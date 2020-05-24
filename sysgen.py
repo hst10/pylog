@@ -1,4 +1,6 @@
 import os
+import glob
+import json
 import jinja2
 import subprocess
 
@@ -8,7 +10,11 @@ TEMPLATE_DIR='/home/shuang91/pylog/tcl_temps/'
 supported_boards = [
     'zedboard',
     'pynq',
-    'ultra96'
+    'ultra96',
+    'aws_f1',
+    'alveo_u200',
+    'alveo_u250',
+    'alveo_u280'
 ]
 
 # An example config:
@@ -29,6 +35,9 @@ class PLSysGen:
         if board not in supported_boards:
             print(f'{board} is not supported. Using pynq as target. ')
             self.target_board = 'pynq'
+
+        self.using_vitis = (board == 'aws_f1' or board.startswith('alveo'))
+
 
     def gen_configs(self, config=None):
         '''generate configs for Vivado and Vivado HLS tcl templates'''
@@ -59,6 +68,23 @@ class PLSysGen:
 
         return vivado_config, hls_config
 
+    def get_afi_id(self, txt_file):
+        with open(txt_file) as f:
+            content = f.read()
+            data = json.loads(content)
+            return data['FpgaImageId']
+
+    def get_afi_status(self, afi_id):
+        info = subprocess.Popen(
+            f'aws ec2 describe-fpga-images --fpga-image-ids {afi_id}',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,
+                                     shell=True)
+        stdout, stderr = info.communicate()
+        data = json.loads(stdout)
+        status = data['FpgaImages'][0]['State']['Code']
+        return status
+
     def generate_system(self, config):
         if config is None:
             config = self.config
@@ -84,13 +110,14 @@ class PLSysGen:
 
         print(output_text, file=open(hls_tcl_script, "w"))
 
-        vivado_template = f"{self.target_board}_vivado.tcl.jinja"
-        template = template_env.get_template(vivado_template)
-        output_text = template.render(vivado_config)
+        if not self.using_vitis:
+            vivado_template = f"{self.target_board}_vivado.tcl.jinja"
+            template = template_env.get_template(vivado_template)
+            output_text = template.render(vivado_config)
 
-        vivado_tcl_script = f"{project_path}/run_vivado.tcl"
+            vivado_tcl_script = f"{project_path}/run_vivado.tcl"
 
-        print(output_text, file=open(vivado_tcl_script, "w"))
+            print(output_text, file=open(vivado_tcl_script, "w"))
 
         process = subprocess.call(
             f"cd {project_path}; " + \
@@ -98,30 +125,102 @@ class PLSysGen:
             f"cd -;",
             shell=True)
 
-        process = subprocess.call(
-            f"cd {project_path}; " + \
-            f"vivado -mode batch -source {vivado_tcl_script}; " + \
-            f"cd -;",
-            shell=True)
+        if not self.using_vitis:
+            process = subprocess.call(
+                f"cd {project_path}; " + \
+                f"vivado -mode batch -source {vivado_tcl_script}; " + \
+                f"cd -;",
+                shell=True)
 
-        print("project_path = ", project_path)
+            print("project_path = ", project_path)
 
-        process = subprocess.call(
-            f"cd {project_path}; " + \
-            f"cp ./{project_name}_{self.target_board}_vivado/" + \
-            f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+\
-            f"design_1_wrapper.bit ./{project_name}_{self.target_board}.bit;"+\
-            f"cd -;",
-            shell=True)
+            process = subprocess.call(
+                f"cd {project_path}; " + \
+                f"cp ./{project_name}_{self.target_board}_vivado/" + \
+                f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+ \
+                f"design_1_wrapper.bit " + \
+                f"./{project_name}_{self.target_board}.bit;" + \
+                f"cd -;",
+                shell=True)
 
-        process = subprocess.call(
-            f"cd {project_path}; " + \
-            f"cp ./{project_name}_{self.target_board}_vivado/" + \
-            f"{project_name}_{self.target_board}_vivado.srcs/sources_1/bd/" + \
-            f"design_1/hw_handoff/design_1.hwh " + \
-            f" ./{project_name}_{self.target_board}.hwh; " + \
-            f"cd -;",
-            shell=True)
+            process = subprocess.call(
+                f"cd {project_path}; " + \
+                f"cp ./{project_name}_{self.target_board}_vivado/" + \
+                f"{project_name}_{self.target_board}_vivado.srcs/" + \
+                f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
+                f" ./{project_name}_{self.target_board}.hwh; " + \
+                f"cd -;",
+                shell=True)
+
+        else:
+            if self.target_board == 'aws_f1':
+                if 'AWS_PLATFORM' in os.environ:
+                    platform = os.environ['AWS_PLATFORM']
+                else:
+                    print("Please set $AWS_PLATFORM to platform file path.")
+                    exit(-1)
+
+                if 'VITIS_DIR' in os.environ:
+                    vitis_dir = os.environ['VITIS_DIR']
+                else:
+                    print("Please set $VITIS_DIR to AWS Vitis directory.")
+                    exit(-1)
+
+                if 'S3_BUCKET' in os.environ:
+                    s3_bucket = os.environ['S3_BUCKET']
+                else:
+                    print("Please set $S3_BUCKET to S3 bucket name.")
+                    exit(-1)
+
+                if 'S3_DCP' in os.environ:
+                    s3_dcp = os.environ['S3_DCP']
+                else:
+                    print("Please set $S3_DCP to S3 dcp directory name.")
+                    exit(-1)
+
+                if 'S3_LOGS' in os.environ:
+                    s3_logs = os.environ['S3_LOGS']
+                else:
+                    print("Please set $S3_LOGS to S3 logs directory name.")
+                    exit(-1)
+
+
+            elif self.target_board == 'alveo_u200':
+                platform = 'xilinx_u200_xdma_201830_2'
+            elif self.target_board == 'alveo_u250':
+                platform = 'xilinx_u250_xdma_201830_2'
+            elif self.target_board == 'alveo_u280':
+                platform = 'xilinx_u280_xdma_201920_3'
+
+            process = subprocess.call(
+                f"cd {project_path}; " + \
+                f"v++ -t hw --platform {platform} --link {project_name}.xo "+\
+                f"-o {project_name}.xclbin; cd -;",
+                shell=True)
+
+            if self.target_board == 'aws_f1':
+
+                print("Start creating Amazon FPGA Image (AFI)...")
+                process = subprocess.call(
+                    f"cd {project_path}; " + \
+                    f"{vitis_dir}/tools/create_vitis_afi.sh " + \
+                    f"-xclbin={project_name}.xclbin" + \
+                    f"-o={project_name}" + \
+                    f"-s3_bucket={s3_bucket} -s3_dcp_key={s3_dcp} " + \
+                    f"-s3_logs_key={s3_logs} cd -;",
+                    shell=True)
+
+                print("Amazon FPGA Image (AFI) creation done. ")
+
+                list_of_files = glob.glob(f'{project_path}/*_afi_id.txt')
+                latest_afi = max(list_of_files, key=os.path.getctime)
+
+                afi_id = self.get_afi_id(latest_afi)
+                status = self.get_afi_status(afi_id)
+
+                while status == 'pending':
+                    sleep(10)
+                    status = self.get_afi_status(afi_id)
 
 if __name__ == '__main__':
     plsysgen = PLSysGen(board='ultra96')

@@ -26,9 +26,11 @@ TARGET_ADDR = 'xilinx@192.168.0.118'
 TARGET_BASE = '/home/xilinx/pylog_projects'
 WORKSPACE   = HOST_BASE
 
-def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
+def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
+          board='ultra96', freq=None):
     if func is None:
-        return functools.partial(pylog, mode=mode, path=path, board=board)
+        return functools.partial(pylog, mode=mode,   path=path,\
+                                        board=board, freq=freq)
 
     code_gen   = ('cgen' or 'codegen') in mode
     hwgen      = 'hwgen' in mode
@@ -37,6 +39,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     debug      = 'debug' in mode
     timing     = 'timing' in mode
     viz        = 'viz' in mode
+
+    if freq is None:
+        if (board == 'aws_f1' or board.startswith('alveo')):
+            freq = 200.0
+        else:
+            freq = 100.0
 
     if pysim_only:
         return func
@@ -71,15 +79,19 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
 
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
-        project_path, top_func, max_idx = pylog_compile(source_func, arg_info,
-                                                        path=path, debug=debug,
-                                                        viz=viz)
+        project_path, top_func, max_idx = pylog_compile(
+                                            src=source_func,
+                                            arg_info=arg_info,
+                                            board=board,
+                                            path=path,
+                                            debug=debug,
+                                            viz=viz)
 
         config = {
             'workspace_base': WORKSPACE,
             'project_name': top_func,
             'project_path': project_path,
-            'freq':         125.00,
+            'freq':         freq,
             'top_name':     top_func,
             'num_bundles':  max_idx,
             'timing':       timing,
@@ -116,7 +128,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, board='ultra96'):
     return wrapper
 
 
-def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
+def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
@@ -129,7 +141,7 @@ def pylog_compile(src, arg_info, path=HOST_BASE, debug=False, viz=False):
     analyzer  = PLAnalyzer(debug=debug)
     typer     = PLTyper(arg_info, debug=debug)
     optimizer = PLOptimizer(debug=debug)
-    codegen   = PLCodeGenerator(arg_info, debug=debug)
+    codegen   = PLCodeGenerator(arg_info, board, debug=debug)
 
     # execute passes
     if debug:
