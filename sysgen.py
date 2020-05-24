@@ -64,7 +64,8 @@ class PLSysGen:
         'hls_project_name':f"{config['project_name']}_{self.target_board}_hls",
         'hls_top':         config['top_name'],
         'hls_file_name':   config['top_name'] + '.cpp',
-        'hls_freq':        config['freq']
+        'hls_freq':        config['freq'],
+        'hls_board':       self.target_board
         }
 
         return vivado_config, hls_config
@@ -194,9 +195,10 @@ class PLSysGen:
                 platform = 'xilinx_u280_xdma_201920_3'
 
             process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"v++ -t hw --platform {platform} --link {project_name}.xo "+\
-                f"-o {project_name}.xclbin; cd -;",
+                f" cd {project_path}; " + \
+                f" v++ -t hw --platform {platform} " + \
+                f" --link {project_name}_{self.target_board}.xo "+\
+                f" -o {project_name}_{self.target_board}.xclbin; cd -;",
                 shell=True)
 
             if self.target_board == 'aws_f1':
@@ -205,8 +207,8 @@ class PLSysGen:
                 process = subprocess.call(
                     f" cd {project_path}; " + \
                     f" {vitis_dir}/tools/create_vitis_afi.sh " + \
-                    f" -xclbin={project_name}.xclbin " + \
-                    f" -o={project_name} " + \
+                    f" -xclbin={project_name}_{self.target_board}.xclbin " + \
+                    f" -o={project_name}_{self.target_board} " + \
                     f" -s3_bucket={s3_bucket} -s3_dcp_key={s3_dcp} " + \
                     f" -s3_logs_key={s3_logs}; cd -;",
                     shell=True)

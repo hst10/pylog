@@ -108,19 +108,31 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
             process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
                                       shell=True)
 
-            bit_file = f'{top_func}/{top_func}_{board}.bit'
-            hwh_file = f'{top_func}/{top_func}_{board}.hwh'
+            if board == 'aws_f1' or board.startswith('alveo'):
 
-            if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
-                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{bit_file} " + \
-                                          f"{TARGET_BASE}/{top_func}/", \
-                                          shell=True)
-            if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
-                process = subprocess.call(f"scp -r {HOST_ADDR}:{HOST_BASE}/"+\
-                                          f"{hwh_file} " + \
-                                          f"{TARGET_BASE}/{top_func}/",
-                                          shell=True)
+                ext = 'awsxclbin' if (board == 'aws_f1') else 'xclbin'
+
+                xclbin = f'{top_func}/{top_func}_{board}.{ext}'
+
+                if not os.path.exists(f'{TARGET_BASE}/{xclbin}'):
+                    process = subprocess.call(
+                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{xclbin} " + \
+                        f"{TARGET_BASE}/{top_func}/", shell=True)
+
+            else:
+
+                bit_file = f'{top_func}/{top_func}_{board}.bit'
+                hwh_file = f'{top_func}/{top_func}_{board}.hwh'
+
+                if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
+                    process = subprocess.call(
+                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
+                        f"{TARGET_BASE}/{top_func}/", shell=True)
+
+                if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
+                    process = subprocess.call(
+                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
+                        f"{TARGET_BASE}/{top_func}/", shell=True)
 
             plrt = PLRuntime(config)
             return plrt.call(args)

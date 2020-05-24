@@ -15,6 +15,6 @@ config_schedule -enable_dsp_full_reg
 # csim_design
 
 csynth_design
-export_design -format ip_catalog -version "1.0" -xo {{ hls_base_path }}/{{hls_top}}.xo
+export_design -format ip_catalog -version "1.0" -xo {{ hls_base_path }}/{{hls_top}}_{{hls_board}}.xo
 
 exit
