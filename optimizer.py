@@ -134,14 +134,29 @@ class PLOptMapTransformer:
 
         return target
 
+    def filter_none(self, lst):
+        return list(filter(None, lst))
 
     def visit_list(self, node, config=None):
-        return [ self.visit(item, config) for item in node ]
+        stmt_list = []
+
+        for e in node:
+            stmt = self.visit(e, config)
+            if isinstance(stmt, list):
+                stmt_list += stmt
+            else:
+                stmt_list.append(stmt)
+        return self.filter_none(stmt_list)
 
     def visit_PLVariable(self, node, config=None):
         if (config is not None) and ('arg_map' in config):
             if node.name in config['arg_map']:
                 return config['arg_map'][node.name]
+        return node
+
+    def visit_PLAssign(self, node, config=None):
+        if isinstance(node.value, PLDot):
+            return self.visit(node.value)
         return node
 
     def visit_PLLambda(self, node, config=None):
@@ -206,6 +221,76 @@ class PLOptMapTransformer:
                            orelse=[]) ]
 
         return stmt[0]
+
+    def visit_PLDot(self, node, config=None):
+
+        op_type  = node.op_type
+        op_shape = node.op_shape
+
+        tmp_var = PLVariable('tmp_dot')
+
+        tmp_var.pl_type  = PLType(ty=op_type.ty, dim=0)
+        tmp_var.pl_shape = ()
+
+        var_decl = PLVariableDecl(ty=op_type.ty,
+                                  name=tmp_var,
+                                  init=PLConst(0))
+
+        var_decl.pl_type  = PLType(ty=op_type.ty, dim=0)
+        var_decl.pl_shape = ()
+
+        op1_subs = self.get_subscript(node.op1, 'i_dot_', config)
+        op2_subs = self.get_subscript(node.op2, 'i_dot_', config)
+
+        op1_subs.pl_type  = PLType(ty=op_type.ty, dim=0)
+        op1_subs.pl_shape = (1 for i in range(len(node.op1.pl_shape)))
+        op2_subs.pl_type  = PLType(ty=op_type.ty, dim=0)
+        op2_subs.pl_shape = (1 for i in range(len(node.op2.pl_shape)))
+
+        mult = PLBinOp(op='*',
+                       left=op1_subs,
+                       right=op2_subs)
+
+        mult.pl_type  = PLType(ty=op_type.ty, dim=0)
+        mult.pl_shape = ()
+
+        stmt = [ PLAssign(op='+=',
+                          target=tmp_var,
+                          value=mult) ]
+
+        stmt[0].pl_type  = PLType(ty=op_type.ty, dim=0)
+        stmt[0].pl_shape = ()
+        stmt[0].is_decl  = False
+
+        for i in range(len(op_shape)-1, -1, -1):
+
+            target = PLVariable(f'i_dot_{i}')
+            target.pl_type  = PLType('int', 0)
+            target.pl_shape = ()
+
+            stmt = [ PLFor(target=target,
+                           iter_dom=PLIterDom(end=PLConst(op_shape[i])),
+                           body=stmt,
+                           orelse=[]) ]
+
+        # write back to target
+
+        if node.target:
+            target = node.target
+        else:
+            raise NotImplementedError
+
+        write_back = PLAssign(op='=',
+                              target=target,
+                              value=tmp_var)
+        write_back.pl_type = PLType(ty=node.pl_type.ty, dim=0)
+        write_back.pl_shape = ()
+        write_back.is_decl  = False
+
+        return [ var_decl, stmt[0], write_back ]
+        # return stmt[0]
+
+
 
 
 class PLOptimizer:

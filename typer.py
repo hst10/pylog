@@ -498,6 +498,24 @@ class PLTyper:
         node.pl_type  = map_return_type
         node.pl_shape = map_return_shape
 
+    def visit_PLDot(self, node, ctx={}):
+        self.visit(node.op1, ctx)
+        self.visit(node.op2, ctx)
+
+        op1_actual_shape = self.actual_shape(node.op1.pl_shape)
+        op2_actual_shape = self.actual_shape(node.op2.pl_shape)
+
+        assert(op1_actual_shape == op2_actual_shape)
+
+        node.op_type = PLType(ty=node.op1.pl_type.ty,
+                              dim=op1_actual_shape)
+        node.op_shape = op1_actual_shape
+
+        node.pl_type  = PLType(node.op1.pl_type.ty, 0)
+        node.pl_shape = ()
+
+        node.return_type  = PLType(node.op1.pl_type.ty, 0)
+        node.return_shape = ()
 
     # def visit_PLAttribute(self, node, ctx={}):
 

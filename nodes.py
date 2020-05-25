@@ -526,6 +526,17 @@ class PLMap(PLNode):
         self.func   = func
         self.arrays = arrays
 
+class PLDot(PLNode):
+    ''' pldot
+    '''
+    def __init__(self, target, op1, op2, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['target', 'op1', 'op2']
+        self.target = target
+        self.op1 = op1
+        self.op2 = op2
+
+
 # class PLMap(PLNode):
 #     def __init__(self, ast_node=None, config=None):
 #         PLNode.__init__(self, ast_node, config)

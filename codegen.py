@@ -330,7 +330,6 @@ class PLCodeGenerator:
                               rvalue=self.visit(node.value, config))
         elif assign_dim > 0:
             if isinstance(node.value, (PLConst, PLVariable)):
-
                 if isinstance(node.value, PLVariable):
                     rvalue = self.get_subscript(node.value, 'i_asg_', config)
                 else:
@@ -353,8 +352,14 @@ class PLCodeGenerator:
                 asgm = stmt[0]
 
             else:
-                node.value.assign_target = node.target
-                node.value.assign_op     = node.op
+                if isinstance(node.value, list):
+                    for obj in node.value:
+                        obj.assign_target = node.target
+                        obj.assign_op     = node.op
+                elif isinstance(node.value, list):
+                    node.value.assign_target = node.target
+                    node.value.assign_op     = node.op
+
                 asgm = self.visit(node.value, config)
                 # not explicitly generate Assignment
         else:
@@ -522,6 +527,30 @@ class PLCodeGenerator:
         return stmt[0]
 
 
-    '''TODO'''
-    def visit_PLDot(self, node, config=None):
-        pass
+    # '''TODO'''
+    # def visit_PLDot(self, node, config=None):
+
+    #     var_decl = PLVariableDecl(ty=node.pl_type.ty,
+    #                               name=PLVariable('tmp_dot'),
+    #                               init=PLConst(0))
+
+    #     op1_subs = self.get_subscript(node.op1, 'i_dot_', True, config)
+    #     op2_subs = self.get_subscript(node.op2, 'i_dot_', True, config)
+
+    #     mult = PLBinOp(op='*',
+    #                    left=op1_subs,
+    #                    right=op2_subs)
+
+    #     stmt = [ PLAssign(op='+=',
+    #                       target=PLVariable('tmp_dot'),
+    #                       value=mult) ]
+
+    #     for i in range(len(node.pl_shape)-1, -1, -1):
+    #         stmt = [ simple_for(iter_var=f'i_dot_{i}',
+    #                             start=int32(0),
+    #                             op='<',
+    #                             end=int32(node.pl_shape[i]),
+    #                             step=int32(1),
+    #                             stmt_lst=stmt) ]
+
+    #     return stmt[0]
