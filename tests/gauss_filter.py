@@ -18,6 +18,7 @@ def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
                 in_image[i,j]=(i*j+0.0)/192#TODO: replace hard coded with M
         for i in range(4):
             Gauss[i]=i
+        return 0 #TODO: compiler signature return type void if no return
 
     def compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
         t=192#TODO: replace hard coded with T
@@ -40,6 +41,8 @@ def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
                 for k in range(t-1,t+2):
                     g_acc2[x,y,k+2-t]=g_acc2[x,y,k+1-t]+g_tmp_image[x,y+k-t]*Gauss[k-t+1]
                 gauss_image[x,y]=g_acc2[x,y,3]/tot[3]
+        return 0  #TODO: compiler signature return type void if no return
+
     init_array(in_image,Gauss)
     compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image)
 
@@ -64,16 +67,13 @@ if __name__=="__main__":
     # g_acc2=np.zeros([N,M,4],dtype=np.single)
     # in_image=np.zeros([N,M],dtype=np.single)
     # gauss_image=np.zeros([N,M],dtype=np.single)
-<<<<<<< HEAD
+
     pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
     np.save(os.path.join("tests","golden_reference","gauss_filter_in_image"),in_image)
     np.save(os.path.join("tests","golden_reference","gauss_filter_Gauss"),Gauss)
-    np.save(os.path.join("tests","golden_reference","gauss_filter_labels"),labels)
     np.save(os.path.join("tests","golden_reference","gauss_filter_gauss_image"),gauss_image)
     np.save(os.path.join("tests","golden_reference","gauss_filter_g_acc1"),g_acc1)
     np.save(os.path.join("tests","golden_reference","gauss_filter_g_acc2"),g_acc2)
     np.save(os.path.join("tests","golden_reference","gauss_filter_tot"),tot)
     np.save(os.path.join("tests","golden_reference","gauss_filter_g_tmp_image"),g_tmp_image)
-=======
-    pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
->>>>>>> 12b4b4ce8bc602e39b84a140dc39eff95842911f
+

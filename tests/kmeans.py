@@ -21,15 +21,18 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
     def clear1D(cluster_num_element, num_cluster):
         for idx in range(num_cluster):
             cluster_num_element[idx]=0
+        return 0 #TODO: compiler signature return type void if no return
 
     def clear1D_float(tmp_distance, dim):
         for idx in range(dim):
             tmp_distance[idx]=0.0
+        return 0 #TODO: compiler signature return type void if no return
 
     def clear2D(means,num_cluster,dim):
         for idx_cluster in range(num_cluster):
             for idx_dim in range(dim):
                 means[idx_cluster,idx_dim]=0.0
+        return 0 #TODO: compiler signature return type void if no return
 
 
 

@@ -16,11 +16,13 @@ def pl_seidel(input, temp, output):
                 A[i,j]=(i*(j+2)+2+0.0)/100#TODO: replace hard coded with N
                 B[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
                 C[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
+        return 0  #TODO: compiler signature return type void if no return
 
     def kernel_jacobi_2d(A, B):
         for i in range(1,100-1):#TODO: replace hard coded with N
             for j in range(1,100-1):#TODO: replace hard coded with N
                 B[i,j]=0.2*(A[i,j]+A[i,j-1]+A[i,j+1]+A[i+1,j]+A[i-1,j])
+        return 0 #TODO: compiler signature return type void if no return
 
     def kernel_jacobi_2d_slicing(A, B):
         B[1:100 - 1, 1:100 - 1] = 0.2 * (A[1:100 - 1, 1:100 - 1] + A[1:100 - 1, 1 - 1:100 - 1 - 1] + A[1:100 - 1,
@@ -29,15 +31,17 @@ def pl_seidel(input, temp, output):
                                                                                                                                  1:100 - 1] + A[
                                                                                                                                                1 - 1:100 - 1 - 1,
                                                                                                                                                1:100 - 1])  # TODO: replace hard coded with N
+        return 0 #TODO: compiler signature return type void if no return
 
     def kernel_seidel_2d(A, B):
         for i in range(2,100-2):#TODO: replace hard coded with N
             for j in range(2,100-2):#TODO: replace hard coded with N
                 B[i,j]=(A[i-1,j-1]+A[i-1,j]+A[i-1,j+1]+A[i,j-1]+A[i,j]+A[i,j+1]+A[i+1,j-1]+A[i+1,j]+A[i+1,j+1])/9.0
+        return 0 #TODO: compiler signature return type void if no return
 
     def kernel_seidel_2d_slicing(A, B):
         B[2:100-2,2:100-2]=(A[2-1:100-2-1,2-1:100-2-1]+A[2-1:100-2-1,2:100-2]+A[2-1:100-2-1,2+1:100-2+1]+A[2:100-2,2-1:100-2-1]+A[2:100-2,2:100-2]+A[2:100-2,2+1:100-2+1]+A[2+1:100-2+1,2-1:100-2-1]+A[2+1:100-2+1,2:100-2]+A[2+1:100-2+1,2+1:100-2+1])/9.0#TODO: replace hard coded with N
-
+        return 0 #TODO: compiler signature return type void if no return
 
     init_array(input, temp, output)
     if 20==0:#TODO: replace hard coded with NUM_ITER
