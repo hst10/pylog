@@ -132,6 +132,7 @@ class PLCodeGenerator:
         elif isinstance(node.value, str):
             return node.value
         else:
+            print(f'visit_PLConst: Type: {type(node.value)}')
             raise NotImplementedError
 
     # def visit_PLArray(self, node, config=None):
@@ -489,7 +490,6 @@ class PLCodeGenerator:
         target_subs = self.get_subscript(node.target, 'i_map_', \
                                          return_plnode=True, config=config)
         lambda_args = [ arg.name for arg in node.func.args ]
-        print(lambda_args)
 
         target_subs.pl_type  = PLType(node.pl_type.ty, 0)
         target_subs.pl_shape = ( 1 for i in node.pl_shape ) # assuming scalar

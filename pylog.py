@@ -52,8 +52,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
 
-        builtins = open('builtin.py').read()
-        source_func = builtins + textwrap.dedent(inspect.getsource(func))
+        # builtins = open('builtin.py').read()
+        source_func = textwrap.dedent(inspect.getsource(func))
         if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
 
@@ -166,7 +166,9 @@ def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
         print(pylog_ir)
 
     typer.visit(pylog_ir)
-    # optimizer.visit(pylog_ir)
+
+    # transform loop transformation and insert pragmas
+    optimizer.opt(pylog_ir)
 
     hls_c = codegen.codegen(pylog_ir)
 
