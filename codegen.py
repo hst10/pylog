@@ -64,8 +64,11 @@ class PLCodeGenerator:
 
     def codegen(self, node, config=None):
         self.cc += self.visit(node, config)
-        self.ccode = self.include_code() + 'extern "C" {\n' + \
-                                            self.cc.cgen()+'\n}\n'
+        if self.board == 'aws_f1' or self.board.startswith('alveo'):
+            self.ccode = self.include_code() + 'extern "C" {\n' + \
+                                                self.cc.cgen()+'\n}\n'
+        else:
+            self.ccode = self.include_code() + self.cc.cgen()
         return self.ccode
 
     def include_code(self):
