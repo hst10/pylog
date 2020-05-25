@@ -5,7 +5,7 @@ import math
 
 
 #Based on heterocl/samples/kmeans/kmeans_main.py
-@pylog(mode='hwgen',board='zedboard')
+@pylog(mode='deploytiming',board='zedboard')
 def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_point, dim, num_cluster, num_iter):
     dim=32
     num_point=40
@@ -65,7 +65,9 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
     return 0
 
 
-
+#@pylog(mode='deploy',board='zedboard')
+#def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element)
+#    return pl_kmeans_golden(points, means, labels, tmp_distance, cluster_num_element)
 
 
 
@@ -79,8 +81,15 @@ if __name__=="__main__":
     means=points[random.sample(range(num_point),num_cluster),:]
     #labels = np.zeros(num_point,dtype=np.int32)#TODO: use np.zeros instead
     labels = np.empty(num_point, dtype=np.int32)
+
+    np.save(os.path.join("tests","golden_reference","kmeans_points_init"),points)
+    np.save(os.path.join("tests","golden_reference","kmeans_means_init"),means)
+    np.save(os.path.join("tests","golden_reference","kmeans_labels_init"),labels)
     # tmp_distance=np.zeros(dim,dtype=np.single)#TODO: use np.zeros instead
     # cluster_num_element=np.zeros(num_cluster,dtype=np.int32)#TODO: use np.zeros instead
     tmp_distance = np.empty(dim, dtype=np.float)  # TODO: use np.single instead
     cluster_num_element = np.empty(num_cluster, dtype=np.int32)
     pl_kmeans(points, means, labels, tmp_distance, cluster_num_element)#, num_point,dim,num_cluster,num_iter)
+    np.save(os.path.join("tests","golden_reference","kmeans_points"),points)
+    np.save(os.path.join("tests","golden_reference","kmeans_means"),means)
+    np.save(os.path.join("tests","golden_reference","kmeans_labels"),labels)

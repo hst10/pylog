@@ -21,8 +21,8 @@ from runtime   import *
 import numpy as np
 
 HOST_ADDR   = 'shuang91@192.168.0.108'
-HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
-TARGET_ADDR = 'xilinx@192.168.0.118'
+HOST_BASE   = r'C:\Users\K.Wu\vivado_projects\pylog_projects'
+TARGET_ADDR = 'xilinx@192.168.2.99'
 TARGET_BASE = '/home/xilinx/pylog_projects'
 WORKSPACE   = HOST_BASE
 
@@ -52,7 +52,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
 
-        builtins = open('builtin.py').read()
+        builtins = open('../builtin.py').read()
         source_func = builtins + textwrap.dedent(inspect.getsource(func))
         if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
@@ -105,7 +105,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
             plsysgen.generate_system(config)
 
         if deploy:
-            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
+            process = subprocess.call("mkdir -p "+os.path.join(f"{TARGET_BASE}",f"{top_func}"), \
                                       shell=True)
 
             if board == 'aws_f1' or board.startswith('alveo'):
@@ -121,18 +121,15 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
             else:
 
-                bit_file = f'{top_func}/{top_func}_{board}.bit'
-                hwh_file = f'{top_func}/{top_func}_{board}.hwh'
 
-                if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
-                    process = subprocess.call(
-                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
-                        f"{TARGET_BASE}/{top_func}/", shell=True)
+                bit_file = os.path.join(f'{top_func}',f'{top_func}_{board}.bit')
+                hwh_file = os.path.join(f'{top_func}',f'{top_func}_{board}.hwh')
 
-                if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
-                    process = subprocess.call(
-                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
-                        f"{TARGET_BASE}/{top_func}/", shell=True)
+                if not os.path.exists(os.path.join(f'{TARGET_BASE}',f'{bit_file}')):
+                    process = subprocess.call("scp -r "+os.path.join(f"{HOST_BASE}",f"{bit_file} ")+" "+os.path.join(f"{TARGET_BASE}",f"{top_func}"),shell=True)
+                if not os.path.exists(os.path.join(f'{TARGET_BASE}',f'{hwh_file}')):
+                    process = subprocess.call("scp -r "+os.path.join(f"{HOST_BASE}",f"{hwh_file} ")+" "+os.path.join(f"{TARGET_BASE}",f"{top_func}"), shell=True)
+
 
             plrt = PLRuntime(config)
             return plrt.call(args)
@@ -174,14 +171,14 @@ def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
         print("Generated C Code:")
         print(hls_c)
 
-    project_path = f'{path}/{analyzer.top_func}'
+    project_path = os.path.join(f'{path}',f'{analyzer.top_func}')
 
     if not os.path.exists(project_path):
         os.makedirs(project_path)
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
 
-    output_file = f'{project_path}/{analyzer.top_func}.cpp'
+    output_file = os.path.join(f'{project_path}',f'{analyzer.top_func}.cpp')
     with open(output_file, 'w') as fout:
         fout.write(hls_c)
         print(f"HLS C code written to {output_file}")

@@ -2,36 +2,38 @@ from pylog import *
 #import numpy as np
 
 # Based on polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.c
-N=1000
-NUM_ITER=20
+#N=1000
+#NUM_ITER=20
 #definition follows STANDARD_DATASERT in polybench/stencils/jacobi-2d-imper/jacobi-2d-imper.h
+N=100
+NUM_ITER=20
 
-@pylog(mode='hwgen',board='zedboard')
+@pylog(mode='deploytiming',board='zedboard')
 def pl_jacobi2D(input, temp, output):
 
     def init_array(A, B, C):
-        for i in range(1000):#TODO: replace hard coded with N
-            for j in range(1000):#TODO: replace hard coded with N
-                A[i,j]=(i*(j+2)+2+0.0)/1000#TODO: replace hard coded with N
-                B[i, j] = (i * (j + 2) + 2 + 0.0) / 1000#TODO: replace hard coded with N
-                C[i, j] = (i * (j + 2) + 2 + 0.0) / 1000#TODO: replace hard coded with N
+        for i in range(100):#TODO: replace hard coded with N
+            for j in range(100):#TODO: replace hard coded with N
+                A[i,j]=(i*(j+2)+2+0.0)/100#TODO: replace hard coded with N
+                B[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
+                C[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
 
 
     def kernel_jacobi_2d(A, B):
-        for i in range(1,1000-1):#TODO: replace hard coded with N
-            for j in range(1,1000-1):#TODO: replace hard coded with N
+        for i in range(1,100-1):#TODO: replace hard coded with N
+            for j in range(1,100-1):#TODO: replace hard coded with N
                 B[i,j]=0.2*(A[i,j]+A[i,j-1]+A[i,j+1]+A[i+1,j]+A[i-1,j])
 
     def kernel_jacobi_2d_slicing(A, B):
-        B[1:1000-1,1:1000-1]=0.2*(A[1:1000-1,1:1000-1]+A[1:1000-1,1-1:1000-1-1]+A[1:1000-1,1+1:1000-1+1]+A[1+1:1000-1+1,1:1000-1]+A[1-1:1000-1-1,1:1000-1])#TODO: replace hard coded with N
+        B[1:100-1,1:100-1]=0.2*(A[1:100-1,1:100-1]+A[1:100-1,1-1:100-1-1]+A[1:100-1,1+1:100-1+1]+A[1+1:100-1+1,1:100-1]+A[1-1:100-1-1,1:100-1])#TODO: replace hard coded with N
 
     def kernel_seidel_2d(A, B):
-        for i in range(2,1000-2):#TODO: replace hard coded with N
-            for j in range(2,1000-2):#TODO: replace hard coded with N
+        for i in range(2,100-2):#TODO: replace hard coded with N
+            for j in range(2,100-2):#TODO: replace hard coded with N
                 B[i,j]=(A[i-1,j-1]+A[i-1,j]+A[i-1,j+1]+A[i,j-1]+A[i,j]+A[i,j+1]+A[i+1,j-1]+A[i+1,j]+A[i+1,j+1])/9.0
 
     def kernel_seidel_2d_slicing(A, B):
-        B[2:1000-2,2:1000-2]=(A[2-1:1000-2-1,2-1:1000-2-1]+A[2-1:1000-2-1,2:1000-2]+A[2-1:1000-2-1,2+1:1000-2+1]+A[2:1000-2,2-1:1000-2-1]+A[2:1000-2,2:1000-2]+A[2:1000-2,2+1:1000-2+1]+A[2+1:1000-2+1,2-1:1000-2-1]+A[2+1:1000-2+1,2:1000-2]+A[2+1:1000-2+1,2+1:1000-2+1])/9.0#TODO: replace hard coded with N
+        B[2:100-2,2:100-2]=(A[2-1:100-2-1,2-1:100-2-1]+A[2-1:100-2-1,2:100-2]+A[2-1:100-2-1,2+1:100-2+1]+A[2:100-2,2-1:100-2-1]+A[2:100-2,2:100-2]+A[2:100-2,2+1:100-2+1]+A[2+1:100-2+1,2-1:100-2-1]+A[2+1:100-2+1,2:100-2]+A[2+1:100-2+1,2+1:100-2+1])/9.0#TODO: replace hard coded with N
 
 
     init_array(input, temp, output)
@@ -51,6 +53,10 @@ def pl_jacobi2D(input, temp, output):
             kernel_jacobi_2d(temp,output)
         return 0
 
+#@pylog(mode='deploy',board='zedboard')
+#def pl_jacobi2D(input, temp, output):
+#    return pl_jacobi2D_golden(input, temp, output)
+
 if __name__=="__main__":
     input = np.empty([N, N], dtype=np.float)
     temp = np.empty([N, N], dtype=np.float)
@@ -61,6 +67,9 @@ if __name__=="__main__":
     # output=np.zeros([N,N],dtype=np.single)
 
     pl_jacobi2D(input, temp, output)
+    np.save(os.path.join("tests","golden_reference","jacobi2D_input"),input)
+    np.save(os.path.join("tests","golden_reference","jacobi2D_temp"),temp)
+    np.save(os.path.join("tests","golden_reference","jacobi2D_output"),output)
     # import seaborn as sns
     # import matplotlib.pylab as plt
     #

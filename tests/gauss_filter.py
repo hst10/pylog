@@ -2,23 +2,27 @@ from pylog import *
 #import numpy as np
 
 #Based on polybench2.0/image-processing/gauss-filter/gauss-filter.c
-N = 1080
-M = 1920
-T = 1920
+#N = 1080
+#M = 1920
+#T = 1920
+#reduce size to fit in FPGA
+N = 108
+M = 192
+T = 192
 
-@pylog
+@pylog(mode='deploytiming',board='zedboard')
 def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
     def init_array(in_image,Gauss):
-        for i in range(1080):#TODO: replace hard coded with N
-            for j in range(1920):#TODO: replace hard coded with M
-                in_image[i,j]=(i*j+0.0)/1920#TODO: replace hard coded with M
+        for i in range(108):#TODO: replace hard coded with N
+            for j in range(192):#TODO: replace hard coded with M
+                in_image[i,j]=(i*j+0.0)/192#TODO: replace hard coded with M
         for i in range(4):
             Gauss[i]=i
 
     def compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
-        t=1920#TODO: replace hard coded with T
-        m=1920#TODO: replace hard coded with M
-        n=1080#TODO: replace hard coded with N
+        t=192#TODO: replace hard coded with T
+        m=192#TODO: replace hard coded with M
+        n=108#TODO: replace hard coded with N
         tot[0]=0
         for k in range(t-1,t+2):
             tot[k+2-t]=tot[k+1-t]+Gauss[k-t+1]
@@ -39,6 +43,10 @@ def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
     init_array(in_image,Gauss)
     compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image)
 
+#@pylog(mode='deploy',board='zedboard')
+#def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
+#    return pl_gauss_filter_golden(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image)
+
 if __name__=="__main__":
 
     tot = np.empty(4, dtype=np.float)
@@ -57,3 +65,11 @@ if __name__=="__main__":
     # in_image=np.zeros([N,M],dtype=np.single)
     # gauss_image=np.zeros([N,M],dtype=np.single)
     pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_in_image"),in_image)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_Gauss"),Gauss)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_labels"),labels)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_gauss_image"),gauss_image)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_g_acc1"),g_acc1)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_g_acc2"),g_acc2)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_tot"),tot)
+    np.save(os.path.join("tests","golden_reference","gauss_filter_g_tmp_image"),g_tmp_image)

@@ -5,7 +5,7 @@ import time
 import jinja2
 import subprocess
 
-TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
+TEMPLATE_DIR=r'D:\github-repos\logicpy\tcl_temps'
 
 # list of supported boards
 supported_boards = [
@@ -108,7 +108,7 @@ class PLSysGen:
         template = template_env.get_template(hls_template)
         output_text = template.render(hls_config)
 
-        hls_tcl_script = f"{project_path}/run_hls.tcl"
+        hls_tcl_script = os.path.join(f"{project_path}","run_hls.tcl")
 
         print(output_text, file=open(hls_tcl_script, "w"))
 
@@ -117,42 +117,30 @@ class PLSysGen:
             template = template_env.get_template(vivado_template)
             output_text = template.render(vivado_config)
 
-            vivado_tcl_script = f"{project_path}/run_vivado.tcl"
+            vivado_tcl_script = os.path.join(f"{project_path}","run_vivado.tcl")
 
             print(output_text, file=open(vivado_tcl_script, "w"))
 
-        process = subprocess.call(
-            f"cd {project_path}; " + \
-            f"vivado_hls -f {hls_tcl_script}; " + \
-            f"cd -;",
-            shell=True)
-
-        if not self.using_vitis:
+        if os.name=="nt":
             process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"vivado -mode batch -source {vivado_tcl_script}; " + \
-                f"cd -;",
+                f"cd {project_path} && " + \
+                f"vivado_hls.bat -f {hls_tcl_script} && " + \
+                f"cd ..",
+                shell=True)
+
+            process = subprocess.call(
+                f"cd {project_path} && " + \
+                f"vivado.bat -mode batch -source {vivado_tcl_script} && " + \
+                f"cd ..",
                 shell=True)
 
             print("project_path = ", project_path)
 
-            process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+ \
-                f"design_1_wrapper.bit " + \
-                f"./{project_name}_{self.target_board}.bit;" + \
-                f"cd -;",
-                shell=True)
+            process = subprocess.call(f"cd {project_path} && COPY " +os.path.join(".",f"{project_name}_{self.target_board}_vivado",f"{project_name}_{self.target_board}_vivado.runs",f"impl_1",f"design_1_wrapper.bit")+" " +os.path.join(".",f"{project_name}_{self.target_board}.bit")+" && "+f"cd ..",shell=True)
 
             process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                f"{project_name}_{self.target_board}_vivado.srcs/" + \
-                f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
-                f" ./{project_name}_{self.target_board}.hwh; " + \
-                f"cd -;",
-                shell=True)
+                f"cd {project_path} && COPY "+os.path.join(".",f"{project_name}_{self.target_board}_vivado",f"{project_name}_{self.target_board}_vivado.srcs","sources_1","bd","design_1","hw_handoff","design_1.hwh")+" " + os.path.join(".",f"{project_name}_{self.target_board}.hwh")+"&& cd ..",shell=True)
+
 
         else:
             if self.target_board == 'aws_f1':
