@@ -64,6 +64,7 @@ if __name__=="__main__":
     # g_acc2=np.zeros([N,M,4],dtype=np.single)
     # in_image=np.zeros([N,M],dtype=np.single)
     # gauss_image=np.zeros([N,M],dtype=np.single)
+<<<<<<< HEAD
     pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
     np.save(os.path.join("tests","golden_reference","gauss_filter_in_image"),in_image)
     np.save(os.path.join("tests","golden_reference","gauss_filter_Gauss"),Gauss)
@@ -73,3 +74,6 @@ if __name__=="__main__":
     np.save(os.path.join("tests","golden_reference","gauss_filter_g_acc2"),g_acc2)
     np.save(os.path.join("tests","golden_reference","gauss_filter_tot"),tot)
     np.save(os.path.join("tests","golden_reference","gauss_filter_g_tmp_image"),g_tmp_image)
+=======
+    pl_gauss_filter(in_image, Gauss, tot, g_acc1, g_acc2, g_tmp_image, gauss_image)
+>>>>>>> 12b4b4ce8bc602e39b84a140dc39eff95842911f
