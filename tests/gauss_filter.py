@@ -10,7 +10,8 @@ N = 108
 M = 192
 T = 192
 
-@pylog(mode='deploytiming',board='zedboard')
+#@pylog(mode='deploytiming',board='zedboard')
+@pylog(mode='hwgen',board='zedboard')
 def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
     def init_array(in_image,Gauss):
         for i in range(108):#TODO: replace hard coded with N
@@ -45,6 +46,7 @@ def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):
 
     init_array(in_image,Gauss)
     compute(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image)
+    return 0
 
 #@pylog(mode='deploy',board='zedboard')
 #def pl_gauss_filter(in_image, Gauss,tot,g_acc1,g_acc2,g_tmp_image,gauss_image):

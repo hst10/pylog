@@ -7,7 +7,8 @@ from pylog import *
 N=100
 NUM_ITER=20
 
-@pylog(mode='deploytiming',board='zedboard')
+#@pylog(mode='deploytiming',board='zedboard')
+@pylog(mode='hwgen',board='zedboard')
 def pl_seidel(input, temp, output):
 
     def init_array(A, B, C):
@@ -59,6 +60,7 @@ def pl_seidel(input, temp, output):
             kernel_seidel_2d(output, temp)
             kernel_seidel_2d(temp,output)
         return 0
+    return 0
 
 #@pylog(mode='deploy',board='zedboard')
 #    def pl_seidel(input, temp, output):
