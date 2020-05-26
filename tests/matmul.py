@@ -27,9 +27,6 @@ def pl_matmul(a, b, c, d):
     matmul(a, b, c)
     # vecadd(a, b, c)
 
-    return 0
-
-
 if __name__ == "__main__":
     length = 32
     a = np.random.rand(length, length)

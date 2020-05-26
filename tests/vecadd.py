@@ -15,8 +15,6 @@ def pl_vecadd(a, b, c):
     for i in range(1024).pipeline():
         c[i] = a[i] + b[i]
 
-    return 0
-
 if __name__ == "__main__":
     length = 1024
     a = np.random.rand(length).astype(pl_fixed(16, 6))

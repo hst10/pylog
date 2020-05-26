@@ -3,19 +3,19 @@ from env import *
 import numpy as np
 from pylog import *
 
-@pylog
-def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
-#    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240]) 
-    c = map(lambda wi: 
-              hmap(lambda x: 
-                dot(x[0:16, -1:2, -1:2], wi), data[0, 1:240, 1:360]),
-            w)
-    return c
+# @pylog
+# def top_func(w: LpType(float, 4), data: LpType(float, 3)) -> LpType(float, 3):
+# #    c = hmap(lambda x: dot(x[-1:2, -1:2], w), data[1:360, 1:240])
+#     c = map(lambda wi:
+#               hmap(lambda x:
+#                 dot(x[0:16, -1:2, -1:2], wi), data[0, 1:240, 1:360]),
+#             w)
+#     return c
 
-@pylog
-def new_conv_for(c, w, data):
-    for i in range(w.shape[0]):
-        c[i] = plmap(lambda x:dot(x[0:16, -1:2, -1:2], w[i]), data[0, 1:240, 1:360])
+@pylog(mode='debug')
+def pl_conv_for(c, w, data):
+    for i in range(32):
+        c[i,:,:] = plmap(lambda x:dot(x[0:16, -1:2, -1:2], w[i,:,:,:]), data[0, 1:240, 1:360])
 
 '''
 // map: iterate through w
@@ -47,26 +47,8 @@ for (int i0 = 0; i0 < w.dim[0]; i0++)
 }
 '''
 
-@pylog
-def add(a, b):
-    c = map(lambda x, y: x+y, a, b)
-    return c
-
-
-@pylog
-def test(c):
-    # c[3]
-    c[3, 5, 2:4]
-    return 1
-
-
-w    = np.random.uniform(size=(32, 16, 3, 3))
-data = np.random.uniform(size=(16, 240, 360))
-
-# top_func(w, data)
-a = np.random.uniform(size=(32))
-b = np.random.uniform(size=(32))
-# add(a, b)
-
-
-# test(24)
+if __name__ == "__main__":
+    w    = np.random.uniform(size=(32, 16, 3, 3))
+    data = np.random.uniform(size=(16, 240, 360))
+    c    = np.random.uniform(size=(32, 239, 359))
+    pl_conv_for(c, w, data)

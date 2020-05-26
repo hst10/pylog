@@ -16,11 +16,9 @@ def pl_fixed_types(lst_a, lst_b):
 
     e = np.empty((3,), pl_int8)
 
-    return a
-
 
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
     b = np.array([1, 3, 6, 7, 10])
-    c = pl_fixed_types(a, b)
+    pl_fixed_types(a, b)
     print(c)

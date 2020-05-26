@@ -34,6 +34,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
     code_gen   = ('cgen' or 'codegen') in mode
     hwgen      = 'hwgen' in mode
+    vivado_only= 'vivado_only' in mode
     pysim_only = 'pysim' in mode
     deploy     = ('deploy' or 'run' or 'acc') in mode
     debug      = 'debug' in mode
@@ -52,8 +53,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
 
-        builtins = open('builtin.py').read()
-        source_func = builtins + textwrap.dedent(inspect.getsource(func))
+        # builtins = open('builtin.py').read()
+        source_func = textwrap.dedent(inspect.getsource(func))
         if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
 
@@ -79,11 +80,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
-        project_path, top_func, max_idx = pylog_compile(
+        project_path, top_func, max_idx, return_void = pylog_compile(
                                             src=source_func,
                                             arg_info=arg_info,
                                             board=board,
                                             path=path,
+                                            vivado_only=vivado_only,
                                             debug=debug,
                                             viz=viz)
 
@@ -95,7 +97,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
             'top_name':     top_func,
             'num_bundles':  max_idx,
             'timing':       timing,
-            'board':        board
+            'board':        board,
+            'return_void':  return_void
         }
 
         if hwgen:
@@ -137,7 +140,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     return wrapper
 
 
-def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
+def pylog_compile(src, arg_info, board, path,
+                  vivado_only=False, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
@@ -163,7 +167,9 @@ def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
         print(pylog_ir)
 
     typer.visit(pylog_ir)
-    # optimizer.visit(pylog_ir)
+
+    # transform loop transformation and insert pragmas
+    optimizer.opt(pylog_ir)
 
     hls_c = codegen.codegen(pylog_ir)
 
@@ -178,17 +184,19 @@ def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
 
-    output_file = os.path.join(f'{project_path}',f'{analyzer.top_func}.cpp')
-    with open(output_file, 'w') as fout:
-        fout.write(hls_c)
-        print(f"HLS C code written to {output_file}")
+    if not vivado_only:
+        output_file = f'{project_path}/{analyzer.top_func}.cpp'
+        with open(output_file, 'w') as fout:
+            fout.write(hls_c)
+            print(f"HLS C code written to {output_file}")
 
     if viz:
         import pylogviz
         pylogviz.show(src, pylog_ir)
 
 
-    return project_path, analyzer.top_func, codegen.max_idx
+    return project_path, analyzer.top_func, \
+           codegen.max_idx, codegen.return_void
 
 if __name__ == "__main__":
 

@@ -26,11 +26,9 @@ def pl_ctrl(a, b):
         c = (foo(a + b, c*d)) if (a > 0) else res
         c = 100 if (a > 0) else -10
     # c = blah(1)
-    return c
 
 
 if __name__ == "__main__":
     a = np.array([1, 3, 6, 7, 10])
     b = np.array([1, 3, 6, 7, 10])
-    c = pl_ctrl(a, b)
-    print(c)
+    pl_ctrl(a, b)

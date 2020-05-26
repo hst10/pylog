@@ -109,7 +109,7 @@ class PLTyper:
             node.pl_type  = PLType('None', 0)
             node.pl_shape = ()
         else:
-            self.visit(node.elts[0])
+            self.visit(node.elts[0], ctx)
             node.pl_type  = node.elts[0].pl_type + 1 # assuming 1D list
             node.pl_shape = (dim,)
 
@@ -246,16 +246,30 @@ class PLTyper:
                 return 0, updated_slice
 
     def visit_PLSlice(self, node, ctx={}):
+
+        # visit each field first (constant propagation may happen:
+        # expression -> PLConst)
+        self.visit(node.lower, ctx)
+        self.visit(node.upper, ctx)
+        self.visit(node.step, ctx)
+
+        lower = node.lower.value if node.lower else None
+        upper = node.upper.value if node.upper else None
+        step  = node.step.value  if node.step  else None
+
+        if hasattr(node, 'is_offset'):
+            if step is None: step = 1
+            length = (upper - lower + step - 1) // step
+            node.updated_slice = (lower, upper, step)
+            node.pl_type = PLType('slice', 0)
+            node.pl_shape = (length,)
+            return
+
+
         if hasattr(node, 'dim_length'):
             dim_length = node.dim_length
         else:
             dim_length = None
-
-        # visit each field first (constant propagation may happen:
-        # expression -> PLConst)
-        self.visit(node.lower)
-        self.visit(node.upper)
-        self.visit(node.step)
 
         for obj in (node.lower, node.upper, node.step):
             if (obj is not None) and (not isinstance(obj, PLConst)):
@@ -263,9 +277,6 @@ class PLTyper:
                 node.pl_shape = ()
                 return
 
-        lower = node.lower.value if node.lower else None
-        upper = node.upper.value if node.upper else None
-        step  = node.step.value  if node.step  else None
 
         length, updated_slice = self.get_slice_length(
                                         lower=lower,
@@ -318,9 +329,12 @@ class PLTyper:
 
     def visit_PLReturn(self, node, ctx={}):
         self.visit(node.value, ctx)
-        node.pl_type  = node.value.pl_type
-        node.pl_shape = node.value.pl_shape
-        # node.pl_ctx   = ctx
+        if node.value:
+            node.pl_type  = node.value.pl_type
+            node.pl_shape = node.value.pl_shape
+        else:
+            node.pl_type  = PLType('void', 0)
+            node.pl_shape = ()
 
         if self.debug:
             print(type(node).__name__, ctx)
@@ -371,7 +385,7 @@ class PLTyper:
             func_def_node.args[i].pl_type  = node.args[i].pl_type
             func_def_node.args[i].pl_shape = node.args[i].pl_shape
 
-        self.visit(func_def_node)
+        self.visit(func_def_node, ctx)
 
         node.pl_type  = func_def_node.return_type
         node.pl_shape = func_def_node.return_shape
@@ -383,11 +397,15 @@ class PLTyper:
 
     def visit_PLSubscript(self, node, ctx={}):
         array_name = node.var.name
-
         if array_name in ctx:
             array_dims  = ctx[array_name][0].dim
             array_shape = ctx[array_name][1]
             decl_node = ctx[array_name][2]
+
+            if array_dims == 0:
+                node.is_offset = True
+                node.var.is_offset = True
+
             lambda_arg = hasattr(decl_node, 'lambda_node')
 
             subscript_dim = len(node.indices)
@@ -419,7 +437,10 @@ class PLTyper:
                 for i in range(len(indices)):
                     # indices[i].parent = node
                     # the length along that dimension
-                    indices[i].dim_length = array_shape[i]
+                    if hasattr(node, 'is_offset'):
+                        indices[i].is_offset = True
+                    else:
+                        indices[i].dim_length = array_shape[i]
                     if self.debug:
                         print('VISITING INDICS')
                         print(f'{type(indices[i])}')
@@ -485,7 +506,7 @@ class PLTyper:
             node.func.args[i].pl_type  = PLType(elem_type.ty, 0)
             node.func.args[i].pl_shape = ()
 
-        self.visit(node.func)
+        self.visit(node.func, ctx)
 
         map_return_type  = node.func.return_type + \
                                     len(self.actual_shape(iter_dom_shape))
@@ -498,6 +519,24 @@ class PLTyper:
         node.pl_type  = map_return_type
         node.pl_shape = map_return_shape
 
+    def visit_PLDot(self, node, ctx={}):
+        self.visit(node.op1, ctx)
+        self.visit(node.op2, ctx)
+
+        op1_actual_shape = self.actual_shape(node.op1.pl_shape)
+        op2_actual_shape = self.actual_shape(node.op2.pl_shape)
+
+        assert(op1_actual_shape == op2_actual_shape)
+
+        node.op_type = PLType(ty=node.op1.pl_type.ty,
+                              dim=op1_actual_shape)
+        node.op_shape = op1_actual_shape
+
+        node.pl_type  = PLType(node.op1.pl_type.ty, 0)
+        node.pl_shape = ()
+
+        node.return_type  = PLType(node.op1.pl_type.ty, 0)
+        node.return_shape = ()
 
     # def visit_PLAttribute(self, node, ctx={}):
 

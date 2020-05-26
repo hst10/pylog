@@ -287,12 +287,24 @@ class PLAnalyzer(PLPostorderVisitor):
                                  config=config)
 
         elif node.func.id == "dot":
-            node.pl_data = PLDot(node, config)
+            if isinstance(node.parent, ast.Assign):
+                self.visit(node.parent.targets[0])
+                target = node.parent.targets[0].pl_data
+            else:
+                target = None
+            node.pl_data = PLDot(target=target,
+                                 op1=node.args[0].pl_data,
+                                 op2=node.args[1].pl_data,
+                                 ast_node=node,
+                                 config=config)
+
+
         elif node.func.id == "PLType" and len(node.args) == 2 \
             and isinstance(node.args[0], ast.Name) \
             and isinstance(node.args[1], ast.Num):
             node.pl_data = TypeNode(node, config)
             return node.pl_data.type
+
         else:
             node.pl_data = PLCall(func=node.func.pl_data,
                                   args=[ e.pl_data for e in node.args ],
@@ -532,7 +544,8 @@ class PLAnalyzer(PLPostorderVisitor):
 
 
     def visit_Return(self, node, config=None):
-        node.pl_data = PLReturn(value=node.value.pl_data,
+        return_value = node.value.pl_data if node.value else None
+        node.pl_data = PLReturn(value=return_value,
                                 ast_node=node,
                                 config=config)
         return node.pl_data

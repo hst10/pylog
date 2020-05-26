@@ -1,0 +1,19 @@
+from env import *
+
+import numpy as np
+from pylog import *
+
+@pylog(mode='debug')
+def pl_simple_map(a, b):
+
+    c = plmap(lambda x, y: x + y, a, b)
+
+    c = plmap(lambda x, y: x * y, a[3, 1:3,:-2], b[1, 3:5, :-2])
+
+if __name__ == "__main__":
+    # a = np.array([1, 3, 6, 7, 10])
+    # b = np.array([1, 3, 6, 7, 10, 13])
+    a = np.random.rand(4,5,6).astype(np.float32)
+    b = np.random.rand(4,5,6).astype(np.float32)
+    pl_simple_map(a, b)
+    print(c)

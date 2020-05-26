@@ -42,6 +42,7 @@ class PLRuntime:
         self.workspace_base = config['workspace_base']
         self.project_name = config['project_name']
         self.num_bundles = config['num_bundles']
+        self.return_void = config['return_void']
         self.config = config
 
     def call(self, args):
@@ -63,17 +64,20 @@ class PLRuntime:
         self.accelerator = getattr(self.overlay, f'{self.project_name}_0')
 
         self.plrt_arrays = []
-        curr_addr = 0x18
-        for arg in args:
-            # "allocate" requires PYNQ v2.5 or newer
-            # new_array = allocate(shape=arg.shape, dtype=arg.dtype)
-            new_array = self.xlnk.cma_array(shape=arg.shape, dtype=arg.dtype)
-            np.copyto(new_array, arg)
-            # new_array.sync_to_device() # requires PYNQ v2.5 or newer
-            new_array.flush()
-            self.accelerator.write(curr_addr, new_array.physical_address)
+        curr_addr = 0x10 if self.return_void else 0x18
+        for arg in range(len(args)):
+            if args[i].shape == ():
+                self.accelerator.write(curr_addr, args[i])
+            else:
+                # "allocate" requires PYNQ v2.5 or newer
+                # new_array = allocate(shape=arg.shape, dtype=arg.dtype)
+                new_array = self.xlnk.cma_array(args[i].shape, args[i].dtype)
+                np.copyto(new_array, arg)
+                # new_array.sync_to_device() # requires PYNQ v2.5 or newer
+                new_array.flush()
+                self.accelerator.write(curr_addr, new_array.physical_address)
+                self.plrt_arrays.append((i, new_array))
             curr_addr += 8
-            self.plrt_arrays.append(new_array)
 
         print("FPGA starts. ")
 
@@ -91,12 +95,12 @@ class PLRuntime:
         print("FPGA finishes. ")
         if self.timing:print(f'FPGA Execution Time: {fpga_time:.10f} s')
 
-        for i in range(len(self.plrt_arrays)):
+        for i, array in self.plrt_arrays:
             # "sync_from_device" only available starting PYNQ v2.5
             # self.plrt_arrays[i].sync_from_device()
-            self.plrt_arrays[i].invalidate()
-            np.copyto(args[i], self.plrt_arrays[i])
-            self.plrt_arrays[i].close()
+            array.invalidate()
+            np.copyto(args[i], array)
+            array.close()
 
         return self.accelerator.read(0x10)
 
@@ -111,12 +115,15 @@ class PLRuntime:
         self.accelerator = getattr(self.overlay, f'{self.project_name}_1')
 
         self.plrt_arrays = []
-        for arg in args:
-            # "allocate" requires PYNQ v2.5 or newer
-            new_array = allocate(shape=arg.shape, dtype=arg.dtype)
-            np.copyto(new_array, arg)
-            new_array.sync_to_device() # requires PYNQ v2.5 or newer
-            self.plrt_arrays.append(new_array)
+        for i in range(len(args)):
+            if args[i].shape == ():
+                self.plrt_arrays.append(args[i])
+            else:
+                # "allocate" requires PYNQ v2.5 or newer
+                new_array = allocate(shape=args[i].shape, dtype=args[i].dtype)
+                np.copyto(new_array, args[i])
+                new_array.sync_to_device() # requires PYNQ v2.5 or newer
+                self.plrt_arrays.append((i, new_array))
 
         print("FPGA starts. ")
 
@@ -131,11 +138,11 @@ class PLRuntime:
         print("FPGA finishes. ")
         if self.timing:  print(f'FPGA Execution Time: {fpga_time:.10f} s')
 
-        for i in range(len(self.plrt_arrays)):
+        for i, array in self.plrt_arrays:
             # "sync_from_device" only available starting PYNQ v2.5
-            self.plrt_arrays[i].sync_from_device()
-            np.copyto(args[i], self.plrt_arrays[i])
-            self.plrt_arrays[i].close()
+            array.sync_from_device()
+            np.copyto(args[i], array)
+            array.close()
 
         self.overlay.free()
 
