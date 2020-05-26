@@ -3,8 +3,15 @@ from env import *
 import numpy as np
 from pylog import *
 
-@pylog(mode='debug')
+@pylog(mode='cgen')
 def pl_test(a, b):
+
+    # def add_one(a, b):
+    #     b = a + 1
+
+    res = np.empty([3,5,7], int)
+
+    # add_one(a, res)
 
     d = a[3::-2] + 3.5
 
@@ -13,6 +20,8 @@ def pl_test(a, b):
 
     b = 10 + a
 
+    x = a * b
+
     b[:,:,:] = a
     c[:,:,:,3] = b
 
@@ -20,11 +29,7 @@ def pl_test(a, b):
 
     a = 10
 
-    return b
-
-
 if __name__ == "__main__":
-    a = np.array([1, 3, 6, 7, 10]).astype(np.uint64)
-    b = np.array([1, 3, 6, 7, 10]).astype(np.uint32)
-    c = pl_test(a, b)
-    print(c)
+    a = np.array([1, 3, 6, 7, 10]).astype(np.int64)
+    b = np.array([1, 3, 6, 7, 10]).astype(np.int32)
+    pl_test(a, b)

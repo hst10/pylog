@@ -484,7 +484,7 @@ class PLCodeGenerator:
         fd = func_def(
                 func_name=node.name,
                 args=arg_list,
-                func_type="int",
+                func_type=node.return_type.ty,
                 body=self.visit(node.body, config))
 
         if node.decorator_list:

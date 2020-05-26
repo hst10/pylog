@@ -544,7 +544,8 @@ class PLAnalyzer(PLPostorderVisitor):
 
 
     def visit_Return(self, node, config=None):
-        node.pl_data = PLReturn(value=node.value.pl_data,
+        return_value = node.value.pl_data if node.value else None
+        node.pl_data = PLReturn(value=return_value,
                                 ast_node=node,
                                 config=config)
         return node.pl_data

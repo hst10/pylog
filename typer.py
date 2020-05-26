@@ -329,9 +329,12 @@ class PLTyper:
 
     def visit_PLReturn(self, node, ctx={}):
         self.visit(node.value, ctx)
-        node.pl_type  = node.value.pl_type
-        node.pl_shape = node.value.pl_shape
-        # node.pl_ctx   = ctx
+        if node.value:
+            node.pl_type  = node.value.pl_type
+            node.pl_shape = node.value.pl_shape
+        else:
+            node.pl_type  = PLType('void', 0)
+            node.pl_shape = ()
 
         if self.debug:
             print(type(node).__name__, ctx)
