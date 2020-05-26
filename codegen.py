@@ -493,6 +493,7 @@ class PLCodeGenerator:
                                             for e in node.decorator_list]
             if "pylog" in decorator_names:
                 self.top_func_name = node.name
+                self.return_void = (if node.return_type.ty == 'void')
 
                 if self.arg_info != None:
                     max_idx = insert_interface_pragmas(

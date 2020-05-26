@@ -8,7 +8,10 @@ def np_pl_type_map(type_name):
     if m:
         if m.group(2) in {'', '32'}:
             # should we reduce double-precision to single-precision?
-            return m.group(1)
+            if m.group(1) == 'uint':
+                return 'unsigned int'
+            else:
+                return 'int'
         else:
             return f'ap_{m.group(1)}<{m.group(2)}>'
 

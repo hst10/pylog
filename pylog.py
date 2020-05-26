@@ -80,7 +80,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
         num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
 
-        project_path, top_func, max_idx = pylog_compile(
+        project_path, top_func, max_idx, return_void = pylog_compile(
                                             src=source_func,
                                             arg_info=arg_info,
                                             board=board,
@@ -97,7 +97,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
             'top_name':     top_func,
             'num_bundles':  max_idx,
             'timing':       timing,
-            'board':        board
+            'board':        board,
+            'return_void':  return_void
         }
 
         if hwgen:
@@ -197,7 +198,8 @@ def pylog_compile(src, arg_info, board, path,
         pylogviz.show(src, pylog_ir)
 
 
-    return project_path, analyzer.top_func, codegen.max_idx
+    return project_path, analyzer.top_func, \
+           codegen.max_idx, codegen.return_void
 
 if __name__ == "__main__":
 
