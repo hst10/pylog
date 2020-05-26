@@ -40,7 +40,6 @@ def get_loop_structure(node):
                 loops_found += get_loop_structure(item)
 
     if isinstance(node, PLFor):
-        print(f'get_loop_structure {node}, {node.target.name}')
         return [ PLOptLoop(plfor=node, subloops=loops_found) ]
     else:
         return loops_found
@@ -156,7 +155,14 @@ class PLOptMapTransformer:
 
     def visit_PLAssign(self, node, config=None):
         if isinstance(node.value, PLDot):
-            return self.visit(node.value)
+            return self.visit(node.value, config)
+        node.target = self.visit(node.target, config)
+        node.value  = self.visit(node.value, config)
+        return node
+
+    def visit_PLSubscript(self, node, config=None):
+        node.var = self.visit(node.var, config)
+        node.indices = [ self.visit(idx, config) for idx in node.indices ]
         return node
 
     def visit_PLLambda(self, node, config=None):
@@ -209,8 +215,8 @@ class PLOptMapTransformer:
         node.func.body = new_lambda_body
         stmt = self.visit(node.func, config)
 
-        for i in range(len(node.pl_shape)-1, -1, -1):
-        # for i in range(len(node.pl_shape)):
+        # for i in range(len(node.pl_shape)-1, -1, -1):
+        for i in range(node.pl_type.dim-1, -1, -1):
             target = PLVariable(f'i_map_{i}')
             target.pl_type  = PLType('int', 0)
             target.pl_shape = ()
@@ -241,6 +247,9 @@ class PLOptMapTransformer:
 
         op1_subs = self.get_subscript(node.op1, 'i_dot_', config)
         op2_subs = self.get_subscript(node.op2, 'i_dot_', config)
+
+        op1_subs = self.visit(op1_subs, config)
+        op2_subs = self.visit(op2_subs, config)
 
         op1_subs.pl_type  = PLType(ty=op_type.ty, dim=0)
         op1_subs.pl_shape = (1 for i in range(len(node.op1.pl_shape)))
@@ -277,6 +286,8 @@ class PLOptMapTransformer:
 
         if node.target:
             target = node.target
+        elif hasattr(node, 'parent'):
+            target = node.parent.target
         else:
             raise NotImplementedError
 

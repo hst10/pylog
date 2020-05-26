@@ -157,7 +157,8 @@ class PLCodeGenerator:
     def visit_PLVariable(self, node, config=None):
         if (config is not None) and ('arg_map' in config):
             if node.name in config['arg_map']:
-                return config['arg_map'][node.name]
+                # return config['arg_map'][node.name]
+                return self.visit(config['arg_map'][node.name], config)
         return ID(node.name)
 
     def visit_PLUnaryOp(self, node, config=None):
@@ -176,6 +177,12 @@ class PLCodeGenerator:
             else:
                 return ID(*args, **kwargs)
 
+        def const32(*args, **kwargs):
+            if return_plnode:
+                return PLConst(*args, **kwargs)
+            else:
+                return int32(*args, **kwargs)
+
         target_shape = len(op_node.pl_shape)
 
         if isinstance(op_node, PLSubscript):
@@ -185,9 +192,12 @@ class PLCodeGenerator:
                 if op_node.pl_shape[i] == 1:
                     if isinstance(op_node.indices[i], PLSlice):
                         idx, _, _ = op_node.indices[i].updated_slice
-                        subs.append(int32(idx))
+                        subs.append(const32(idx))
                     else:
-                        subs.append(self.visit(op_node.indices[i], config))
+                        if return_plnode:
+                            subs.append(op_node.indices[i])
+                        else:
+                            subs.append(self.visit(op_node.indices[i], config))
                 else:
                     if isinstance(op_node.indices[i], PLSlice):
                         bounds = op_node.indices[i].updated_slice
@@ -218,8 +228,8 @@ class PLCodeGenerator:
 
         else:
             array_name = VarNode(op_node.name)
-            subs = [ VarNode(f'{iter_prefix}{i}') for i in range(target_shape)]
 
+            subs = [ VarNode(f'{iter_prefix}{i}') for i in range(target_shape)]
             if return_plnode:
                 target = PLSubscript(var=op_node,
                                      indices=subs)
@@ -284,10 +294,38 @@ class PLCodeGenerator:
         return top
 
     def visit_PLSubscript(self, node, config=None):
-        sub = subscript(array_name=self.visit(node.var, config),
-                        subscripts=[ self.visit(idx, config) \
-                                                    for idx in node.indices ])
+
+        if isinstance(node.var, PLSubscript):
+            array_name = self.visit(node.var.var, config)
+            subscripts = []
+            for i in range(len(node.indices)):
+                plbinop = PLBinOp(op='+',
+                                 left=node.indices[i],
+                                 right=node.var.indices[i])
+
+                binop = self.visit(plbinop, config)
+                subscripts.append(binop)
+
+        else:
+            array_name = self.visit(node.var, config)
+            subscripts = [ self.visit(idx, config) for idx in node.indices ]
+
+        sub = subscript(array_name=array_name,
+                        subscripts=subscripts)
         return sub
+
+        # if hasattr(node, 'is_offset'):
+        #     if (config is not None) and ('arg_map' in config):
+        #         if node.var.name in config['arg_map']:
+        #             # return config['arg_map'][node.name]
+        #             actual_var = config['arg_map'][node.var.name]
+        #             print(f'1234 actual_var: {actual_var}')
+        # else:
+        #     sub = subscript(array_name=self.visit(node.var, config),
+        #                     subscripts=[ self.visit(idx, config) \
+        #                                             for idx in node.indices ])
+        #     return sub
+
         # obj = self.visit(node.var, config)
         # for index in node.indices:
         #     obj = ArrayRef(name=obj, subscript=self.visit(index, config))
@@ -312,10 +350,17 @@ class PLCodeGenerator:
 
         if node.is_decl:
             if assign_dim == 0:
-                decl = var_decl(var_type=node.target.pl_type.ty,
-                                name=target_c_obj.name,
-                                init=self.visit(node.value, config))
-                return decl
+                if isinstance(node.value, (PLMap, PLFor, PLAssign)):
+                    decl = var_decl(var_type=node.target.pl_type.ty,
+                                    name=target_c_obj.name,
+                                    init=None)
+                    map_expr = self.visit(node.value, config)
+                    return [ decl, map_expr ]
+                else:
+                    decl = var_decl(var_type=node.target.pl_type.ty,
+                                    name=target_c_obj.name,
+                                    init=self.visit(node.value, config))
+                    return decl
 
             elif assign_dim > 0:
                 dims = [ int32(s) for s in node.target.pl_shape ]
@@ -359,7 +404,7 @@ class PLCodeGenerator:
                     for obj in node.value:
                         obj.assign_target = node.target
                         obj.assign_op     = node.op
-                elif isinstance(node.value, list):
+                else:
                     node.value.assign_target = node.target
                     node.value.assign_op     = node.op
 
@@ -469,7 +514,7 @@ class PLCodeGenerator:
             new_config = copy.deepcopy(config)
             if new_config is None:
                 new_config = { 'arg_map': node.arg_map,
-                           'target' : node.target }
+                               'target' : node.target }
             else:
                 new_config['arg_map'] = node.arg_map
                 new_config['target']  = node.target
@@ -493,7 +538,7 @@ class PLCodeGenerator:
     def visit_PLMap(self, node, config=None):
         args_subs = []
         for array in node.arrays:
-            args_subs.append(self.get_subscript(array, 'i_map_', config))
+            args_subs.append(self.get_subscript(array, 'i_map_', True, config))
 
         target_subs = self.get_subscript(node.target, 'i_map_', \
                                          return_plnode=True, config=config)
@@ -519,7 +564,8 @@ class PLCodeGenerator:
         node.func.body = new_lambda_body
         stmt = self.visit(node.func, config)
 
-        for i in range(len(node.pl_shape)-1, -1, -1):
+        # for i in range(len(node.pl_shape)-1, -1, -1):
+        for i in range(node.pl_type.dim-1, -1, -1):
             stmt = [ simple_for(iter_var=f'i_map_{i}',
                                 start=int32(0),
                                 op='<',

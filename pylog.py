@@ -34,6 +34,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
     code_gen   = ('cgen' or 'codegen') in mode
     hwgen      = 'hwgen' in mode
+    vivado_only= 'vivado_only' in mode
     pysim_only = 'pysim' in mode
     deploy     = ('deploy' or 'run' or 'acc') in mode
     debug      = 'debug' in mode
@@ -84,6 +85,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
                                             arg_info=arg_info,
                                             board=board,
                                             path=path,
+                                            vivado_only=vivado_only,
                                             debug=debug,
                                             viz=viz)
 
@@ -140,7 +142,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     return wrapper
 
 
-def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
+def pylog_compile(src, arg_info, board, path,
+                  vivado_only=False, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
@@ -183,10 +186,11 @@ def pylog_compile(src, arg_info, board, path, debug=False, viz=False):
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
 
-    output_file = f'{project_path}/{analyzer.top_func}.cpp'
-    with open(output_file, 'w') as fout:
-        fout.write(hls_c)
-        print(f"HLS C code written to {output_file}")
+    if not vivado_only:
+        output_file = f'{project_path}/{analyzer.top_func}.cpp'
+        with open(output_file, 'w') as fout:
+            fout.write(hls_c)
+            print(f"HLS C code written to {output_file}")
 
     if viz:
         import pylogviz
