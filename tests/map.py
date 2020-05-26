@@ -19,4 +19,3 @@ if __name__ == "__main__":
     w    = np.random.uniform(size=(3, 3, 16, 32))
     data = np.random.uniform(size=(16, 240, 360))
     pl_map(w, data)
-    print(c)
