@@ -65,18 +65,20 @@ class PLRuntime:
 
         self.plrt_arrays = []
         curr_addr = 0x10 if self.return_void else 0x18
+        print("starting addr "+str(curr_addr))
         for arg in range(len(args)):
-            if args[i].shape == ():
-                self.accelerator.write(curr_addr, args[i])
+            if args[arg].shape == ():
+                self.accelerator.write(curr_addr, args[arg])
             else:
                 # "allocate" requires PYNQ v2.5 or newer
                 # new_array = allocate(shape=arg.shape, dtype=arg.dtype)
-                new_array = self.xlnk.cma_array(args[i].shape, args[i].dtype)
-                np.copyto(new_array, arg)
+                new_array = self.xlnk.cma_array(args[arg].shape, args[arg].dtype)
+                np.copyto(new_array, args[arg])
                 # new_array.sync_to_device() # requires PYNQ v2.5 or newer
                 new_array.flush()
                 self.accelerator.write(curr_addr, new_array.physical_address)
-                self.plrt_arrays.append((i, new_array))
+                self.plrt_arrays.append((arg, new_array))
+            print("argument idx "+str(arg)+" curr_addr "+str(curr_addr)+" "+str(args[arg])+"\n")
             curr_addr += 8
 
         print("FPGA starts. ")
