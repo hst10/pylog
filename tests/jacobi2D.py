@@ -8,22 +8,25 @@ from pylog import *
 N=100
 NUM_ITER=20
 
+
+def init_array(A, B, C):
+    for i in range(100):  # TODO: replace hard coded with N
+        for j in range(100):  # TODO: replace hard coded with N
+            A[i, j] = (i * (j + 2) + 2 + 0.0) / 100  # TODO: replace hard coded with N
+            B[i, j] = (i * (j + 2) + 2 + 0.0) / 100  # TODO: replace hard coded with N
+            C[i, j] = (i * (j + 2) + 2 + 0.0) / 100  # TODO: replace hard coded with N
+    return 0  # TODO: compiler signature return type void if no return
 #@pylog(mode='deploytiming',board='zedboard')
 @pylog(mode='hwgen',board='zedboard')
 def pl_jacobi2D(input, temp, output):
 
-    def init_array(A, B, C):
-        for i in range(100):#TODO: replace hard coded with N
-            for j in range(100):#TODO: replace hard coded with N
-                A[i,j]=(i*(j+2)+2+0.0)/100#TODO: replace hard coded with N
-                B[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
-                C[i, j] = (i * (j + 2) + 2 + 0.0) / 100#TODO: replace hard coded with N
-        return 0 #TODO: compiler signature return type void if no return
+
 
 
     def kernel_jacobi_2d(A, B):
         for i in range(1,100-1):#TODO: replace hard coded with N
-            for j in range(1,100-1):#TODO: replace hard coded with N
+            for j in range(1,100-1).pipeline():#TODO: replace hard coded with N
+                pragma("HLS unroll factor=5")
                 B[i,j]=0.2*(A[i,j]+A[i,j-1]+A[i,j+1]+A[i+1,j]+A[i-1,j])
         return 0  #TODO: compiler signature return type void if no return
 
@@ -41,7 +44,7 @@ def pl_jacobi2D(input, temp, output):
         B[2:100-2,2:100-2]=(A[2-1:100-2-1,2-1:100-2-1]+A[2-1:100-2-1,2:100-2]+A[2-1:100-2-1,2+1:100-2+1]+A[2:100-2,2-1:100-2-1]+A[2:100-2,2:100-2]+A[2:100-2,2+1:100-2+1]+A[2+1:100-2+1,2-1:100-2-1]+A[2+1:100-2+1,2:100-2]+A[2+1:100-2+1,2+1:100-2+1])/9.0#TODO: replace hard coded with N
         return 0 #TODO: compiler signature return type void if no return
 
-    init_array(input, temp, output)
+
     if 20==0:#TODO: replace hard coded with NUM_ITER
         return 0
     if 20%2==0:#TODO: replace hard coded with NUM_ITER
@@ -71,7 +74,7 @@ if __name__=="__main__":
     # input=np.zeros([N,N],dtype=np.single)
     # temp=np.zeros([N,N],dtype=np.single)
     # output=np.zeros([N,N],dtype=np.single)
-
+    init_array(input, temp, output)
     pl_jacobi2D(input, temp, output)
     np.save(os.path.join("tests","golden_reference","jacobi2D_input"),input)
     np.save(os.path.join("tests","golden_reference","jacobi2D_temp"),temp)

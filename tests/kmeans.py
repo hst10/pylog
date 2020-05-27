@@ -20,8 +20,8 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
         return result
 
     def clear1D(cluster_num_element, num_cluster):
-        pragma("HLS unroll factor=5")
-        for idx in range(num_cluster):#TODO: replace hard coded with variable num_cluster
+
+        for idx in range(num_cluster).unroll(5):#TODO: replace hard coded with variable num_cluster
             cluster_num_element[idx]=0
         return 0 #TODO: compiler signature return type void if no return
 
@@ -31,8 +31,7 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
         return 0 #TODO: compiler signature return type void if no return
 
     def clear2D(means,num_cluster,dim):
-        pragma("HLS unroll factor=5")
-        for idx_cluster in range(num_cluster):#TODO: replace hard coded with variable num_cluster
+        for idx_cluster in range(num_cluster).unroll(5):#TODO: replace hard coded with variable num_cluster
             for idx_dim in range(dim):
                 means[idx_cluster,idx_dim]=0.0
         return 0 #TODO: compiler signature return type void if no return
@@ -42,10 +41,10 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
     for idx_iter in range(num_iter):
         #assign cluster
 
-        for idx_point in range(num_point).pipeline():
+        for idx_point in range(num_point):
             label = -1
             min_dist = 3.402823466e+38#TODO:Support math.inf
-            for idx_cluster in range(num_cluster):
+            for idx_cluster in range(num_cluster).pipeline():
                 #curr_dist = dist(points[idx_point,:],means[idx_cluster,:],tmp_distance,dim)#TODO: remove the redundant ",:"
                 #TODO: use dist instead
                 curr_dist = 0.0
@@ -61,13 +60,13 @@ def pl_kmeans(points, means, labels, tmp_distance, cluster_num_element):#, num_p
         #update mean
         clear1D(cluster_num_element,num_cluster)
         clear2D(means,num_cluster,dim)
-        for idx_point in range(num_point).pipeline():
+        for idx_point in range(num_point):
             curr_label = labels[idx_point]
             cluster_num_element[curr_label]+=1
-            for idx_dim in range(dim):
+            for idx_dim in range(dim).pipeline():
                 means[curr_label,idx_dim]+=points[idx_point,idx_dim]
-        for idx_cluster in range(num_cluster).pipeline():
-            for idx_dim in range(dim):
+        for idx_cluster in range(num_cluster):
+            for idx_dim in range(dim).pipeline():
                 means[idx_cluster,idx_dim]/=cluster_num_element[idx_cluster]
     return 0
 
