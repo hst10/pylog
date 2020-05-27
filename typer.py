@@ -136,7 +136,7 @@ class PLTyper:
         node.pl_shape = ()
         # node.pl_ctx   = copy.copy(ctx)
         # node.pl_ctx[node.name] = (node.pl_type, node.pl_shape, node)
-        ctx[node.name]         = (node.pl_type, node.pl_shape, node)
+        ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
 
         # if self.debug:
         #     print(type(node).__name__, node.pl_ctx)
