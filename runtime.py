@@ -65,18 +65,18 @@ class PLRuntime:
 
         self.plrt_arrays = []
         curr_addr = 0x10 if self.return_void else 0x18
-        for arg in range(len(args)):
-            if args[arg].shape == ():
-                self.accelerator.write(curr_addr, args[arg])
+        for i in range(len(args)):
+            if args[i].shape == ():
+                self.accelerator.write(curr_addr, args[i])
             else:
                 # "allocate" requires PYNQ v2.5 or newer
                 # new_array = allocate(shape=arg.shape, dtype=arg.dtype)
-                new_array = self.xlnk.cma_array(args[arg].shape, args[arg].dtype)
-                np.copyto(new_array, args[arg])
+                new_array = self.xlnk.cma_array(args[i].shape, args[i].dtype)
+                np.copyto(new_array, args[i])
                 # new_array.sync_to_device() # requires PYNQ v2.5 or newer
                 new_array.flush()
                 self.accelerator.write(curr_addr, new_array.physical_address)
-                self.plrt_arrays.append((arg, new_array))
+                self.plrt_arrays.append((i, new_array))
             curr_addr += 8
 
         print("FPGA starts. ")
@@ -115,21 +115,23 @@ class PLRuntime:
         self.accelerator = getattr(self.overlay, f'{self.project_name}_1')
 
         self.plrt_arrays = []
+        self.plrt_args = []
         for i in range(len(args)):
             if args[i].shape == ():
-                self.plrt_arrays.append(args[i])
+                self.plrt_args.append(args[i])
             else:
                 # "allocate" requires PYNQ v2.5 or newer
                 new_array = allocate(shape=args[i].shape, dtype=args[i].dtype)
                 np.copyto(new_array, args[i])
                 new_array.sync_to_device() # requires PYNQ v2.5 or newer
                 self.plrt_arrays.append((i, new_array))
+                self.plrt_args.append(new_array)
 
         print("FPGA starts. ")
 
         start_time = time.time()
 
-        result = self.accelerator.call(*self.plrt_arrays)
+        result = self.accelerator.call(*self.plrt_args)
 
         end_time = time.time()
 
