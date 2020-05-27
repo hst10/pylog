@@ -65,7 +65,6 @@ class PLRuntime:
 
         self.plrt_arrays = []
         curr_addr = 0x10 if self.return_void else 0x18
-        print("starting addr "+str(curr_addr))
         for arg in range(len(args)):
             if args[arg].shape == ():
                 self.accelerator.write(curr_addr, args[arg])
@@ -78,7 +77,6 @@ class PLRuntime:
                 new_array.flush()
                 self.accelerator.write(curr_addr, new_array.physical_address)
                 self.plrt_arrays.append((arg, new_array))
-            print("argument idx "+str(arg)+" curr_addr "+str(curr_addr)+" "+str(args[arg])+"\n")
             curr_addr += 8
 
         print("FPGA starts. ")
