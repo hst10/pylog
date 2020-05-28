@@ -37,8 +37,9 @@ def pl_seidel(input, temp, output):
         return 0 #TODO: compiler signature return type void if no return
 
     def kernel_seidel_2d(A, B):
-        for i in range(2,100-2).pipeline():#TODO: replace hard coded with N
-            for j in range(2,100-2):#TODO: replace hard coded with N
+        for i in range(2,100-2):#TODO: replace hard coded with N
+            for j in range(2,100-2).pipeline():#TODO: replace hard coded with N
+                pragma("HLS unroll factor=5")
                 B[i,j]=(A[i-1,j-1]+A[i-1,j]+A[i-1,j+1]+A[i,j-1]+A[i,j]+A[i,j+1]+A[i+1,j-1]+A[i+1,j]+A[i+1,j+1])/9.0
         return 0 #TODO: compiler signature return type void if no return
 
