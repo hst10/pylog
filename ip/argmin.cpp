@@ -23,7 +23,7 @@ typedef float DTYPE;
 // one-dimensional version
 extern "C" {
 void argmax(const int *a, // Read-Only array A
-           int minindex,       // Output Result
+           int* minindex,       // Output Result
            int size    // array A Size
 ) {
    #pragma HLS INTERFACE m_axi port=a offset=slave bundle=gmem
@@ -35,12 +35,12 @@ void argmax(const int *a, // Read-Only array A
    #pragma HLS INTERFACE s_axilite port=return bundle=control
 
     int min = a[0];
-    minindex = 0;
+    *minindex = 0;
     
     for (int i=0; i<size; i++){
         if (a[i]<min){
             min = a[i] ; 
-            minindex = i ; 
+            *minindex = i ; 
         }
     }
 }

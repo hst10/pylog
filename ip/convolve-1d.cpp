@@ -53,8 +53,6 @@ void convolve(const int *a, // Read-Only array A, signal
             c[i] += a[k]*b[i-k];
         }
     }
-
-
 }
 
 }
