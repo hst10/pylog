@@ -26,7 +26,7 @@ extern "C" {
 void reversed(const int *a, // Read-Only Input array
            int *b,       // Output Result
            int size    // size of the array
-) { 
+) {
    #pragma HLS INTERFACE m_axi port=a offset=slave bundle=gmem
    #pragma HLS INTERFACE m_axi port=b offset=slave bundle=gmem
 
