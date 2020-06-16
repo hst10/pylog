@@ -1,0 +1,49 @@
+Copyright (c) <2019> 
+<University of Illinois at Urbana-Champaign>
+All rights reserved.
+
+Developed by:   
+
+<ES CAD Group>
+<University of Illinois at Urbana-Champaign>
+<http://dchen.ece.illinois.edu/>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this IP
+suite and associated documentation file (the "IP Package"), to deal with the IP Package
+without restriction, including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the IP Package, and to permit
+persons to whom the IP Package is furnished to do so, subject to the following conditions:
+
+    * Redistributions of source code must retain the above copyright notice, this list of
+    conditions and the following disclaimers.
+    * Redistributions in binary form must reproduce the above copyright notice, this list
+    of conditions and the following disclaimers in 
+    the documentation and/or other materials provided with the distribution.
+    * Neither the names of the Development Groups and the names of the Institutions, nor
+    the names of its contributors may be used to endorse or promote products derived from
+    this IP Package without specific prior written permission. 
+
+THE IP PACKAGE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
+OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE IP PACKAGE OR THE USE OR
+OTHER DEALINGS WITH THE IP PACKAGE. 
+
+When referencing this particular IP Package in a publication, please use the following citation:
+
+[1] Xinheng Liu, Cong Hao, and Deming Chen, "HLS based Open-Source IPs for Deep Neural Network Acceleration,"
+University of Illinois at Urbana-Champaign, Feb. 2019: https://github.com/DNN-Accelerators/Open-Source-IPs
+
+Specifically, the LRCN IP was created through the following work: 
+
+[2] X. Zhang, X. Liu, A. Ramachandran, C. Zhuge, S. Tang, P. Ouyang, Z. Cheng, K. Rupnow and D. Chen,
+“High-Performance Video Content Recognition with Long-term Recurrent Convolutional Network for FPGA”,
+Proceedings of International Conference on Field-Programmable Logic and Applications, September 2017.
+
+The Standard convolution, Depth-wise separable convolution, Pooling, and Bounding box
+regression IPs were created through the following work:
+
+[3] C. Hao, X. Zhang, Y. Li, S. Huang, J. Xiong, K. Rupnow, W.M. Hwu, and D. Chen,
+“FPGA/DNN Co-Design: An Efficient Design Methodology for IoT Intelligence on the Edge”,
+Proceedings of IEEE/ACM Design Automation Conference, June 2019.
