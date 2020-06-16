@@ -1,8 +1,8 @@
-#include "insertion_sort_itself.h"
 #include "insertion_sort_parallel.h"
-#include "merge_sort_itself.h"
+#include "merge_sort_parallel.h"
 #include <iostream>
 #include "stdio.h"
+
 int main(){
 	int fail = 0;
 	DTYPE A[SIZE];
@@ -11,13 +11,8 @@ int main(){
 	}
 	DTYPE B[SIZE];	
 
-	insertion_sort_itself(A);
-	//merge_sort_itself(A);
-	for (int i=0; i<SIZE; i++){
-		B[i] = A[i] ; 
-	}
-
-	//insertion_sort_parallel(A,B);
+	insertion_sort_parallel(A,B);
+	merge_sort_parallel(A,B);
 
     for(int i = 0; i < SIZE; i++)
         std::cout << B[i] << " ";

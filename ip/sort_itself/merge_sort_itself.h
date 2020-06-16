@@ -3,7 +3,7 @@
 #define VAR2_ 1
 //variables to be defined
 #define SIZE_ 16
-#define DTYPE_ int
+#define DTYPE_ float
 //invariant variables
 #define MAX_SIZE_ 1024
 
@@ -13,6 +13,6 @@ const static int SIZE = SIZE_;
 const static int MAX_SIZE = MAX_SIZE_;
 typedef DTYPE_ DTYPE;
 
-void insertion_sort_parallel(DTYPE A[SIZE], DTYPE B[SIZE]);
+void merge_sort(DTYPE A[SIZE]);
 
 

@@ -8,6 +8,6 @@ const static int SIZE = SIZE_;
 const static int MAX_SIZE = MAX_SIZE_;
 typedef DTYPE_ DTYPE;
 
-extern void insertion_sort_itself(DTYPE A[SIZE]);
+void insertion_sort_itself(DTYPE A[SIZE]);
 
 

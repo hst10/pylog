@@ -1,5 +1,6 @@
 #include "insertion_sort_parallel.h"
 #include "assert.h"
+
 void insertion_sort_parallel(DTYPE A[SIZE], DTYPE B[SIZE]) {
 #pragma HLS array_partition variable=B cyclic factor=VAR1
  L1:
