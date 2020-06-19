@@ -1,6 +1,6 @@
 /*
-numpy.argmax(a, axis=None, out=None)
-Returns the indices of the minimum values along an axis.
+numpy.argmin(a, axis=None, out=None)
+Returns the indices of the maximum values along an axis.
 
 Parameters
     a : Input array. 
@@ -12,36 +12,82 @@ Returns
     index_array: Array of indices into the array.
         It has the same shape as a.shape with the dimension along axis removed.
 */
+#include "argmin.h"
+void argmin(DTYPE A[SIZE] , int* min_index )
+{
+    DTYPE min = min_f1(A);
+    DTYPE temp[VAR2];
+    for (int i=0; i<VAR2; i++){
+    #pragma HLS unroll
+    	temp[i] = SIZE;}
+
+    for (int i=BOUND-1; i>=0; i--){
+    #pragma HLS pipeline
+        for (int j=0 ; j< VAR2 ; j++){
+            if ( i*VAR2+j< SIZE && A[i*VAR2+j] == min ){
+                temp[j] = i*VAR2+j ;
+    }   }   }
+
+    for (int i=0;i<VAR2;i++)
+        *min_index = min_f2(temp);
+}
 
 
-//Maximum Array Size
-#define MAX_SIZE 16
 
-//TRIPCOUNT identifier
-typedef float DTYPE;
+DTYPE min_f1(DTYPE A[SIZE]){
+    DTYPE temp[STAGE][BATCH/2];
+    DTYPE min_value = A[0];
+    #pragma HLS ARRAY_PARTITION variable=temp complete
+    #pragma HLS ARRAY_PARTITION variable=A complete
 
-// one-dimensional version
-extern "C" {
-void argmax(const int *a, // Read-Only array A
-           int* minindex,       // Output Result
-           int size    // array A Size
-) {
-   #pragma HLS INTERFACE m_axi port=a offset=slave bundle=gmem
-   #pragma HLS INTERFACE m_axi port=minindex offset=slave bundle=gmem
+    for (int i=0; i<ITERATION; i++){
+        #pragma HLS pipeline
+        for(int b=0;b<BATCH;b=b+2){ // BATCH = 2^n
+        	if( i*BATCH+b+1 <SIZE ){
+                temp[0][b/2] = min_unit(A[i*BATCH+b],A[i*BATCH+b+1]);
+        	}else if(i*BATCH+b<SIZE && i*BATCH+b+1>=SIZE ){
+        	    temp[0][b/2] = min_unit(A[i*BATCH+b],A[0]);
+        	}else {
+        		temp[0][b/2] = A[0] ;
+        }   }
 
-   #pragma HLS INTERFACE s_axilite port=a bundle=control
-   #pragma HLS INTERFACE s_axilite port=minindex bundle=control
-   #pragma HLS INTERFACE s_axilite port=size bundle=control
-   #pragma HLS INTERFACE s_axilite port=return bundle=control
+        for (int s=0; s<STAGE-1; s++){
+            for(int m=0; m<BATCH/2; m=m+2){
+                temp[s+1][m/2]= min_unit(temp[s][m],temp[s][m+1]);
+        }   }
 
-    int min = a[0];
-    *minindex = 0;
-    
-    for (int i=0; i<size; i++){
-        if (a[i]<min){
-            min = a[i] ; 
-            *minindex = i ; 
-        }
+        if(temp[STAGE-1][0]<min_value)
+                min_value = temp[STAGE-1][0];
+        if(temp[STAGE-1][1]< min_value)
+            min_value = temp[STAGE-1][1];
     }
+    return min_value;
 }
+
+
+int min_f2(int A[VAR2]){
+    int temp[STAGE_2][VAR2/2];
+    int min_value = A[0];
+#pragma HLS ARRAY_PARTITION variable=temp complete
+#pragma HLS ARRAY_PARTITION variable=A complete
+
+    #pragma HLS pipeline
+    for(int b=0;b<VAR2;b=b+2){ // VAR2 = 2^n
+        temp[0][b/2] = min_unit(A[b],A[b+1]);}
+
+    for (int s=0; s<STAGE_2-1; s++){
+        for(int m=0; m<VAR2/2; m=m+2){
+            temp[s+1][m/2]= min_unit(temp[s][m],temp[s][m+1]);
+    }   }
+
+    if(temp[STAGE_2-1][0]<min_value)
+        min_value = temp[STAGE_2-1][0];
+    if(temp[STAGE_2-1][1]<min_value)
+        min_value = temp[STAGE_2-1][1];
+    return min_value;
 }
+
+DTYPE min_unit(DTYPE a , DTYPE b){
+    return a<b?a:b ;
+}
+

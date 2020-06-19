@@ -6,7 +6,7 @@
 #include <fstream>
 
 
-//#define CSIM_DEBUG
+#define CSIM_DEBUG
 
 
 typedef ap_uint<8> uint8;

@@ -48,7 +48,7 @@ FIX_32_12 compute_engine_16(FIX_WT w0,  FIX_FM b0,
 	mul14 = w14 * b14;
 	mul15 = w15 * b15;
 
-
+ 
 	add0 = mul0  + mul1;
 	add1 = mul2  + mul3;
 	add2 = mul4  + mul5;
