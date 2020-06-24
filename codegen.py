@@ -284,8 +284,10 @@ class PLCodeGenerator:
 
     def visit_PLCall(self, node, config=None):
         el = ExprList(exprs=[ self.visit(e, config) for e in node.args ])
-        return FuncCall(name=self.visit(node.func, config), args=el)
-
+        if node.is_method:
+            return FuncCall(name=StructRef(name=self.visit(node.obj, config), type='.', field=self.visit(node.func, config)), args=el)
+        else:
+            return FuncCall(name=self.visit(node.func, config), args=el)
 
     def visit_PLIfExp(self, node, config=None):
         top = TernaryOp(cond=self.visit(node.test, config),

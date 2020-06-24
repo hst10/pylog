@@ -24,7 +24,7 @@ HOST_ADDR   = 'shuang91@192.168.0.108'
 HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
 TARGET_ADDR = 'xilinx@192.168.0.118'
 TARGET_BASE = '/home/xilinx/pylog_projects'
-WORKSPACE   = HOST_BASE
+WORKSPACE   = '/home/paul/hls/pylog_projects'
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
           board='ultra96', freq=None):

@@ -417,16 +417,37 @@ class PLTyper:
 
             if not lambda_arg:
                 # allow an extra dimension for bit access
-                assert(subscript_dim < (array_dims + 1))
+                if 'fixed' in ctx[array_name][0].ty:
+                    assert(subscript_dim < (array_dims + 2))
+                else:
+                    assert(subscript_dim < (array_dims + 1))
             # node.pl_type = ctx[array_name][0] - subscript_dim
             # node.pl_shape = ctx[array_name][1][:-subscript_dim]
 
             if subscript_dim == (array_dims + 1):
-                # bit access
-                # for now only allow accesing a scalar's bits
-                # TODO: add support for bit access for arrays
-                node.pl_type = PLType('bit', 0)
-                npde.pl_shape = ()
+                # bit-wise range access
+                # last index (extra dimension) used as range function
+                # implemented as function call, which replaces original object in the node tree
+                print(">>>>>>>>>>>>>>>>BIT ACCESS")
+                indices = node.indices
+                parent = node.parent
+                range_arg = indices.pop()
+                range_fn = PLCall(func=PLVariable('range'), args=[range_arg.lower, range_arg.upper], is_method=True, obj=node)
+                
+                if node.parent.__class__.__name__ == 'PLAssign':
+                    if node.parent.target is node:
+                        node.parent.target = range_fn
+                    elif node.parent.value is node:
+                        node.parent.value = range_fn
+                range_fn.parent = node.parent
+                node = range_fn
+                
+                self.visit(node.obj, ctx)
+                for i in range(len(node.args)):
+                    self.visit(node.args[i], ctx)
+
+                node.pl_type  = PLType('bit', 0)
+                node.pl_shape = ()
 
             else:
                 shape = ()

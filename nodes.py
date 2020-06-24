@@ -250,8 +250,10 @@ class PLCall(PLNode):
         args: list of PLNodes
         attr: string
         attr_args: list of PLNodes
+        is_method: whether it is a class method with object
+        obj: object when it is a class method
     '''
-    def __init__(self, func, args, attr=None, attr_args=None, \
+    def __init__(self, func, args, attr=None, attr_args=None, is_method=False, obj=None, \
                  ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['func', 'args', 'attr', 'attr_args']
@@ -259,6 +261,8 @@ class PLCall(PLNode):
         self.args = args
         self.attr = attr # string
         self.attr_args = attr_args
+        self.is_method = is_method
+        self.obj = obj
 
 class PLPragma(PLNode):
     '''Call'''
