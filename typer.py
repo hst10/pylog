@@ -298,7 +298,9 @@ class PLTyper:
             node.is_decl = False
         else:
             if node.target.name in ctx:
-                ctx_type, ctx_shape, _ = ctx[node.target.name]
+                ctx_type, ctx_shape, ctx_decl = ctx[node.target.name]
+                if isinstance(ctx_decl, PLVariableDecl):
+                    node.is_decl = False
                 if ctx_shape == node.value.pl_shape:
                     # allow types to be different (implicit type cast)
                     node.is_decl = False
@@ -411,7 +413,7 @@ class PLTyper:
             subscript_dim = len(node.indices)
 
             if self.debug:
-                print(f'Type: >>>>>>>>>>>> {type(node.indices[0])}')
+                #print(f'Type: >>>>>>>>>>>> {type(node.indices[0])}')
                 print(f'Type: >>>>>>>>>>>> {type(node.indices)}')
                 print(f'Type: >>>>>>>>>>>> {len(node.indices)}')
 
@@ -434,7 +436,7 @@ class PLTyper:
                 range_arg = indices.pop()
                 range_fn = PLCall(func=PLVariable('range'), args=[range_arg.lower, range_arg.upper], is_method=True, obj=node)
                 
-                if node.parent.__class__.__name__ == 'PLAssign':
+                if isinstance(node.parent, PLAssign):
                     if node.parent.target is node:
                         node.parent.target = range_fn
                     elif node.parent.value is node:
