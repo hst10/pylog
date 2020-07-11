@@ -344,6 +344,7 @@ class PLTyper:
         # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLFor(self, node, ctx={}):
+        breakpoint()
         node.target.pl_type  = PLType('int', 0)
         node.target.pl_shape = ()
 
@@ -378,19 +379,45 @@ class PLTyper:
         func_name = node.func.name
         if func_name in ctx:
             func_def_node = ctx[func_name][2]
+            for i in range(len(node.args)):
+                self.visit(node.args[i], ctx)
+                func_def_node.args[i].pl_type  = node.args[i].pl_type
+                func_def_node.args[i].pl_shape = node.args[i].pl_shape
+
+            self.visit(func_def_node, ctx)
+
+            node.pl_type  = func_def_node.return_type
+            node.pl_shape = func_def_node.return_shape
+
+        elif func_name is 'len':
+            if len(node.args) is not 1:
+                print(f'Function {func_name} should only have one parameter!')
+                raise TypeError
+
+            if isinstance(node.args[0], PLVariable):
+                var_name = node.args[0].name
+                num_indice = 0
+            elif isinstance(node.args[0], PLSubscript):
+                var_name = node.args[0].var.name
+                num_indice = len(node.args[0].indices)
+            else:
+                print(f'Object of type {node.args[0]} has no len()!')
+                raise TypeError
+
+            if ctx[var_name][1] == ():
+                print(f'Object of type {ctx[var_name][0]} has no len()')
+                raise TypeError
+
+            length = PLConst(ctx[var_name][1][num_indice])
+            length.pl_type = PLType('int')
+            length.pl_shape = ()
+            for field in node.parent._fields:
+                if node is getattr(node.parent, field):
+                    setattr(node.parent, field, length)
+                    break
         else:
             print(f'Function {func_name} called before definition!')
             raise NameError
-
-        for i in range(len(node.args)):
-            self.visit(node.args[i], ctx)
-            func_def_node.args[i].pl_type  = node.args[i].pl_type
-            func_def_node.args[i].pl_shape = node.args[i].pl_shape
-
-        self.visit(func_def_node, ctx)
-
-        node.pl_type  = func_def_node.return_type
-        node.pl_shape = func_def_node.return_shape
 
     def actual_shape(self, shape):
         # return a new tuple without 1's tuple
@@ -435,7 +462,7 @@ class PLTyper:
                 parent = node.parent
                 range_arg = indices.pop()
                 range_fn = PLCall(func=PLVariable('range'), args=[range_arg.lower, range_arg.upper], is_method=True, obj=node)
-                
+
                 if isinstance(node.parent, PLAssign):
                     if node.parent.target is node:
                         node.parent.target = range_fn
@@ -443,7 +470,7 @@ class PLTyper:
                         node.parent.value = range_fn
                 range_fn.parent = node.parent
                 node = range_fn
-                
+
                 self.visit(node.obj, ctx)
                 for i in range(len(node.args)):
                     self.visit(node.args[i], ctx)
