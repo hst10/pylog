@@ -20,10 +20,11 @@ from runtime   import *
 
 import numpy as np
 
-HOST_ADDR   = 'shuang91@192.168.0.108'
-HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
+# nslookup  localhost
+HOST_ADDR   = 'wangcheng@127.0.0.1'
+HOST_BASE   = '/Users/wangcheng/vivado'
 TARGET_ADDR = 'xilinx@192.168.0.118'
-TARGET_BASE = '/home/xilinx/pylog_projects'
+TARGET_BASE = '/Users/wangcheng/vivado'
 WORKSPACE   = HOST_BASE
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, \

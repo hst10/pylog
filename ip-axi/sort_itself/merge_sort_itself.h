@@ -16,7 +16,3 @@ typedef DTYPE_ DTYPE;
 void merge_sort(DTYPE A[SIZE]);
 
 
-
-int A[8];
-
-

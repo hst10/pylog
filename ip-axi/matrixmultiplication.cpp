@@ -16,3 +16,10 @@ void matrixmul(int A[N][M], int B[M][P], int AB[N][P]) {
     }
   }
 }
+
+void matrixmul(int A[N][M], int B[M][P], int AB[N][P]) {
+
+
+
+
+}

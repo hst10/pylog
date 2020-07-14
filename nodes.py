@@ -1,6 +1,5 @@
 import ast
 
-
 def iter_fields(node):
 
     if isinstance(node, list):

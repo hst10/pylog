@@ -5,7 +5,7 @@
 #define SIZE_ 63
 #define DTYPE_ int
 //invariant variables
-//#define MAX_SIZE_ 1024
+#define MAX_SIZE_ 1024
 
 
 const static int BATCH = BATCH_;
@@ -13,14 +13,10 @@ const static int ITERATION = (SIZE_%BATCH_==0) ? SIZE_/BATCH_ : SIZE_/BATCH_+1;
 const static int STAGE = log2(BATCH)-1; 
 
 const static int SIZE = SIZE_;
-//const static int MAX_SIZE = MAX_SIZE_;
+const static int MAX_SIZE = MAX_SIZE_;
 
 
 typedef DTYPE_ DTYPE;
 
-void max(DTYPE A[SIZE] , DTYPE* max);
-DTYPE max_unit(DTYPE a , DTYPE b);
-
-
-template <class DTYPE = int, int BATCH=16, int SIZE = 63 >
-void max(DTYPE* A, DTYPE* B); 
+void min(DTYPE A[SIZE] , DTYPE* min );
+DTYPE min_unit(DTYPE a , DTYPE b);

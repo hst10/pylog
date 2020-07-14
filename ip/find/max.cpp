@@ -34,3 +34,37 @@ void max(DTYPE A[SIZE] , DTYPE* max ){
 DTYPE max_unit(DTYPE a , DTYPE b){
     return a>b?a:b ;
 }
+
+
+
+{
+
+#define NUM 8
+
+int sum = 0;
+for (int i=0; i<NUM; i++){
+    sum += A[i];
+}
+
+
+}
+{
+
+
+{{dtype}} max_{{kernel_size}}(
+            {% for i in range(kernel_size-1) %}{{dtype}} a_0_{{i}},
+            {% endfor %}{{dtype}} a_0_{{kernel_size-1}})
+{
+      {% for i in range(1,log2_kernel_size+1) %}{{dtype}} {% for j in range(((kernel_size//(2**i)))-1)%}a_{{i}}_{{j}},{% endfor %}a_{{i}}_{{ (kernel_size//(2**i))-1}}; 
+      {% endfor %}{% for i in range(1,log2_kernel_size+1) %}{% for j in range(((kernel_size//(2**i))))%}
+      if (a_{{i-1}}_{{j*2}} > a_{{i-1}}_{{j*2+1}}){a_{{i}}_{{j}} = a_{{i-1}}_{{j*2}};}
+          else {a_{{i}}_{{j}} = a_{{i-1}}_{{j*2+1}};}{% endfor %}
+      {% endfor %}
+      return a_{{log2_kernel_size}}_0;
+      
+      
+
+
+
+
+}
