@@ -1,8 +1,6 @@
 import ast
 
-
 def iter_fields(node):
-
     if isinstance(node, list):
         for item in node:
             if isinstance(item, PLNode):
@@ -28,6 +26,20 @@ def iter_child_nodes(node):
                 if isinstance(item, PLNode):
                     yield item
 
+def replace_child(parent, old_child, new_child):
+    for name, field in iter_fields(parent):
+        if isinstance(field, list):
+            for idx, child in enumerate(field):
+                if child is old_child:
+                    getattr(parent, name)[idx] = new_child
+                    new_child.parent = parent
+                    return
+        elif isinstance(field, PLNode):
+            if field is old_child:
+                setattr(parent, name, new_child)
+                new_child.parent = parent
+                return
+
 def plnode_walk(node):
     from collections import deque
     if isinstance(node, list):
@@ -49,7 +61,7 @@ def token(obj):
     type_name = obj.__class__.__name__
     token_map = {
         "And": "&&",
-        "Or": "||", 
+        "Or": "||",
         "Add": "+",
         "Sub": "-",
         "Mult": "*",
@@ -297,7 +309,7 @@ class PLAttribute(PLNode):
 class PLSubscript(PLNode):
     '''Subscript'''
     def __init__(self, var, indices, ast_node=None, config=None):
-        ''' 
+        '''
             var: expr for the array name
             indices: Python list of PLSlice/Expr
         '''
@@ -472,7 +484,7 @@ class PLLambda(PLNode):
     # def codegen(self, config, arguments, output_var):
     #     # if self.set_codegened(): return ""
     #     self.src = ""
-        
+
     #     self.iter_vars = config.iter_vars
     #     param_names = [e.name for e in self.args]
     #     argum_names = [e.name for e in arguments]
@@ -497,23 +509,23 @@ class PLReturn(PLNode):
         self.value = value
 
 '''
-    out = map(f, a, b, ...) 
+    out = map(f, a, b, ...)
     =>
-    T out[a.shape(0)]; 
+    T out[a.shape(0)];
     for (int i = 0; i < a.shape(0); i++)
     {
-        T tmp = f(a[i], b[i], ...); 
-        out[i] = tmp; 
+        T tmp = f(a[i], b[i], ...);
+        out[i] = tmp;
     }
 
 
-    out = map(lambda x, y, ...: op(x, y, ...), a, b, ...) 
+    out = map(lambda x, y, ...: op(x, y, ...), a, b, ...)
     =>
-    T out[a.shape(0)]; 
+    T out[a.shape(0)];
     for (int i = 0; i < a.shape(0); i++)
     {
-        T tmp = op(a[i], b[i], c[i], ...); 
-        out[i] = tmp; 
+        T tmp = op(a[i], b[i], c[i], ...);
+        out[i] = tmp;
     }
 '''
 
@@ -581,7 +593,7 @@ class PLDot(PLNode):
 #         idx_var_num = config.idx_var_num
 #         for dim_i in range(dim):
 #             idx_var_num += 1
-            
+
 #             # assuming these are all consts not variables
 #             lower_i = self.data[0].slices[dim_i][0]
 #             upper_i = self.data[0].slices[dim_i][1]
@@ -660,7 +672,7 @@ class PLDot(PLNode):
 #         idx_var_num = config.idx_var_num
 #         for dim_i in range(dim):
 #             idx_var_num += 1
-            
+
 #             # assuming these are all consts not variables
 #             lower_i = self.data[0].slices[dim_i][0]
 #             upper_i = self.data[0].slices[dim_i][1]
@@ -775,8 +787,7 @@ class PLDot(PLNode):
 #         for dim_i in range(self.dim):
 #             indent_level -= 1
 #             self.src += indent_str*indent_level + "}\n"
-            
+
 #         config.indent_level = indent_level
 
 #         return self.src
-

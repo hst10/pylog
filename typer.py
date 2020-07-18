@@ -344,7 +344,6 @@ class PLTyper:
         # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLFor(self, node, ctx={}):
-        breakpoint()
         node.target.pl_type  = PLType('int', 0)
         node.target.pl_shape = ()
 
@@ -376,11 +375,13 @@ class PLTyper:
             self.visit(stmt, ctx)
 
     def visit_PLCall(self, node, ctx={}):
+        #breakpoint()
         func_name = node.func.name
         if func_name in ctx:
             func_def_node = ctx[func_name][2]
             for i in range(len(node.args)):
                 self.visit(node.args[i], ctx)
+                #breakpoint()
                 func_def_node.args[i].pl_type  = node.args[i].pl_type
                 func_def_node.args[i].pl_shape = node.args[i].pl_shape
 
@@ -411,10 +412,7 @@ class PLTyper:
             length = PLConst(ctx[var_name][1][num_indice])
             length.pl_type = PLType('int')
             length.pl_shape = ()
-            for field in node.parent._fields:
-                if node is getattr(node.parent, field):
-                    setattr(node.parent, field, length)
-                    break
+            replace_child(node.parent, node, length)
         else:
             print(f'Function {func_name} called before definition!')
             raise NameError
@@ -463,12 +461,7 @@ class PLTyper:
                 range_arg = indices.pop()
                 range_fn = PLCall(func=PLVariable('range'), args=[range_arg.lower, range_arg.upper], is_method=True, obj=node)
 
-                if isinstance(node.parent, PLAssign):
-                    if node.parent.target is node:
-                        node.parent.target = range_fn
-                    elif node.parent.value is node:
-                        node.parent.value = range_fn
-                range_fn.parent = node.parent
+                replace_child(node.parent, node, range_fn)
                 node = range_fn
 
                 self.visit(node.obj, ctx)
