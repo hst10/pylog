@@ -301,6 +301,28 @@ class PLOptMapTransformer:
         return [ var_decl, stmt[0], write_back ]
         # return stmt[0]
 
+    def visit_PLFunctionDef(self, node, config=None):
+        #breakpoint()
+        for field, old_value in iter_fields(node):
+            if isinstance(old_value, list):
+                new_values = []
+                for value in old_value:
+                    if isinstance(value, PLNode):
+                        value = self.visit(value, config)
+                        if value is None:
+                            continue
+                        elif not isinstance(value, PLNode):
+                            new_values.extend(value)
+                            continue
+                    new_values.append(value)
+                old_value[:] = new_values
+            elif isinstance(old_value, PLNode):
+                new_node = self.visit(old_value, config)
+                if new_node is None:
+                    delattr(node, field)
+                else:
+                    setattr(node, field, new_node)
+        return node
 
 
 

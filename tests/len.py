@@ -5,18 +5,19 @@ import numpy as np
 from pylog import *
 
 @pylog(mode='debug')#(mode='pysim')
-def pl_len(a, b, c):
-    def add(a, b):
-        return a + b
+def pl_len(a:'buffer', b:'buffer', c):
+    def multiply(a):
+        result = 1
+        for i in a:
+            result = result * i
+        return result
 
     def test_len(a, b, c):
-        tmp = np.empty((128, 256, 512, 1024), pl_fixed(16, 16))
-        pragma("HLS array_partition variable=tmp complete dim=2")
-
-        l1 = add(len(tmp), 1)
-        l2 = len(tmp[0])
-        l3 = len(tmp[1][2])
-        l4 = len(tmp[3][2][1])
+        tmp = np.empty((128,), pl_fixed(16, 16))
+        tmp2 = np.empty((256,), pl_fixed(16, 16))
+        pragma("HLS array_partition variable=tmp complete")
+        multiply(tmp)
+        multiply(tmp2)
 
     test_len(a, b, c)
 

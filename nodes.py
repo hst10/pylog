@@ -443,15 +443,16 @@ class PLFunctionDef(PLNode):
         decorator_list: list of PLNodes
     '''
     def __init__(self, name, args, body, decorator_list, pl_top=False,
-                 ast_node=None, config=None):
+                 ast_node=None, config=None, annotations={}):
         PLNode.__init__(self, ast_node, config)
-        self._fields = ['name', 'args', 'body', 'decorator_list']
+        self._fields = ['name', 'args', 'body', 'decorator_list', 'annotations']
         self.name = name
         self.args = args
         self.body = body
         self.decorator_list = decorator_list
         self.iter_vars = []
         self.pl_top = pl_top
+        self.annotations = annotations
         # if config != None:
         #     print(">>>>>>>>>>> FuncDef Found CONFIG")
         #     print(config.var_list)

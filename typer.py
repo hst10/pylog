@@ -74,12 +74,29 @@ class PLTyper:
         local_ctx = copy.copy(ctx)
 
         if node.pl_top:
+            #breakpoint()
+            buffer_decls = []
             for arg in node.args:
                 type_name, shape = self.args_info[arg.name]
                 arg.pl_type  = PLType(ty=np_pl_type_map(type_name),
                                       dim=len(shape))
                 arg.pl_shape = shape
 
+                # copy input array to buffer when annotation=buffer
+                # specifically, create a new node named var, which will be used
+                # as a buffer for top function's input
+                # change the name of top function's input to _var
+                annotation = node.annotations[arg.name]
+                if annotation is not None and annotation.value == 'buffer':
+                    breakpoint()
+                    elts = [ PLConst(e) for e in shape ]
+                    buffer_decl = PLArrayDecl(ele_type=arg.pl_type.ty,
+                                              name=PLVariable(name=arg.name),
+                                              dims=PLArray(elts=elts))
+                    local_ctx[arg.name] = (arg.pl_type, arg.pl_shape, arg)
+                    buffer_decls.append(buffer_decl)
+                    arg.name = '_' + arg.name
+            node.body.insert(0, buffer_decls)
         node.return_type  = PLType('void', 0)
         node.return_shape = ()
 
@@ -122,7 +139,7 @@ class PLTyper:
         node.pl_shape = dims
 
         # node.pl_ctx   = copy.copy(ctx)
-
+        #breakpoint()
         # node.name is a PLVariable object
         # node.pl_ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
         ctx[node.name.name] = (node.pl_type, node.pl_shape, node)
@@ -152,6 +169,7 @@ class PLTyper:
                 # node.pl_ctx   = {}
             else:
                 print(node.name)
+                breakpoint()
                 raise NameError
 
         # return node.pl_type, node.pl_shape, node.pl_ctx
