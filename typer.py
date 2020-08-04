@@ -75,7 +75,8 @@ class PLTyper:
 
         if node.pl_top:
             #breakpoint()
-            buffer_decls = []
+            buf_decls = []
+            buf_loops = []
             for arg in node.args:
                 type_name, shape = self.args_info[arg.name]
                 arg.pl_type  = PLType(ty=np_pl_type_map(type_name),
@@ -88,15 +89,22 @@ class PLTyper:
                 # change the name of top function's input to _var
                 annotation = node.annotations[arg.name]
                 if annotation is not None and annotation.value == 'buffer':
-                    breakpoint()
+                    #breakpoint()
                     elts = [ PLConst(e) for e in shape ]
-                    buffer_decl = PLArrayDecl(ele_type=arg.pl_type.ty,
-                                              name=PLVariable(name=arg.name),
-                                              dims=PLArray(elts=elts))
+                    buf_decl = PLArrayDecl(ele_type=arg.pl_type.ty,
+                                           name=PLVariable(arg.name),
+                                           dims=PLArray(elts=elts))
+
+                    buf_loop = PLAssign(op='=',
+                                        target=PLVariable(arg.name),
+                                        value=PLVariable('_'+arg.name))
+                    buf_decls.append(buf_decl)
+                    buf_loops.append(buf_loop)
+
                     local_ctx[arg.name] = (arg.pl_type, arg.pl_shape, arg)
-                    buffer_decls.append(buffer_decl)
                     arg.name = '_' + arg.name
-            node.body.insert(0, buffer_decls)
+            node.body.insert(0, buf_loops)
+            node.body.insert(0, buf_decls)
         node.return_type  = PLType('void', 0)
         node.return_shape = ()
 
@@ -472,12 +480,16 @@ class PLTyper:
             if subscript_dim == (array_dims + 1):
                 # bit-wise range access
                 # last index (extra dimension) used as range function
-                # implemented as function call, which replaces original object in the node tree
+                # implemented as function call, which replaces original object
+                # in the node tree
                 print(">>>>>>>>>>>>>>>>BIT ACCESS")
                 indices = node.indices
                 parent = node.parent
                 range_arg = indices.pop()
-                range_fn = PLCall(func=PLVariable('range'), args=[range_arg.lower, range_arg.upper], is_method=True, obj=node)
+                range_fn = PLCall(func=PLVariable('range'),
+                                  args=[range_arg.lower, range_arg.upper],
+                                  is_method=True,
+                                  obj=node)
 
                 replace_child(node.parent, node, range_fn)
                 node = range_fn
