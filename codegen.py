@@ -4,6 +4,7 @@ from cgen.c_ast import *
 from cgen.pylog_cast import *
 from cgen.c_generator import *
 from typer import PLType
+import IPanalyzer
 
 def filter_none(lst):
     return list(filter(None, lst))
@@ -61,8 +62,10 @@ class PLCodeGenerator:
         self.debug = debug
         self.board = board
         self.num_mem_ports = 4
-
-    def codegen(self, node, config=None):
+        self.recordip = 0
+    ##@@ project_path
+    def codegen(self, node, project_path, config=None):
+        self.project_path = project_path
         self.cc += self.visit(node, config)
         if self.board == 'aws_f1' or self.board.startswith('alveo'):
             self.ccode = self.include_code() + 'extern "C" {\n' + \
@@ -72,7 +75,7 @@ class PLCodeGenerator:
         return self.ccode
 
     def include_code(self):
-        header_files = ['ap_int.h', 'ap_fixed.h']
+        header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h'] #@@ cy
         return ''.join([ f'#include "{f}"\n' for f in header_files])
 
     def iter_fields(self, node):
@@ -286,6 +289,12 @@ class PLCodeGenerator:
         el = ExprList(exprs=[ self.visit(e, config) for e in node.args ])
         return FuncCall(name=self.visit(node.func, config), args=el)
 
+#@@ modified by cy
+    def visit_PLIPcore(self, node, config=None):
+        el = ExprList(exprs=[ self.visit(e, config) for e in node.args ])
+        IPanalyzer.ip_generator(node, self.project_path, self.recordip)
+        self.recordip = self.recordip + 1
+        return FuncCall(name=ID(node.name+'_'+str(self.recordip-1)), args=el)
 
     def visit_PLIfExp(self, node, config=None):
         top = TernaryOp(cond=self.visit(node.test, config),

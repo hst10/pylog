@@ -1,0 +1,25 @@
+#include "insertion_sort_parallel.h"
+#include "assert.h"
+
+void insertion_sort_parallel({{d0}} A[{{s0}}], {{d0}} B[{{s0}}]) {
+#pragma HLS array_partition variable=B cyclic factor={{v0}}
+ L1:
+    for(int i = 0; i < {{s0}}; i++) {
+#pragma HLS pipeline II={{v1}}
+        {{d0}} item = A[i];
+    L2:
+        for(int j = {{s0}}-1; j >= 0; j--) {
+            {{d0}} t;
+            if(j > i) {
+                t = B[j];
+            } else if(j > 0 && B[j-1] > item) {
+                t = B[j-1];
+            } else {
+                t = item;
+                if (j > 0)
+                    item = B[j-1];
+            }
+            B[j] = t;
+        }
+    }
+}

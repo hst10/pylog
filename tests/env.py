@@ -1,2 +1,2 @@
 import sys
-sys.path.extend(['/Users/wangcheng/Github/pylog/'])
+sys.path.extend(['/home/wcy/Documents/github/pylog'])
