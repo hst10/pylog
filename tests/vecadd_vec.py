@@ -12,8 +12,23 @@ from the input NumPy arrays.
 
 @pylog(mode='debug')
 def pl_vecadd(a, b, c):
-    for i in range(1024).pipeline():
-        c[i] = a[i] + b[i]
+    for idx in range(len(a)):
+        c[idx] = a[idx] + b[idx]
+
+
+@pylog(mode='debug')
+def pl_vecadd2(a, b, c):
+    c = a + b
+    d = a + c
+
+
+# @pylog(mode='debug, viz')
+# def pl_vecadd3(a, b, c):
+#    c=map(lambda x:x,b)
+
+@pylog(mode='debug')
+def pl_vecadd4(a, b, c):
+    c[:15] = a[:15] + b[15:30]
 
 
 if __name__ == "__main__":
@@ -30,7 +45,11 @@ if __name__ == "__main__":
     # print(b)
     # print(c)
 
+    # pl_vecadd(a, b, c)
+    # pl_vecadd2(a, b, c)
     pl_vecadd(a, b, c)
+    pl_vecadd2(a, b, c)
+    pl_vecadd4(a, b, c)
     # print("result arrays: ")
     # print(a)
     # print(b)
