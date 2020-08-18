@@ -227,7 +227,7 @@ class PLChainingRewriter:
                 raise NameError
 
     def visit_general_variable_nodes(self, node, stmt_node=None):
-        if len(stmt_node.pl_shape) > 0:
+        if len(stmt_node.pl_shape) > 0 and not (len(stmt_node.pl_shape)==1 and stmt_node.pl_shape[0]==1):
             # create a new PLSubscript to realize PLSubscript to PLSubscript
             indices = []
             if len(node.pl_shape) == 0:
