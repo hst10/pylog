@@ -18,8 +18,8 @@ def init_array(A,p):
     return 0# TODO: compiler signature return type void if no return
 
 @pylog(mode='hwgen',board='zedboard')
-def pl_cholesky_naive(A,p):
-    def kernel_cholesky_naive(A,p):
+def pl_cholesky_golden(A,p):
+    def kernel_cholesky_golden(A,p):
         for i in range(1024):# TODO: replace hard coded with N
             x=A[i,i]
             for j in range(i):
@@ -30,10 +30,10 @@ def pl_cholesky_naive(A,p):
                 for k in range(i):
                     x=x-A[j,k]*A[i,k]
                 A[j,i]=x*p[i]
-    kernel_cholesky_naive(A,p)
+    kernel_cholesky_golden(A,p)
 
 if __name__=="__main__":
     A=np.empty([N,N],dtype=np.float)
     p=np.empty(N,dtype=np.float)
     init_array(A,p)
-    pl_cholesky_naive(A,p)
+    pl_cholesky_golden(A,p)
