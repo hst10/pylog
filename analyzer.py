@@ -141,27 +141,27 @@ class PLAnalyzer(PLPostorderVisitor):
                                        ast_node=node,
                                        config=config)
         else:
-            node.pl_data = PLUnaryOp(op=token(node.op), 
-                                     operand=node.operand.pl_data, 
-                                     ast_node=node, 
+            node.pl_data = PLUnaryOp(op=token(node.op),
+                                     operand=node.operand.pl_data,
+                                     ast_node=node,
                                      config=None)
         return node.pl_data
 
     def visit_BinOp(self, node, config=None):
-        node.pl_data = PLBinOp(op=token(node.op), 
-                               left=node.left.pl_data, 
-                               right=node.right.pl_data, 
-                               ast_node=node, 
+        node.pl_data = PLBinOp(op=token(node.op),
+                               left=node.left.pl_data,
+                               right=node.right.pl_data,
+                               ast_node=node,
                                config=config)
         return node.pl_data
 
     def visit_BoolOp(self, node, config=None):
         expr = node.values[0].pl_data
         for i in range(1, len(node.values)):
-            expr = PLBinOp(op=token(node.op), 
-                           left=expr, 
+            expr = PLBinOp(op=token(node.op),
+                           left=expr,
                            right=node.values[i].pl_data,
-                           ast_node=node, 
+                           ast_node=node,
                            config=config)
         node.pl_data = expr
         return node.pl_data
@@ -169,10 +169,10 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_Compare(self, node, config=None):
         expr = node.left.pl_data
         for i in range(len(node.comparators)):
-            expr = PLBinOp(op=token(node.ops[i]), 
-                           left=expr, 
+            expr = PLBinOp(op=token(node.ops[i]),
+                           left=expr,
                            right=node.comparators[i].pl_data,
-                           ast_node=node, 
+                           ast_node=node,
                            config=config)
         node.pl_data = expr
         return node.pl_data
@@ -316,10 +316,10 @@ class PLAnalyzer(PLPostorderVisitor):
         pass
 
     def visit_IfExp(self, node, config=None):
-        node.pl_data = PLIfExp(test=node.test.pl_data, 
+        node.pl_data = PLIfExp(test=node.test.pl_data,
                                body=node.body.pl_data,
-                               orelse=node.orelse.pl_data, 
-                               ast_node=node, 
+                               orelse=node.orelse.pl_data,
+                               ast_node=node,
                                config=config)
         return node.pl_data
 
@@ -345,12 +345,12 @@ class PLAnalyzer(PLPostorderVisitor):
         if isinstance(var, PLSubscript):
             node.pl_data = PLSubscript(var=var.var,
                                        indices=(var.indices+indices),
-                                       ast_node=node, 
+                                       ast_node=node,
                                        config=config)
         else:
-            node.pl_data = PLSubscript(var=var, 
+            node.pl_data = PLSubscript(var=var,
                                        indices=indices,
-                                       ast_node=node, 
+                                       ast_node=node,
                                        config=config)
         return node.pl_data
 
@@ -387,9 +387,9 @@ class PLAnalyzer(PLPostorderVisitor):
         #     self.visit(target, config)
 
         # sometimes the pl_data has already been populated
-        # when visiting the right-hand side, for example, 
+        # when visiting the right-hand side, for example,
         # a = np.empty([3, 4]) generates array declaration
-        # for the whole assignment.  
+        # for the whole assignment.
 
         if hasattr(node, "pl_data"):
             return node.pl_data
@@ -400,9 +400,9 @@ class PLAnalyzer(PLPostorderVisitor):
         node.value.pl_targets = node.pl_targets
 
         node.pl_data = PLAssign(op='=',
-                                target=node.targets[0].pl_data, 
+                                target=node.targets[0].pl_data,
                                 value=node.value.pl_data,
-                                ast_node=node, 
+                                ast_node=node,
                                 config=config)
 
         # if config == None:
@@ -418,9 +418,9 @@ class PLAnalyzer(PLPostorderVisitor):
 
     def visit_AugAssign(self, node, config=None):
         node.pl_data = PLAssign(op=token(node.op)+'=',
-                                target=node.target.pl_data, 
+                                target=node.target.pl_data,
                                 value=node.value.pl_data,
-                                ast_node=node, 
+                                ast_node=node,
                                 config=config)
 
     def visit_Assert(self, node, config=None):
@@ -440,7 +440,7 @@ class PLAnalyzer(PLPostorderVisitor):
         node.pl_data = PLIf(test=node.test.pl_data,
                             body=[ e.pl_data for e in node.body ],
                             orelse=[ e.pl_data for e in node.orelse ],
-                            ast_node=node, 
+                            ast_node=node,
                             config=config)
 
     def visit_For(self, node, config=None):
@@ -458,7 +458,7 @@ class PLAnalyzer(PLPostorderVisitor):
         node.pl_data = PLWhile(test=node.test.pl_data,
                                body=[ e.pl_data for e in node.body ],
                                orelse=[ e.pl_data for e in node.orelse ],
-                               ast_node=node, 
+                               ast_node=node,
                                config=config)
 
     def visit_Break(self, node, config=None):
@@ -507,7 +507,8 @@ class PLAnalyzer(PLPostorderVisitor):
                     decorator_list=[e.pl_data for e in node.decorator_list],
                     pl_top=pl_top,
                     ast_node=node,
-                    config=config)
+                    config=config,
+                    annotations=self.args)
 
         return node.pl_data
 
@@ -535,8 +536,8 @@ class PLAnalyzer(PLPostorderVisitor):
         # if node.annotation != None:
         #     self.visit(node.annotation, config)
 
-        node.pl_data = PLVariable(name=node.arg, 
-                                  ast_node=node, 
+        node.pl_data = PLVariable(name=node.arg,
+                                  ast_node=node,
                                   config=config)
 
         # print("PyLog arg |||>>>>", type(node))

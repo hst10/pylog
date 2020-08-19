@@ -10,36 +10,38 @@ import textwrap
 import functools
 import subprocess
 
-from visitors  import *
-from analyzer  import *
-from typer     import *
+from visitors import *
+from analyzer import *
+from typer import *
 from optimizer import *
-from codegen   import *
-from sysgen    import *
-from runtime   import *
+from codegen import *
+from sysgen import *
+from runtime import *
+from chaining_rewriter import *
 
 import numpy as np
 
-HOST_ADDR   = 'shuang91@192.168.0.108'
-HOST_BASE   = '/home/shuang91/vivado_projects/pylog_projects'
+HOST_ADDR = 'shuang91@192.168.0.108'
+HOST_BASE = '/home/shuang91/vivado_projects/pylog_projects'
 TARGET_ADDR = 'xilinx@192.168.0.118'
 TARGET_BASE = '/home/xilinx/pylog_projects'
-WORKSPACE   = HOST_BASE
+WORKSPACE = HOST_BASE
+
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
           board='ultra96', freq=None):
     if func is None:
-        return functools.partial(pylog, mode=mode,   path=path,\
-                                        board=board, freq=freq)
+        return functools.partial(pylog, mode=mode, path=path, \
+                                 board=board, freq=freq)
 
-    code_gen   = ('cgen' or 'codegen') in mode
-    hwgen      = 'hwgen' in mode
-    vivado_only= 'vivado_only' in mode
+    code_gen = ('cgen' or 'codegen') in mode
+    hwgen = 'hwgen' in mode
+    vivado_only = 'vivado_only' in mode
     pysim_only = 'pysim' in mode
-    deploy     = ('deploy' or 'run' or 'acc') in mode
-    debug      = 'debug' in mode
-    timing     = 'timing' in mode
-    viz        = 'viz' in mode
+    deploy = ('deploy' or 'run' or 'acc') in mode
+    debug = 'debug' in mode
+    timing = 'timing' in mode
+    viz = 'viz' in mode
 
     if freq is None:
         if (board == 'aws_f1' or board.startswith('alveo')):
@@ -59,7 +61,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
         arg_names = inspect.getfullargspec(func).args
 
         for arg in args:
-            assert(isinstance(arg, (np.ndarray, np.generic)))
+            assert (isinstance(arg, (np.ndarray, np.generic)))
 
         arg_info = {}
 
@@ -74,31 +76,30 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
             arg_info[arg_names[i]] = (type_name, args[i].shape)
 
-
         # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) \
         #                                           for i in range(len(args)) }
 
-        num_array_inputs = sum(len(val[1])!=1 for val in arg_info.values())
+        num_array_inputs = sum(len(val[1]) != 1 for val in arg_info.values())
 
         project_path, top_func, max_idx, return_void = pylog_compile(
-                                            src=source_func,
-                                            arg_info=arg_info,
-                                            board=board,
-                                            path=path,
-                                            vivado_only=vivado_only,
-                                            debug=debug,
-                                            viz=viz)
+            src=source_func,
+            arg_info=arg_info,
+            board=board,
+            path=path,
+            vivado_only=vivado_only,
+            debug=debug,
+            viz=viz)
 
         config = {
             'workspace_base': WORKSPACE,
             'project_name': top_func,
             'project_path': project_path,
-            'freq':         freq,
-            'top_name':     top_func,
-            'num_bundles':  max_idx,
-            'timing':       timing,
-            'board':        board,
-            'return_void':  return_void
+            'freq': freq,
+            'top_name': top_func,
+            'num_bundles': max_idx,
+            'timing': timing,
+            'board': board,
+            'return_void': return_void
         }
 
         if hwgen:
@@ -150,14 +151,15 @@ def pylog_compile(src, arg_info, board, path,
     if debug: astpretty.pprint(ast_py)
 
     # add an extra attribute pointing to parent for each node
-    ast_link_parent(ast_py) # need to be called before analyzer
+    ast_link_parent(ast_py)  # need to be called before analyzer
 
     # instantiate passes
-    tester    = PLTester()
-    analyzer  = PLAnalyzer(debug=debug)
-    typer     = PLTyper(arg_info, debug=debug)
+    tester = PLTester()
+    analyzer = PLAnalyzer(debug=debug)
+    typer = PLTyper(arg_info, debug=debug)
+    chaining_rewriter = PLChainingRewriter(debug=debug)
     optimizer = PLOptimizer(debug=debug)
-    codegen   = PLCodeGenerator(arg_info, board, debug=debug)
+    codegen = PLCodeGenerator(arg_info, board, debug=debug)
 
     # execute passes
     if debug:
@@ -170,6 +172,8 @@ def pylog_compile(src, arg_info, board, path,
         print(pylog_ir)
 
     typer.visit(pylog_ir)
+
+    chaining_rewriter.visit(pylog_ir)
 
     # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
@@ -197,20 +201,22 @@ def pylog_compile(src, arg_info, board, path,
         import pylogviz
         pylogviz.show(src, pylog_ir)
 
-
     return project_path, analyzer.top_func, \
            codegen.max_idx, codegen.return_void
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     a = np.array([1, 3, 5])
     b = np.array([2, 4, 6])
+
 
     @pylog
     def test(a, b):
         return a + b
 
+
     test(a, b)
+
 
 def pl_fixed(total_bits, dec_bits):
     return np.dtype([(f'total{total_bits}bits', np.int32), \
