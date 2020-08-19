@@ -204,7 +204,7 @@ class PLAnalyzer(PLPostorderVisitor):
                         if isinstance(node.args[1].pl_data, PLConst):
                             ele_type = node.args[1].pl_data.value
                         else:
-                            ty = node.args[1].pl_data.name
+                            ty = node.args[1].pl_data.attr
                             if ty.startswith("pl_"):
                                 ty = np_pl_type_map(ty[3:])
                             ele_type = ty

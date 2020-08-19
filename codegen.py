@@ -385,7 +385,8 @@ class PLCodeGenerator:
             return int32(0)
 
     def visit_PLAssign(self, node, config=None):
-
+        #TODO: the compound assign operator can be transcripted correctly now, such as -=, +=
+        # but we don't know them in the compiler flow. Do we need to break them down to assign with children lhs and binop rhs?
         target_c_obj = self.visit(node.target, config)
         assign_dim = node.target.pl_type.dim
         decl = None

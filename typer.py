@@ -123,7 +123,7 @@ class PLTyper:
                 local_ctx[arg.name] = (arg.pl_type, arg.pl_shape, arg)
             for stmt in node.body:
                 self.visit(stmt, local_ctx,
-                           is_statement=True)  # This could include chaining for-loop expression. ending point of propagation
+                           is_statement=True)  
                 if isinstance(stmt, PLReturn):
                     node.return_type = stmt.pl_type
                     node.return_shape = stmt.pl_shape
@@ -194,7 +194,7 @@ class PLTyper:
         # return node.pl_type, node.pl_shape, node.pl_ctx
 
     def visit_PLUnaryOp(self, node, ctx={}):
-        self.visit(node.operand, ctx)  # This could include chaining for-loop expression
+        self.visit(node.operand, ctx)  
         node.pl_type = node.operand.pl_type
         node.pl_shape = node.operand.pl_shape
         # node.pl_ctx   = node.operand.pl_ctx
@@ -207,8 +207,8 @@ class PLTyper:
     def visit_PLBinOp(self, node, ctx={}):
 
         self.visit(node.op, ctx)  # TODO: What is this for?
-        self.visit(node.left, ctx)  # This could include chaining for-loop expression
-        self.visit(node.right, ctx)  # This could include chaining for-loop expression
+        self.visit(node.left, ctx)  
+        self.visit(node.right, ctx)  
 
         left_shape = self.actual_shape(node.left.pl_shape)
         right_shape = self.actual_shape(node.right.pl_shape)
@@ -329,6 +329,8 @@ class PLTyper:
         node.is_decl = True
         if isinstance(node.target, PLSubscript):
             node.is_decl = False
+        elif len(node.op)>=2:#compound assignment operator like += implies the value is already defined
+            node.is_decl= False
         else:
             if node.target.name in ctx:
                 ctx_type, ctx_shape, ctx_decl = ctx[node.target.name]
@@ -347,7 +349,7 @@ class PLTyper:
                                      node.target.pl_shape, \
                                      node)
         else:
-            self.visit(node.target, ctx)  # This could include chaining for-loop expression。
+            self.visit(node.target, ctx)  
             target_type = node.target.pl_type
             target_shape = node.target.pl_shape
 
@@ -363,7 +365,7 @@ class PLTyper:
             node.pl_shape = node.target.pl_shape
 
     def visit_PLReturn(self, node, ctx={}):
-        self.visit(node.value, ctx)  # This could include chaining for-loop expression. ending point of propagation
+        self.visit(node.value, ctx)  
         if node.value:
             node.pl_type = node.value.pl_type
             node.pl_shape = node.value.pl_shape
@@ -384,7 +386,7 @@ class PLTyper:
                                  node.target)
         self.visit(node.iter_dom, ctx)
         for stmt in node.body:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
+            self.visit(stmt, ctx)  
 
         # node.pl_ctx = copy.copy(ctx)
 
@@ -396,23 +398,26 @@ class PLTyper:
 
     def visit_PLWhile(self, node, ctx={}):
         for stmt in node.body:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
+            self.visit(stmt, ctx)  
 
         # node.pl_ctx = copy.copy(ctx)
 
     def visit_PLIf(self, node, ctx={}):
         for stmt in node.body:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
+            self.visit(stmt, ctx)  
 
         for stmt in node.orelse:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
+            self.visit(stmt, ctx)  
 
     def visit_PLIfExp(self, node, ctx={}):
-        for stmt in node.body:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
-
-        for stmt in node.orelse:
-            self.visit(stmt, ctx)  # This could include chaining for-loop expression. ending point of propagation
+        #This is to deal with single-line (a if condition else b) expression
+        self.visit(node.body, ctx)
+        self.visit(node.orelse, ctx)  
+        #right now only support node.body shape and type equals those of node.orelse
+        assert(node.body.pl_shape==node.orelse.pl_shape)
+        assert(node.body.pl_type==node.orelse.pl_type)
+        node.pl_shape=node.body.pl_shape
+        node.pl_type=node.body.pl_type
 
     def visit_PLCall(self, node, ctx={}):
         # breakpoint()
@@ -422,7 +427,7 @@ class PLTyper:
             node.func_def_node = func_def_node  # register the def node in nodes so that chaining rewriter can read it without passing ctx objects
             for i in range(len(node.args)):
                 self.visit(node.args[i],
-                           ctx)  # This could include chaining for-loop expression. ending point of propagation
+                           ctx)  
                 # breakpoint()
                 func_def_node.args[i].pl_type = node.args[i].pl_type
                 func_def_node.args[i].pl_shape = node.args[i].pl_shape
@@ -571,7 +576,7 @@ class PLTyper:
                 local_ctx[arg.name] = (arg.pl_type, arg.pl_shape, arg)
 
             self.visit(node.body,
-                       local_ctx)  # This could include chaining for-loop expression. ending point of propagation
+                       local_ctx)  
             node.return_type = node.body.pl_type
             node.return_shape = node.body.pl_shape
 
