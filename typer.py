@@ -79,7 +79,7 @@ class PLTyper:
         if node.pl_top:
             # breakpoint()
             buf_decls = []
-            buf_loops = []
+            buf_copies = ([], [])
             for arg in node.args:
                 type_name, shape = self.args_info[arg.name]
                 arg.pl_type = PLType(ty=np_pl_type_map(type_name),
@@ -91,24 +91,31 @@ class PLTyper:
                 # as a buffer for top function's input
                 # change the name of top function's input to _var
                 annotation = node.annotations[arg.name]
-                if annotation is not None and annotation.value == 'buffer':
-                    # breakpoint()
-                    elts = [PLConst(e) for e in shape]
+                if annotation is not None and 'buffer' in annotation.value:
+                    #breakpoint()
+                    elts = [ PLConst(e) for e in shape ]
                     buf_decl = PLArrayDecl(ele_type=arg.pl_type.ty,
                                            name=PLVariable(arg.name),
                                            dims=PLArray(elts=elts))
-
-                    buf_loop = PLAssign(op='=',
-                                        target=PLVariable(arg.name),
-                                        value=PLVariable('_' + arg.name))
                     buf_decls.append(buf_decl)
-                    buf_loops.append(buf_loop)
+
+                    if 'in' in annotation.value:
+                        buf_copy = PLAssign(op='=',
+                                            target=PLVariable(arg.name),
+                                            value=PLVariable('_'+arg.name))
+                        buf_copies[0].append(buf_copy)
+                    elif 'out' in annotation.value:
+                        buf_copy = PLAssign(op='=',
+                                            target=PLVariable('_'+arg.name),
+                                            value=PLVariable(arg.name))
+                        buf_copies[1].append(buf_copy)
 
                     local_ctx[arg.name] = (arg.pl_type, arg.pl_shape, arg)
                     arg.name = '_' + arg.name
-            node.body.insert(0, buf_loops)
+            node.body.insert(0, buf_copies[0])
             node.body.insert(0, buf_decls)
-        node.return_type = PLType('void', 0)
+            node.body.insert(len(node.body), buf_copies[1])
+        node.return_type  = PLType('void', 0)
         node.return_shape = ()
 
         if all(hasattr(arg, 'pl_type') for arg in node.args):
