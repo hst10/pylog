@@ -177,15 +177,12 @@ def pylog_compile(src, arg_info, board, path,
 
     typer.visit(pylog_ir)
 
-<<<<<<< HEAD
     if 0:
         print('\n')
         print("pylog IR after typer")
         print(pylog_ir) 
         print('\n')   
-=======
     chaining_rewriter.visit(pylog_ir)
->>>>>>> master
 
     # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)

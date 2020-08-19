@@ -461,17 +461,6 @@ class PLTyper:
             print(f'Function {func_name} called before definition!')
             raise NameError
 
-<<<<<<< HEAD
-        for i in range(len(node.args)):
-            self.visit(node.args[i], ctx)
-            func_def_node.args[i].pl_type  = node.args[i].pl_type
-            func_def_node.args[i].pl_shape = node.args[i].pl_shape
-
-        self.visit(func_def_node, ctx)
-
-        node.pl_type  = func_def_node.return_type
-        node.pl_shape = func_def_node.return_shape
-
     def check_ip_inputs(self, node):
         global_ip = IPinforms.Global_IP_args[node.name]
 
@@ -597,8 +586,6 @@ class PLTyper:
         node.pl_type, node.pl_shape  = self.calculate_ip_return(node)
 
 
-=======
->>>>>>> master
     def actual_shape(self, shape):
         # return a new tuple without 1's tuple
         # (1,4,6,1,1,5) -> (4,6,5) represents the actual shape
