@@ -3,10 +3,12 @@ from nodes import *
 from visitors import *
 import IPinforms
 
+
 def ast_link_parent(root):
     for node in ast.walk(root):
         for child in ast.iter_child_nodes(node):
             child.parent = node
+
 
 # class PLConfig:
 #     def __init__(self, indent_level=0, indent_str=" "*2, idx_var_num=0, \
@@ -48,7 +50,6 @@ class PLTester(PLPostorderVisitor):
         print("NONE!!! ")
 
 
-
 class PLAnalyzer(PLPostorderVisitor):
 
     def __init__(self, debug=False):
@@ -76,7 +77,6 @@ class PLAnalyzer(PLPostorderVisitor):
     #     """Propagate pl_targets to all downstream nodes. """
     #     pass
 
-
     ######## Literals ########
 
     # def visit_NoneType(self, node, config=None):
@@ -95,12 +95,12 @@ class PLAnalyzer(PLPostorderVisitor):
         return node.pl_data
 
     def visit_List(self, node, config=None):
-        elts=[ e.pl_data for e in node.elts ]
+        elts = [e.pl_data for e in node.elts]
         node.pl_data = PLArray(elts, node, config)
         return node.pl_data
 
     def visit_Tuple(self, node, config=None):
-        elts=[ e.pl_data for e in node.elts ]
+        elts = [e.pl_data for e in node.elts]
         node.pl_data = PLArray(elts, node, config)
         return node.pl_data
 
@@ -115,24 +115,22 @@ class PLAnalyzer(PLPostorderVisitor):
         node.pl_data = PLConst(node.value, node, config)
         return node.pl_data
 
-
     ######## Variables ########
 
     def visit_Name(self, node, config=None):
         node.pl_data = PLVariable(node.id, node, config)
         return node.pl_data
 
-
     ######## Expressions ########
 
     def visit_Expr(self, node, config=None):
-        node.pl_data = node.value.pl_data # simply propagate the value
+        node.pl_data = node.value.pl_data  # simply propagate the value
         return node.pl_data
 
     def visit_UnaryOp(self, node, config=None):
         if (node.operand.pl_data != None) and \
-            isinstance(node.operand.pl_data, PLConst) and \
-            isinstance(node.op, (ast.USub, ast.UAdd)):
+                isinstance(node.operand.pl_data, PLConst) and \
+                isinstance(node.op, (ast.USub, ast.UAdd)):
             if isinstance(node.op, ast.USub):
                 node.pl_data = PLConst(value=-node.operand.pl_data.value,
                                        ast_node=node,
@@ -180,7 +178,7 @@ class PLAnalyzer(PLPostorderVisitor):
 
     def visit_Call(self, node, config=None):
 
-#        if (config != None) and (config.target != None):
+        #        if (config != None) and (config.target != None):
 
         if hasattr(node, "pl_targets"):
             node.func.pl_targets = node.pl_targets
@@ -192,12 +190,12 @@ class PLAnalyzer(PLPostorderVisitor):
         if isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Call):
                 node.pl_data = PLCall(
-                        func=node.func.value.func.pl_data,
-                        args=[ e.pl_data for e in node.func.value.args ],
-                        attr=node.func.attr,
-                        attr_args=[ e.pl_data for e in node.args ],
-                        ast_node=node,
-                        config=config)
+                    func=node.func.value.func.pl_data,
+                    args=[e.pl_data for e in node.func.value.args],
+                    attr=node.func.attr,
+                    attr_args=[e.pl_data for e in node.args],
+                    ast_node=node,
+                    config=config)
 
             elif node.func.value.id == 'np':
                 if node.func.attr == 'empty':
@@ -205,32 +203,36 @@ class PLAnalyzer(PLPostorderVisitor):
                         if isinstance(node.args[1].pl_data, PLConst):
                             ele_type = node.args[1].pl_data.value
                         else:
-                            ty = node.args[1].pl_data.name
+                            if isinstance(node.args[1].pl_data, PLVariable):
+                                ty = node.args[1].pl_data.name
+                            else:
+                                ty = node.args[
+                                    1].pl_data.attr  # TODO: potential buggy code. Check if it is pl_data.name
                             if ty.startswith("pl_"):
                                 ty = np_pl_type_map(ty[3:])
                             ele_type = ty
                         node.pl_data = PLArrayDecl(
-                                        ele_type=ele_type,
-                                        name=node.parent.targets[0].pl_data,
-                                        dims=node.args[0].pl_data,
-                                        ast_node=node,
-                                        config=config)
+                            ele_type=ele_type,
+                            name=node.parent.targets[0].pl_data,
+                            dims=node.args[0].pl_data,
+                            ast_node=node,
+                            config=config)
                         node.parent.pl_data = node.pl_data
                 elif node.func.attr.startswith(('int', 'float')):
                     if isinstance(node.parent, ast.Assign):
                         init = node.args[0].pl_data if node.args != [] \
-                                                    else None
+                            else None
 
                         if node.func.attr.startswith('float'):
                             ty_str = 'float'
                         elif node.func.attr.startswith('int'):
                             ty_str = node.func.attr
                         node.pl_data = PLVariableDecl(
-                                        ty=ty_str,
-                                        name=node.parent.targets[0].pl_data,
-                                        init=init,
-                                        ast_node=node,
-                                        config=config)
+                            ty=ty_str,
+                            name=node.parent.targets[0].pl_data,
+                            init=init,
+                            ast_node=node,
+                            config=config)
                         node.parent.pl_data = node.pl_data
                 elif node.func.attr in IPinforms.Global_IP_args:
                     #if isinstance(node.parent, ast.Assign):
@@ -249,32 +251,32 @@ class PLAnalyzer(PLPostorderVisitor):
 
         elif node.func.id == "pl_fixed":
             if isinstance(node.parent, ast.Assign):
-                init = None# PLConst(value=0)
+                init = None  # PLConst(value=0)
 
                 node.pl_data = PLVariableDecl(
-                                ty=f'ap_fixed<{node.args[0].pl_data.value}, '+\
-                                            f'{node.args[1].pl_data.value}>',
-                                name=node.parent.targets[0].pl_data,
-                                init=init,
-                                ast_node=node,
-                                config=config)
+                    ty=f'ap_fixed<{node.args[0].pl_data.value}, ' + \
+                       f'{node.args[1].pl_data.value}>',
+                    name=node.parent.targets[0].pl_data,
+                    init=init,
+                    ast_node=node,
+                    config=config)
                 node.parent.pl_data = node.pl_data
             else:
                 node.pl_data = PLConst(
-                    value=f'ap_fixed<{node.args[0].pl_data.value}, '+\
-                                   f'{node.args[1].pl_data.value}>')
+                    value=f'ap_fixed<{node.args[0].pl_data.value}, ' + \
+                          f'{node.args[1].pl_data.value}>')
 
         elif node.func.id.startswith(("pl_int", "pl_float")):
             if isinstance(node.parent, ast.Assign):
                 init = node.args[0].pl_data if node.args != [] \
-                                                    else None
+                    else None
                 ty = np_pl_type_map(node.func.id[3:])
                 node.pl_data = PLVariableDecl(
-                                ty=ty,
-                                name=node.parent.targets[0].pl_data,
-                                init=init,
-                                ast_node=node,
-                                config=config)
+                    ty=ty,
+                    name=node.parent.targets[0].pl_data,
+                    init=init,
+                    ast_node=node,
+                    config=config)
                 node.parent.pl_data = node.pl_data
             else:
                 node.pl_data = PLConst(
@@ -290,7 +292,7 @@ class PLAnalyzer(PLPostorderVisitor):
                 target = None
             node.pl_data = PLMap(target=target,
                                  func=node.args[0].pl_data,
-                                 arrays=[ a.pl_data for a in node.args[1:] ],
+                                 arrays=[a.pl_data for a in node.args[1:]],
                                  ast_node=node,
                                  config=config)
 
@@ -308,14 +310,14 @@ class PLAnalyzer(PLPostorderVisitor):
 
 
         elif node.func.id == "PLType" and len(node.args) == 2 \
-            and isinstance(node.args[0], ast.Name) \
-            and isinstance(node.args[1], ast.Num):
+                and isinstance(node.args[0], ast.Name) \
+                and isinstance(node.args[1], ast.Num):
             node.pl_data = TypeNode(node, config)
             return node.pl_data.type
 
         else:
             node.pl_data = PLCall(func=node.func.pl_data,
-                                  args=[ e.pl_data for e in node.args ],
+                                  args=[e.pl_data for e in node.args],
                                   ast_node=node,
                                   config=config)
         return node.pl_data
@@ -337,22 +339,21 @@ class PLAnalyzer(PLPostorderVisitor):
                                    ast_node=node,
                                    config=config)
 
-
     ######## Subscripting ########
 
     def visit_Subscript(self, node, config=None):
         var = node.value.pl_data
-        indices =  node.slice.pl_data
+        indices = node.slice.pl_data
 
         if isinstance(indices, PLArray):
             indices = indices.elts
 
         if not isinstance(indices, list):
-            indices = [ indices ]
+            indices = [indices]
 
         if isinstance(var, PLSubscript):
             node.pl_data = PLSubscript(var=var.var,
-                                       indices=(var.indices+indices),
+                                       indices=(var.indices + indices),
                                        ast_node=node,
                                        config=config)
         else:
@@ -384,9 +385,8 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_ExtSlice(self, node, config=None):
         # for slc in node.dims:
         #     self.visit(slc)
-        node.pl_data = [ e.pl_data for e in node.dims ]
+        node.pl_data = [e.pl_data for e in node.dims]
         return node.pl_data
-
 
     ######## Statements ########
 
@@ -402,7 +402,7 @@ class PLAnalyzer(PLPostorderVisitor):
         if hasattr(node, "pl_data"):
             return node.pl_data
 
-        node.pl_targets = [ t.pl_data for t in node.targets ]
+        node.pl_targets = [t.pl_data for t in node.targets]
         if len(node.targets) > 1:
             raise NotImplementedError
         node.value.pl_targets = node.pl_targets
@@ -418,14 +418,12 @@ class PLAnalyzer(PLPostorderVisitor):
         # config.targets = [ t.pl_data for t in node.targets ]
         # config.curr_node = node.pl_data
 
-
-
         return node.pl_data
 
         # self.visit(node.value, config)
 
     def visit_AugAssign(self, node, config=None):
-        node.pl_data = PLAssign(op=token(node.op)+'=',
+        node.pl_data = PLAssign(op=token(node.op) + '=',
                                 target=node.target.pl_data,
                                 value=node.value.pl_data,
                                 ast_node=node,
@@ -440,14 +438,12 @@ class PLAnalyzer(PLPostorderVisitor):
     def visit_Pass(self, node, config=None):
         pass
 
-
-
     ######## Control flow ########
 
     def visit_If(self, node, config=None):
         node.pl_data = PLIf(test=node.test.pl_data,
-                            body=[ e.pl_data for e in node.body ],
-                            orelse=[ e.pl_data for e in node.orelse ],
+                            body=[e.pl_data for e in node.body],
+                            orelse=[e.pl_data for e in node.orelse],
                             ast_node=node,
                             config=config)
 
@@ -457,15 +453,15 @@ class PLAnalyzer(PLPostorderVisitor):
                                       config=config)
         node.pl_data = PLFor(target=node.target.pl_data,
                              iter_dom=node.iter.pl_data,
-                             body=[ s.pl_data for s in node.body ],
-                             orelse=[ s.pl_data for s in node.orelse ],
+                             body=[s.pl_data for s in node.body],
+                             orelse=[s.pl_data for s in node.orelse],
                              ast_node=node,
                              config=config)
 
     def visit_While(self, node, config=None):
         node.pl_data = PLWhile(test=node.test.pl_data,
-                               body=[ e.pl_data for e in node.body ],
-                               orelse=[ e.pl_data for e in node.orelse ],
+                               body=[e.pl_data for e in node.body],
+                               orelse=[e.pl_data for e in node.orelse],
                                ast_node=node,
                                config=config)
 
@@ -478,7 +474,7 @@ class PLAnalyzer(PLPostorderVisitor):
     ######## Function and class definitions ########
 
     def parse_func_args(self, arg_lst, config=None):
-        return {arg.arg:self.visit(arg.annotation, config) for arg in arg_lst}
+        return {arg.arg: self.visit(arg.annotation, config) for arg in arg_lst}
 
     def visit_FunctionDef(self, node, config=None):
         # self.visit(node.args, config)
@@ -487,7 +483,7 @@ class PLAnalyzer(PLPostorderVisitor):
 
         if node.decorator_list:
             decorator_names = [e.id if isinstance(e, ast.Name) else e.func.id \
-                                            for e in node.decorator_list]
+                               for e in node.decorator_list]
             # print(decorator_names)
             if "pylog" in decorator_names:
                 pl_top = True
@@ -509,14 +505,14 @@ class PLAnalyzer(PLPostorderVisitor):
         #     self.visit(node.body, config)
 
         node.pl_data = PLFunctionDef(
-                    name=node.name,
-                    args=node.args.pl_data,
-                    body=[stmt.pl_data for stmt in node.body],
-                    decorator_list=[e.pl_data for e in node.decorator_list],
-                    pl_top=pl_top,
-                    ast_node=node,
-                    config=config,
-                    annotations=self.args)
+            name=node.name,
+            args=node.args.pl_data,
+            body=[stmt.pl_data for stmt in node.body],
+            decorator_list=[e.pl_data for e in node.decorator_list],
+            pl_top=pl_top,
+            ast_node=node,
+            config=config,
+            annotations=self.args)
 
         return node.pl_data
 
@@ -535,7 +531,7 @@ class PLAnalyzer(PLPostorderVisitor):
         if self.debug:
             for arg in node.args:
                 print(arg.arg)
-        node.pl_data = [ arg.pl_data for arg in node.args ]
+        node.pl_data = [arg.pl_data for arg in node.args]
 
         # print("PyLog arguments |||>>>>", type(node))
         return node.pl_data
@@ -551,7 +547,6 @@ class PLAnalyzer(PLPostorderVisitor):
         # print("PyLog arg |||>>>>", type(node))
         return node.pl_data
 
-
     def visit_Return(self, node, config=None):
         return_value = node.value.pl_data if node.value else None
         node.pl_data = PLReturn(value=return_value,
@@ -560,7 +555,7 @@ class PLAnalyzer(PLPostorderVisitor):
         return node.pl_data
 
     def visit_Module(self, node, config=None):
-        node.pl_data = [ stmt.pl_data for stmt in node.body ]
+        node.pl_data = [stmt.pl_data for stmt in node.body]
         return node.pl_data
         # for stmt in node.body:
         #     self.visit(stmt, config)

@@ -200,15 +200,16 @@ class PLChainingRewriter:
         return self.NOT_IN_CHAINING_OR_DONT_CARE
 
     def visit_PLIfExp(self, node, stmt_node=None):
+        #TODO: single-line expression not yet suppported
         # TODO: the condition expr *test* is harder to deal with (maybe temporary object is needed) yet not visited by this vistor
-        for stmt in node.body:
-            self.visit(stmt,
-                       stmt_node=stmt)  # This could include chaining for-loop expression. ending point of propagation
-
-        for stmt in node.orelse:
-            self.visit(stmt,
-                       stmt_node=stmt)  # This could include chaining for-loop expression. ending point of propagation
         return self.NOT_IN_CHAINING_OR_DONT_CARE
+        #self.visit(node.body,
+        #               stmt_node=stmt_node)  # This could include chaining for-loop expression. ending point of propagation
+
+        #self.visit(node.orelse,
+        #               stmt_node=stmt_node)  # This could include chaining for-loop expression. ending point of propagation
+
+
 
     def visit_PLCall(self, node, stmt_node=None):
         # breakpoint()
