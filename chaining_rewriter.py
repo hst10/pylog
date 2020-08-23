@@ -48,6 +48,10 @@ class PLChainingRewriter:
                 del item.parent
         return self.NOT_IN_CHAINING_OR_DONT_CARE
 
+    def visit_PLIPcore(self, node, stmt_node=None):
+        #TODO: not supported function call
+        return self.NOT_IN_CHAINING_OR_DONT_CARE
+
     def visit_PLChainingTop(self, node, stmt_node=None):
         assert (
                 0 and "visiting chaining top is not supposed to happen. Possible reason: reusing function but this is not supported")
@@ -81,7 +85,7 @@ class PLChainingRewriter:
         #    pass
         # else:
         #    self.visit(node.elts[0], stmt_node) #TODO: not dealing with node.elts
-        return self.visit_general_variable_nodes(self, node, stmt_node=stmt_node)
+        return self.visit_general_variable_nodes(node, stmt_node=stmt_node)
 
     def visit_PLArrayDecl(self, node, stmt_node=None):
         return self.NOT_IN_CHAINING_OR_DONT_CARE

@@ -1,0 +1,20 @@
+#include "insertion_sort_itself.h"
+
+void insertion_sort_itself({{d0}} A[{{s0}}]) {
+ L1:
+    for(int i = 1; i < {{s0}}; i++) {
+	#pragma HLS LOOP_TRIPCOUNT min={{vm}} max={{vm}}
+        {{d0}} item = A[i];
+        int j = i;
+        {{d0}} t = A[j-1];
+    L2:
+        while(j > 0 && t > item) {
+			#pragma HLS LOOP_TRIPCOUNT min=0 max={{vm}}
+			#pragma HLS pipeline II={{v0}}
+            A[j] = t;
+            t = A[j-{{v0}}];
+            j--;
+        }
+        A[j] = item;
+    }
+}

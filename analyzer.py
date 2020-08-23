@@ -1,6 +1,7 @@
 from utils import *
 from nodes import *
 from visitors import *
+import IPinforms
 
 
 def ast_link_parent(root):
@@ -233,10 +234,17 @@ class PLAnalyzer(PLPostorderVisitor):
                             ast_node=node,
                             config=config)
                         node.parent.pl_data = node.pl_data
+                elif node.func.attr in IPinforms.Global_IP_args:
+                    #if isinstance(node.parent, ast.Assign):
+                    node.pl_data = PLIPcore(
+                                        args=[ e.pl_data for e in node.args],
+                                        name=node.func.attr, 
+                                        func_configs={}, 
+                                        optm_configs={}, 
+                                        ast_node=node, 
+                                        config=config)
                 else:
                     raise NotImplementedError
-
-
 
         elif node.func.id == "pragma":
             node.pl_data = PLPragma(node.args[0].pl_data, node, config)

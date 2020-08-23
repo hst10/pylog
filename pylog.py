@@ -14,9 +14,10 @@ from visitors import *
 from analyzer import *
 from typer import *
 from optimizer import *
-from codegen import *
-from sysgen import *
-from runtime import *
+from codegen   import *
+from sysgen    import *
+from runtime   import *
+import IPinforms
 from chaining_rewriter import *
 
 import numpy as np
@@ -168,21 +169,31 @@ def pylog_compile(src, arg_info, board, path,
     pylog_ir = analyzer.visit(ast_py)
     plnode_link_parent(pylog_ir)
 
-    if debug:
+    if 0:
+        print('\n')
+        print("pylog IR after analyzer")
         print(pylog_ir)
+        print('\n')
 
     typer.visit(pylog_ir)
 
+    if 0:
+        print('\n')
+        print("pylog IR after typer")
+        print(pylog_ir) 
+        print('\n')   
     chaining_rewriter.visit(pylog_ir)
 
     # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
 
-    hls_c = codegen.codegen(pylog_ir)
+    if 0:
+        print('\n')
+        print("pylog IR after optimizer")
+        print(pylog_ir) 
+        print('\n')  
 
-    if debug:
-        print("Generated C Code:")
-        print(hls_c)
+
 
     project_path = f'{path}/{analyzer.top_func}'
 
@@ -190,6 +201,13 @@ def pylog_compile(src, arg_info, board, path,
         os.makedirs(project_path)
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
+
+
+    hls_c = codegen.codegen(pylog_ir, project_path )
+
+    if 0:
+        print("Generated C Code:")
+        print(hls_c)
 
     if not vivado_only:
         output_file = f'{project_path}/{analyzer.top_func}.cpp'

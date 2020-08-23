@@ -1,0 +1,19 @@
+#include "matrixmultiplication.h"
+
+void matrixmul({{d0}} A[{{s0}}][{{s1}}], {{d0}} B[{{s1}}][{{s2}}], {{d0}} AB[{{s0}}][{{s2}}]) {
+  #pragma HLS ARRAY_RESHAPE variable=A complete dim=2
+  #pragma HLS ARRAY_RESHAPE variable=B complete dim=1
+  /* for each row and column of AB */
+  row: for(int i = 0; i < {{s0}}; ++i) {
+  #pragma HLS PIPELINE II={{v0}}
+    col: for(int j = 0; j < {{s2}}; ++j) {
+      #pragma HLS PIPELINE II=1
+      /* compute (AB)i,j */
+      {{d0}} ABij = 0;
+    product: for(int k = 0; k < {{s1}}; ++k) {
+        ABij += A[i][k] * B[k][j];
+      }
+      AB[i][j] = ABij;
+    }
+  }
+}

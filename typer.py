@@ -3,7 +3,7 @@ import copy
 
 from utils import *
 from nodes import *
-
+import IPinforms
 
 class PLType:
     '''Scalars, arrays, and functions'''
@@ -465,6 +465,131 @@ class PLTyper:
         else:
             print(f'Function {func_name} called before definition!')
             raise NameError
+
+    def check_ip_inputs(self, node):
+        global_ip = IPinforms.Global_IP_args[node.name]
+
+        if len(node.dims) != len(global_ip['dim']):
+            # check if the number of the inputs is correct
+            print(f'The input number of IP {node.name} is incorrect!')
+            raise NameError
+
+        for i in range(len(node.dims)):
+            # check if the dimensions of the inputs are correct
+            if global_ip['dim'][i] != node.dims[i]:
+                input_name = node.args[i].name
+                global_dim = global_ip['dim'][i]
+                current_dim = node.dims[i]
+                print("Note that dimension =0 indicates scalar and >1 indicates array")
+                print(f'The dimension of input {input_name} should be {global_dim} instead of {current_dim}!')
+                raise NameError
+        
+        # check types
+        for i in range(len(node.dims)):
+            if global_ip['type'][i] in node.func_configs:
+                # check if the data types are consistent    
+                global_ty = node.func_configs[global_ip['type'][i]]
+                current_ty = node.types[i]
+                input_name = node.args[i].name
+                if(current_ty != global_ty):
+                    print(f'The type of input {input_name} should be {global_ty} instead of {current_ty}!')
+                    raise NameError
+            else:
+                if (global_ip['type'][i][0]=='d'):
+                    # if begin with "d", the type should be configured
+                    node.func_configs[global_ip['type'][i]] = node.types[i]
+                else:
+                    # deal with fixed types like int, void ...
+                    global_ty = global_ip['type'][i]
+                    current_ty = node.types[i]
+                    input_name = node.args[i].name
+
+                    if ( global_ty != current_ty):
+                        print(f'The type of input {input_name} should be {global_ty} instead of {current_ty}!')
+                        raise NameError
+        
+        # check shapes
+        for i in range(len(node.dims)):
+            if (node.dims[i]==0):
+                print("input is a scalar, nothing to do")
+            
+            # input is a one-dimensional array
+            if (node.dims[i]==1):
+                if global_ip['shape'][i] in node.func_configs:
+                    # check if the data shape are consistent    
+                    global_sp = node.func_configs[global_ip['shape'][i]]
+                    current_sp = node.shapes[i][0]
+                    input_name = node.args[i].name
+                    if(current_sp != global_sp):
+                        print(f'The shape of input {input_name} should be {global_sp} instead of {current_sp}!')
+                        raise NameError
+                else:
+                    if (global_ip['shape'][i][0]=='s') :
+                        # if begin with "s", the shape should be configured
+                        node.func_configs[global_ip['shape'][i]] = node.shapes[i][0]
+            
+            # the input dimension is >1
+            if (node.dims[i]>1):
+                for j in range(node.dims[i]):
+                    if global_ip['shape'][i][j] in node.func_configs:
+                        print("enter")
+                        # check if the data shape are consistent    
+                        global_sp = node.func_configs[global_ip['shape'][i][j]]
+                        current_sp = node.shapes[i][j]
+                        input_name = node.args[i].name
+                        print(input_name)
+                        print(global_sp)
+                        print(current_sp)
+                        if(current_sp != global_sp):
+                            print(f'The size of dimension {j} of input {input_name} should be {global_sp} instead of {current_sp}!')
+                            raise NameError
+                    else:
+                        if (global_ip['shape'][i][j][0]=='s') :
+                            # if begin with "s", the shape should be configured
+                            node.func_configs[global_ip['shape'][i][j]] = node.shapes[i][j]
+        print(node.func_configs)
+
+
+    def calculate_ip_return(self, node):
+        global_ip_ret = IPinforms.Global_IP_args[node.name]['ret']
+        if (global_ip_ret[0]=='d'):
+            return PLType( node.func_configs[global_ip_ret[0]],0), () 
+        if (global_ip_ret =='void'):
+            return PLType('void', 0) , ()
+        else :
+            return PLType( global_ip_ret, 0) , ()     
+
+## have not consider the situation that argmax(1, a+2), a is not defined
+## have not consider the input is constant such as np.testip(m,m,m,m,5)
+## have not consider IP shape is fixed 
+    def visit_PLIPcore(self, node, ctx={}):
+        print("\n ctx")
+        print(ctx)
+        print("\n args")
+        print(node.args)
+
+        node.types = []
+        node.shapes = []
+        node.dims = []
+
+        for a in node.args:
+            self.visit(a, ctx)
+            if(isinstance(a, PLVariable)):
+                if a.name not in ctx:
+                    print(f'Input argument {a.name} of IP {node.name} called before definition!')
+                    raise NameError
+            node.types.append(a.pl_type.ty)
+            node.shapes.append(a.pl_shape)
+            node.dims.append(a.pl_type.dim)
+
+        print(node.types)
+        print(node.shapes)
+        print(node.dims)
+        print(type(node.shapes[0]))
+        
+        self.check_ip_inputs(node)
+        node.pl_type, node.pl_shape  = self.calculate_ip_return(node)
+
 
     def actual_shape(self, shape):
         # return a new tuple without 1's tuple

@@ -5,7 +5,9 @@ import time
 import jinja2
 import subprocess
 
+#TEMPLATE_DIR='/Users/wangcheng/Github/pylog/tcl_temps/'
 TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
+
 
 # list of supported boards
 supported_boards = [

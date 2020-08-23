@@ -1,6 +1,5 @@
 import ast
 
-
 def iter_fields(node):
     if isinstance(node, list):
         for item in node:
@@ -301,6 +300,17 @@ class PLCall(PLNode):
         self.is_method = is_method
         self.obj = obj
 
+
+#@@ modified by cy
+class PLIPcore(PLNode):
+    '''IP cores'''
+    def __init__(self, args, name=None, func_configs=None, optm_configs=None, ast_node=None, config=None):
+        PLNode.__init__(self, ast_node, config)
+        self._fields = ['args','name','func_configs','optm_configs']
+        self.args = args
+        self.name = name
+        self.func_configs = func_configs
+        self.optm_configs = optm_configs
 
 class PLPragma(PLNode):
     '''Call'''
