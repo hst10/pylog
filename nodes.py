@@ -200,6 +200,9 @@ class PLArrayDecl(PLNode):
         self.name = name
         self.dims = dims
 
+    def __repr__(self):
+        return f'{self.name}({self.ele_type},{len(self.dims.elts)})'
+
 
 class PLVariableDecl(PLNode):
     '''Declare a variable with optional initial value'''
@@ -476,7 +479,7 @@ class PLIterDom(PLNode):
 
 
 class PLFor(PLNode):
-    def __init__(self, target, iter_dom, body, orelse, \
+    def __init__(self, target, iter_dom, body, orelse, source=None, \
                  ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['target', 'iter_dom', 'body', 'orelse']
@@ -484,6 +487,7 @@ class PLFor(PLNode):
         self.iter_dom = iter_dom
         self.body = body
         self.orelse = orelse
+        self.source = source # the source op lowered to for (string)
 
 
 class PLWhile(PLNode):

@@ -5,7 +5,6 @@ import time
 import jinja2
 import subprocess
 
-#TEMPLATE_DIR='/Users/wangcheng/Github/pylog/tcl_temps/'
 TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
 
 
@@ -23,8 +22,8 @@ supported_boards = [
 # An example config:
 config = {
     'project_name': 'pl_matmul',
-    'project_path': '/home/shuang91/vivado_projects/pylog_projects/pl_matmul',
-    'base_path':    '/home/shuang91/vivado_projects/pylog_projects',
+    'project_path': '/home/ubuntu/vivado_projects/pylog_projects/pl_matmul',
+    'base_path':    '/home/ubuntu/vivado_projects/pylog_projects',
     'freq':         125.00, 
     'top_name':     'matmul',
     'num_bundles':  3,

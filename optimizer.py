@@ -7,12 +7,13 @@ class PLOptLoop:
     def __init__(self, plfor, subloops):
         self.plnode   = plfor
         self.subloops = subloops
+        self.source   = plfor.source
 
     def append(self, plfor):
         self.subloops.append(plfor)
 
     def __repr__(self):
-        return f'Loop_{self.plnode.target.name}{self.subloops}'
+        return f'Loop_{self.plnode.target.name}({self.source}){self.subloops}'
 
     def unroll(self, factor=None):
         self.plnode.iter_dom.attr = 'unroll'
@@ -91,7 +92,7 @@ class PLOptMapTransformer:
         target_shape = len(op_node.pl_shape)
 
         if isinstance(op_node, PLSubscript):
-            subs       = []
+            subs = []
             for i in range(len(op_node.pl_shape)):
                 if op_node.pl_shape[i] == 1:
                     if isinstance(op_node.indices[i], PLSlice):
@@ -224,7 +225,8 @@ class PLOptMapTransformer:
             stmt = [ PLFor(target=target,
                            iter_dom=PLIterDom(end=PLConst(node.pl_shape[i])),
                            body=stmt,
-                           orelse=[]) ]
+                           orelse=[],
+                           source='map') ]
 
         return stmt[0]
 
@@ -280,7 +282,8 @@ class PLOptMapTransformer:
             stmt = [ PLFor(target=target,
                            iter_dom=PLIterDom(end=PLConst(op_shape[i])),
                            body=stmt,
-                           orelse=[]) ]
+                           orelse=[],
+                           source='dot') ]
 
         # write back to target
 
