@@ -79,15 +79,22 @@ class PLCodeGenerator:
     def codegen(self, node, project_path, config=None):
         self.project_path = project_path
         self.cc += self.visit(node, config)
+        c_code = self.cc.cgen()
         if self.board == 'aws_f1' or self.board.startswith('alveo'):
-            self.ccode = self.include_code() + 'extern "C" {\n' + \
-                         self.cc.cgen() + '\n}\n'
+            c_code = 'extern "C" {\n' + c_code + '\n}\n'
+
+        if self.recordip > 0:
+            self.ccode = self.include_code(True) + c_code
         else:
-            self.ccode = self.include_code() + self.cc.cgen()
+            self.ccode = self.include_code(False) + c_code
+
         return self.ccode
 
-    def include_code(self):
-        header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h'] 
+    def include_code(self, ip_header=False):
+        if ip_header:
+            header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h']
+        else:
+            header_files = ['ap_int.h', 'ap_fixed.h']
         return ''.join([ f'#include "{f}"\n' for f in header_files])
 
     def iter_fields(self, node):

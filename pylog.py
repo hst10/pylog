@@ -169,7 +169,7 @@ def pylog_compile(src, arg_info, board, path,
     pylog_ir = analyzer.visit(ast_py)
     plnode_link_parent(pylog_ir)
 
-    if 0:
+    if debug:
         print('\n')
         print("pylog IR after analyzer")
         print(pylog_ir)
@@ -177,7 +177,7 @@ def pylog_compile(src, arg_info, board, path,
 
     typer.visit(pylog_ir)
 
-    if 0:
+    if debug:
         print('\n')
         print("pylog IR after typer")
         print(pylog_ir) 
@@ -187,7 +187,7 @@ def pylog_compile(src, arg_info, board, path,
     # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
 
-    if 0:
+    if debug:
         print('\n')
         print("pylog IR after optimizer")
         print(pylog_ir) 
@@ -205,7 +205,7 @@ def pylog_compile(src, arg_info, board, path,
 
     hls_c = codegen.codegen(pylog_ir, project_path )
 
-    if 0:
+    if debug:
         print("Generated C Code:")
         print(hls_c)
 
