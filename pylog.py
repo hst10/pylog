@@ -29,11 +29,11 @@ TARGET_BASE = '/home/xilinx/pylog_projects'
 WORKSPACE = HOST_BASE
 
 
-def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
+def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
           board='ultra96', freq=None):
     if func is None:
         return functools.partial(pylog, mode=mode, path=path, \
-                                 board=board, freq=freq)
+                                 backend=backend, board=board, freq=freq)
 
     code_gen = ('cgen' or 'codegen') in mode
     hwgen = 'hwgen' in mode
@@ -80,11 +80,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
         # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) \
         #                                           for i in range(len(args)) }
 
-        num_array_inputs = sum(len(val[1]) != 1 for val in arg_info.values())
+        # num_array_inputs = sum(len(val[1]) != 1 for val in arg_info.values())
 
         project_path, top_func, max_idx, return_void = pylog_compile(
             src=source_func,
             arg_info=arg_info,
+            backend=backend,
             board=board,
             path=path,
             vivado_only=vivado_only,
@@ -145,7 +146,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     return wrapper
 
 
-def pylog_compile(src, arg_info, board, path,
+def pylog_compile(src, arg_info, backend, board, path,
                   vivado_only=False, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
@@ -160,7 +161,10 @@ def pylog_compile(src, arg_info, board, path,
     typer = PLTyper(arg_info, debug=debug)
     chaining_rewriter = PLChainingRewriter(debug=debug)
     optimizer = PLOptimizer(debug=debug)
-    codegen = PLCodeGenerator(arg_info, board, debug=debug)
+    codegen = PLCodeGenerator(arg_info,
+                              backend=backend,
+                              board=board,
+                              debug=debug)
 
     # execute passes
     if debug:
