@@ -47,7 +47,8 @@ def get_loop_structure(node):
 
 class PLOptMapTransformer:
 
-    def __init__(self, debug=False):
+    def __init__(self, backend='vhls', debug=False):
+        self.backend = backend
         self.debug = debug
 
     def visit(self, node, config=None):
@@ -74,7 +75,10 @@ class PLOptMapTransformer:
                         elif not isinstance(value, PLNode):
                             new_values.extend(value)
                             continue
-                    new_values.append(value)
+                    if value is list:
+                        new_values.extend(value)
+                    else:
+                        new_values.append(value)
                 old_value[:] = new_values
             elif isinstance(old_value, PLNode):
                 new_node = self.visit(old_value, config)
@@ -228,6 +232,10 @@ class PLOptMapTransformer:
                            orelse=[],
                            source='map') ]
 
+        # add Merlin parallel pragma
+        if self.backend == 'merlin':
+            stmt[0].iter_dom.attr = 'parallel'
+
         return stmt[0]
 
     def visit_PLDot(self, node, config=None):
@@ -330,9 +338,10 @@ class PLOptMapTransformer:
 
 
 class PLOptimizer:
-    def __init__(self, debug=False):
+    def __init__(self, backend='vhls', debug=False):
+        self.backend = backend
         self.debug = debug
-        self.map_transformer = PLOptMapTransformer(debug)
+        self.map_transformer = PLOptMapTransformer(backend, debug)
 
     def opt(self, node):
         self.map_transformer.visit(node)

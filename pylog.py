@@ -160,7 +160,7 @@ def pylog_compile(src, arg_info, backend, board, path,
     analyzer = PLAnalyzer(debug=debug)
     typer = PLTyper(arg_info, debug=debug)
     chaining_rewriter = PLChainingRewriter(debug=debug)
-    optimizer = PLOptimizer(debug=debug)
+    optimizer = PLOptimizer(backend=backend, debug=debug)
     codegen = PLCodeGenerator(arg_info,
                               backend=backend,
                               board=board,

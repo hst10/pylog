@@ -117,9 +117,9 @@ class PLCodeGenerator:
         """Visit a node."""
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        visit_return = visitor(node, config)
         if self.debug:
             print(f'CODEGEN visiting {node.__class__.__name__}: {node}')
+        visit_return = visitor(node, config)
         return visit_return
 
     def generic_visit(self, node, config=None):
@@ -494,7 +494,7 @@ class PLCodeGenerator:
             raise NotImplementedError
 
         if decl:
-            return [decl, asgm]
+            return [decl] + asgm if isinstance(asgm, list) else [decl, asgm]
         else:
             return asgm
 
@@ -529,6 +529,7 @@ class PLCodeGenerator:
                               pragma=pliter_dom.attr,
                               attr=(self.visit(pliter_dom.attr_args[0], config)
                                     if pliter_dom.attr_args else None))
+
                 sim_for = [merlin_pragma, sim_for]
 
         return sim_for
