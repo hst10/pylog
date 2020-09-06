@@ -107,7 +107,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
         if hwgen:
             print("generating hardware ...")
 
-            plsysgen = PLSysGen(board=board)
+            plsysgen = PLSysGen(backend=backend, board=board)
             plsysgen.generate_system(config)
 
         if deploy:
