@@ -22,10 +22,10 @@ from chaining_rewriter import *
 
 import numpy as np
 
-HOST_ADDR = 'ubuntu@192.168.0.108'
+HOST_ADDR = 'ubuntu@localhost'
 HOST_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
-TARGET_ADDR = 'xilinx@192.168.0.118'
-TARGET_BASE = '/home/xilinx/pylog_projects'
+TARGET_ADDR = 'ubuntu@localhost'
+TARGET_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
 WORKSPACE = HOST_BASE
 
 
@@ -35,11 +35,15 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
         return functools.partial(pylog, mode=mode, path=path, \
                                  backend=backend, board=board, freq=freq)
 
-    code_gen = ('cgen' or 'codegen') in mode
-    hwgen = 'hwgen' in mode
-    vivado_only = 'vivado_only' in mode
+    hwgen = 'hwgen' in mode # hwgen = cgen, hls, syn
+
+    # individual steps
+    gen_hlsc = ('cgen' in mode) or ('codegen' in mode) # generate HLS C code
+    run_hls  = 'hls' in mode # run HLS
+    run_syn  = 'syn' in mode # run FPGA synthesis
+
     pysim_only = 'pysim' in mode
-    deploy = ('deploy' or 'run' or 'acc') in mode
+    deploy = ('deploy' in mode) or ('run' in mode) or ('acc' in mode)
     debug = 'debug' in mode
     timing = 'timing' in mode
     viz = 'viz' in mode
@@ -88,7 +92,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
             backend=backend,
             board=board,
             path=path,
-            vivado_only=vivado_only,
+            gen_hlsc=gen_hlsc,
             debug=debug,
             viz=viz)
 
@@ -104,14 +108,14 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
             'return_void': return_void
         }
 
-        if hwgen:
+        if run_hls or run_syn or hwgen:
             print("generating hardware ...")
 
             plsysgen = PLSysGen(backend=backend, board=board)
-            plsysgen.generate_system(config)
+            plsysgen.generate_system(config, run_hls, run_syn)
 
         if deploy:
-            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
+            subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
                                       shell=True)
 
             if board == 'aws_f1' or board.startswith('alveo'):
@@ -121,7 +125,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
                 xclbin = f'{top_func}/{top_func}_{board}.{ext}'
 
                 if not os.path.exists(f'{TARGET_BASE}/{xclbin}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{xclbin} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
@@ -131,12 +135,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
                 hwh_file = f'{top_func}/{top_func}_{board}.hwh'
 
                 if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
                 if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
@@ -147,7 +151,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
 
 def pylog_compile(src, arg_info, backend, board, path,
-                  vivado_only=False, debug=False, viz=False):
+                  gen_hlsc=True, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
@@ -213,7 +217,7 @@ def pylog_compile(src, arg_info, backend, board, path,
         print("Generated C Code:")
         print(hls_c)
 
-    if not vivado_only:
+    if gen_hlsc:
         output_file = f'{project_path}/{analyzer.top_func}.cpp'
         with open(output_file, 'w') as fout:
             fout.write(hls_c)

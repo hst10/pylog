@@ -89,7 +89,10 @@ class PLSysGen:
         status = data['FpgaImages'][0]['State']['Code']
         return status
 
-    def generate_system(self, config):
+    def generate_system(self, config, run_hls=True, run_syn=True):
+
+        ### Initialize sysgen variables
+
         if config is None:
             config = self.config
 
@@ -144,85 +147,92 @@ class PLSysGen:
             platform = 'xilinx_u280_xdma_201920_3'
 
         if self.backend == 'merlin':
-            subprocess.call(
-                f"cd {project_path}; " + \
-                f"merlincc -c {project_name}.cpp -D XILINX " + \
-                         f"-o {project_name}_{self.target_board} -I. " + \
-                         f"--platform={platform}; " + \
-                f"cd -;",
-                shell=True)
 
-            subprocess.call(
-                f"cd {project_path}; " + \
-                f"merlincc {project_name}_{self.target_board}.mco -o " + \
-                         f"{project_name}_{self.target_board}.xclbin " + \
-                         f"--platform={platform}; " + \
-                f"cd -;",
-                shell=True)
+            if run_hls:
+                subprocess.call(
+                    f"cd {project_path}; " + \
+                    f"merlincc -c {project_name}.cpp -D XILINX " + \
+                            f"-o {project_name}_{self.target_board} " + \
+                            f"-funsafe-math-optimizations -I. " + \
+                            f"--platform={platform}; " + \
+                    f"cd -;",
+                    shell=True)
+
+            if run_syn:
+                subprocess.call(
+                    f"cd {project_path}; " + \
+                    f"merlincc {project_name}_{self.target_board}.mco " + \
+                        f"-o {project_name}_{self.target_board}.xclbin " + \
+                        f"--platform={platform}; " + \
+                    f"cd -;",
+                    shell=True)
 
         elif self.backend == 'vhls':
 
             vivado_config, hls_config = self.gen_configs(config)
 
-            template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
-            template_env = jinja2.Environment(loader=template_loader)
-            hls_template = f"{self.target_board}_hls.tcl.jinja"
-            template = template_env.get_template(hls_template)
-            output_text = template.render(hls_config)
+            if run_hls:
 
-            hls_tcl_script = f"{project_path}/run_hls.tcl"
+                template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
+                template_env = jinja2.Environment(loader=template_loader)
+                hls_template = f"{self.target_board}_hls.tcl.jinja"
+                template = template_env.get_template(hls_template)
+                output_text = template.render(hls_config)
 
-            print(output_text, file=open(hls_tcl_script, "w"))
+                hls_tcl_script = f"{project_path}/run_hls.tcl"
 
-            subprocess.call(
-                f"cd {project_path}; " + \
-                f"vivado_hls -f {hls_tcl_script}; " + \
-                f"cd -;",
-                shell=True)
-
-            if not self.using_vitis:
-                vivado_template = f"{self.target_board}_vivado.tcl.jinja"
-                template = template_env.get_template(vivado_template)
-                output_text = template.render(vivado_config)
-
-                vivado_tcl_script = f"{project_path}/run_vivado.tcl"
-
-                print(output_text, file=open(vivado_tcl_script, "w"))
+                print(output_text, file=open(hls_tcl_script, "w"))
 
                 subprocess.call(
                     f"cd {project_path}; " + \
-                    f"vivado -mode batch -source {vivado_tcl_script}; " + \
+                    f"vivado_hls -f {hls_tcl_script}; " + \
                     f"cd -;",
                     shell=True)
 
-                print("project_path = ", project_path)
+            if run_syn:
 
-                subprocess.call(
-                    f"cd {project_path}; " + \
-                    f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                    f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+\
-                    f"design_1_wrapper.bit " + \
-                    f"./{project_name}_{self.target_board}.bit;" + \
-                    f"cd -;",
-                    shell=True)
+                if not self.using_vitis:
+                    vivado_template = f"{self.target_board}_vivado.tcl.jinja"
+                    template = template_env.get_template(vivado_template)
+                    output_text = template.render(vivado_config)
 
-                subprocess.call(
-                    f"cd {project_path}; " + \
-                    f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                    f"{project_name}_{self.target_board}_vivado.srcs/" + \
-                    f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
-                    f" ./{project_name}_{self.target_board}.hwh; " + \
-                    f"cd -;",
-                    shell=True)
+                    vivado_tcl_script = f"{project_path}/run_vivado.tcl"
 
-            else:
+                    print(output_text, file=open(vivado_tcl_script, "w"))
 
-                subprocess.call(
-                    f" cd {project_path}; " + \
-                    f" v++ -t hw --platform {platform} " + \
-                    f" --link {project_name}_{self.target_board}.xo "+\
-                    f" -o {project_name}_{self.target_board}.xclbin; cd -;",
-                    shell=True)
+                    subprocess.call(
+                        f"cd {project_path}; " + \
+                        f"vivado -mode batch -source {vivado_tcl_script}; " + \
+                        f"cd -;",
+                        shell=True)
+
+                    print("project_path = ", project_path)
+
+                    subprocess.call(
+                        f"cd {project_path}; " + \
+                        f"cp ./{project_name}_{self.target_board}_vivado/" + \
+                        f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+\
+                        f"design_1_wrapper.bit " + \
+                        f"./{project_name}_{self.target_board}.bit;" + \
+                        f"cd -;",
+                        shell=True)
+
+                    subprocess.call(
+                        f"cd {project_path}; " + \
+                        f"cp ./{project_name}_{self.target_board}_vivado/" + \
+                        f"{project_name}_{self.target_board}_vivado.srcs/" + \
+                        f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
+                        f" ./{project_name}_{self.target_board}.hwh; " + \
+                        f"cd -;",
+                        shell=True)
+
+                else:
+                    subprocess.call(
+                        f" cd {project_path}; " + \
+                        f" v++ -t hw --platform {platform} " + \
+                        f" --link {project_name}_{self.target_board}.xo "+\
+                        f" -o {project_name}_{self.target_board}.xclbin; cd -;",
+                        shell=True)
 
         else:
             raise NotImplementedError
