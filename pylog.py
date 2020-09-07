@@ -38,9 +38,9 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
     hwgen = 'hwgen' in mode # hwgen = cgen, hls, syn
 
     # individual steps
-    gen_hlsc = ('cgen' in mode) or ('codegen' in mode) # generate HLS C code
-    run_hls  = 'hls' in mode # run HLS
-    run_syn  = 'syn' in mode # run FPGA synthesis
+    gen_hlsc = hwgen or ('cgen' in mode) or ('codegen' in mode) # HLS C gen
+    run_hls  = hwgen or ('hls' in mode) # run HLS
+    run_syn  = hwgen or ('syn' in mode) # run FPGA synthesis
 
     pysim_only = 'pysim' in mode
     deploy = ('deploy' in mode) or ('run' in mode) or ('acc' in mode)

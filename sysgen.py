@@ -153,7 +153,17 @@ class PLSysGen:
                     f"cd {project_path}; " + \
                     f"merlincc -c {project_name}.cpp -D XILINX " + \
                             f"-o {project_name}_{self.target_board} " + \
+                            f"--attribute auto_dse=on " + \
                             f"-funsafe-math-optimizations -I. " + \
+                            f"--platform={platform}; " + \
+                    f"cd -;",
+                    shell=True)
+
+                subprocess.call(
+                    f"cd {project_path}; " + \
+                    f"merlincc {project_name}_{self.target_board}.mco " + \
+                            f"--report=estimate " + \
+                            f"--attribute auto_dse=on " + \
                             f"--platform={platform}; " + \
                     f"cd -;",
                     shell=True)
@@ -163,6 +173,7 @@ class PLSysGen:
                     f"cd {project_path}; " + \
                     f"merlincc {project_name}_{self.target_board}.mco " + \
                         f"-o {project_name}_{self.target_board}.xclbin " + \
+                        f"--attribute auto_dse=on " + \
                         f"--platform={platform}; " + \
                     f"cd -;",
                     shell=True)
