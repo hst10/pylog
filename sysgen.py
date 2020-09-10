@@ -5,7 +5,7 @@ import time
 import jinja2
 import subprocess
 
-TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
+TEMPLATE_DIR='/home/ubuntu/kwu/pylog/tcl_temps/'
 
 
 # list of supported boards
@@ -22,8 +22,8 @@ supported_boards = [
 # An example config:
 config = {
     'project_name': 'pl_matmul',
-    'project_path': '/home/ubuntu/vivado_projects/pylog_projects/pl_matmul',
-    'base_path':    '/home/ubuntu/vivado_projects/pylog_projects',
+    'project_path': '/home/ubuntu/kwu/vivado_projects/pylog_projects/pl_matmul',
+    'base_path':    '/home/ubuntu/kwu/vivado_projects/pylog_projects',
     'freq':         125.00, 
     'top_name':     'matmul',
     'num_bundles':  3,
@@ -112,7 +112,7 @@ class PLSysGen:
         hls_tcl_script = f"{project_path}/run_hls.tcl"
 
         print(output_text, file=open(hls_tcl_script, "w"))
-
+        input("Press any key to continue")
         if not self.using_vitis:
             vivado_template = f"{self.target_board}_vivado.tcl.jinja"
             template = template_env.get_template(vivado_template)

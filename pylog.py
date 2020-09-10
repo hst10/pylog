@@ -23,7 +23,7 @@ from chaining_rewriter import *
 import numpy as np
 
 HOST_ADDR = 'ubuntu@192.168.0.108'
-HOST_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
+HOST_BASE = '/home/ubuntu/kwu/vivado_projects/pylog_projects'
 TARGET_ADDR = 'xilinx@192.168.0.118'
 TARGET_BASE = '/home/xilinx/pylog_projects'
 WORKSPACE = HOST_BASE
@@ -105,7 +105,6 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
 
         if hwgen:
             print("generating hardware ...")
-
             plsysgen = PLSysGen(board=board)
             plsysgen.generate_system(config)
 

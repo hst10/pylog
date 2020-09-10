@@ -1,2 +1,2 @@
 import sys
-sys.path.extend(['/home/ubuntu/pylog/'])
+sys.path.extend(['/home/ubuntu/kwu/pylog/'])

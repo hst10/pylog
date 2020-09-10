@@ -7,8 +7,8 @@ template = templateEnv.get_template(TEMPLATE_FILE)
 
 config = {
     'project_name': 'jinja_vivado',
-    'base_path':    '/home/ubuntu/vivado_projects',
-    'ip_repo_path': '/home/ubuntu/vivado_projects/hls_test_project/solution1',
+    'base_path':    '/home/ubuntu/kwu/vivado_projects',
+    'ip_repo_path': '/home/ubuntu/kwu/vivado_projects/hls_test_project/solution1',
     'pl_freq':      100.00, 
     'ip_name':      'matmul',
     'num_hp_ports': 3,
