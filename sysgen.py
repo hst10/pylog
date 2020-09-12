@@ -113,47 +113,47 @@ class PLSysGen:
 
         print(output_text, file=open(hls_tcl_script, "w"))
         input("Press any key to continue")
+        # if not self.using_vitis:
+        #     vivado_template = f"{self.target_board}_vivado.tcl.jinja"
+        #     template = template_env.get_template(vivado_template)
+        #     output_text = template.render(vivado_config)
+
+        #     vivado_tcl_script = f"{project_path}/run_vivado.tcl"
+
+        #     print(output_text, file=open(vivado_tcl_script, "w"))
+
+        # process = subprocess.call(
+        #     f"cd {project_path}; " + \
+        #     f"vivado_hls -f {hls_tcl_script}; " + \
+        #     f"cd -;",
+        #     shell=True)
+
         if not self.using_vitis:
-            vivado_template = f"{self.target_board}_vivado.tcl.jinja"
-            template = template_env.get_template(vivado_template)
-            output_text = template.render(vivado_config)
-
-            vivado_tcl_script = f"{project_path}/run_vivado.tcl"
-
-            print(output_text, file=open(vivado_tcl_script, "w"))
-
-        process = subprocess.call(
-            f"cd {project_path}; " + \
-            f"vivado_hls -f {hls_tcl_script}; " + \
-            f"cd -;",
-            shell=True)
-
-        if not self.using_vitis:
-            process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"vivado -mode batch -source {vivado_tcl_script}; " + \
-                f"cd -;",
-                shell=True)
+            # process = subprocess.call(
+            #     f"cd {project_path}; " + \
+            #     f"vivado -mode batch -source {vivado_tcl_script}; " + \
+            #     f"cd -;",
+            #     shell=True)
 
             print("project_path = ", project_path)
 
-            process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+ \
-                f"design_1_wrapper.bit " + \
-                f"./{project_name}_{self.target_board}.bit;" + \
-                f"cd -;",
-                shell=True)
+            # process = subprocess.call(
+            #     f"cd {project_path}; " + \
+            #     f"cp ./{project_name}_{self.target_board}_vivado/" + \
+            #     f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+ \
+            #     f"design_1_wrapper.bit " + \
+            #     f"./{project_name}_{self.target_board}.bit;" + \
+            #     f"cd -;",
+            #     shell=True)
 
-            process = subprocess.call(
-                f"cd {project_path}; " + \
-                f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                f"{project_name}_{self.target_board}_vivado.srcs/" + \
-                f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
-                f" ./{project_name}_{self.target_board}.hwh; " + \
-                f"cd -;",
-                shell=True)
+            # process = subprocess.call(
+            #     f"cd {project_path}; " + \
+            #     f"cp ./{project_name}_{self.target_board}_vivado/" + \
+            #     f"{project_name}_{self.target_board}_vivado.srcs/" + \
+            #     f"sources_1/bd/design_1/hw_handoff/design_1.hwh " + \
+            #     f" ./{project_name}_{self.target_board}.hwh; " + \
+            #     f"cd -;",
+            #     shell=True)
 
         else:
             if self.target_board == 'aws_f1':
@@ -198,12 +198,12 @@ class PLSysGen:
             elif self.target_board == 'alveo_u280':
                 platform = 'xilinx_u280_xdma_201920_3'
 
-            process = subprocess.call(
-                f" cd {project_path}; " + \
-                f" v++ -t hw --platform {platform} " + \
-                f" --link {project_name}_{self.target_board}.xo "+\
-                f" -o {project_name}_{self.target_board}.xclbin; cd -;",
-                shell=True)
+            # process = subprocess.call(
+            #     f" cd {project_path}; " + \
+            #     f" v++ -t hw --platform {platform} " + \
+            #     f" --link {project_name}_{self.target_board}.xo "+\
+            #     f" -o {project_name}_{self.target_board}.xclbin; cd -;",
+            #     shell=True)
 
             if self.target_board == 'aws_f1':
 
