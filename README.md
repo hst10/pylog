@@ -11,9 +11,13 @@ PyLog: An Algorithm-Centric FPGA Programming and Synthesis Flow
 
 ### Setting paths
 
-Before running PyLog, please modify the paths at the beginning the following files: 
+Before running PyLog, please add the path to your PyLog directory to `PYTHONPATH`. You can add the following line into your `~/.bashrc` file:
+```{bash}
+export PYTHONPATH=/your/path/to/pylog:$PYTHONPATH
+```
 
-- `tests/env.py`: Modify PyLog path accordingly. `env.py` is imported by test code under `tests`
+Also, please modify the paths at the beginning the following files: 
+- `tests/env.py`: Modify PyLog path accordingly. `env.py` is imported by test code under `tests` (not necessary if you add PyLog path to `PYTHONPATH`)
 - `pylog.py`: Set the following addresses for your host system (used for compilation and synthesis) and target system (used for deployment, i.e. the FPGA system)
   - `HOST_ADDR`: The address of the host system (should be reachable from target system), used only in `deploy` mode to fetch syntehsis results. 
   - `HOST_BASE`: The path to the workspace directory on the host system. If the directory doesn't exist, PyLog will create it. PyLog compilation and synthesis outputs will be written to this directory. 
@@ -25,8 +29,6 @@ Before running PyLog, please modify the paths at the beginning the following fil
 To use PyLog, import pylog and simply add PyLog decorator `@pylog` to the function that you'd like to synthesize into an FPGA accelerator. Pass NumPy arrays to the decorated function and call the decorated function. Then run the whole Python program. In the following example, `vecadd` function will be compiled into HLS C code by PyLog. 
 
 ```Python
-import sys
-sys.path.append('/your/path/to/pylog/')
 import numpy as np
 from pylog import *
 
