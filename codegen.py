@@ -68,27 +68,39 @@ class CCode:
 
 
 class PLCodeGenerator:
-    def __init__(self, arg_info=None, board='ultra96', debug=False):
+    def __init__(self, arg_info=None,
+                       backend='vhls',
+                       board='ultra96',
+                       debug=False):
         self.cc = CCode(debug=debug)
         self.arg_info = arg_info
+        self.backend = backend # backend flow, e.g. vhls, merlin, etc.
         self.debug = debug
         self.board = board
         self.num_mem_ports = 4
         self.recordip = 0
+        self.max_idx = 1
     ##@@ project_path
     def codegen(self, node, project_path, config=None):
         self.project_path = project_path
         self.cc += self.visit(node, config)
+        c_code = self.cc.cgen()
         if self.board == 'aws_f1' or self.board.startswith('alveo'):
-            self.ccode = self.include_code() + 'extern "C" {\n' + \
-                         self.cc.cgen() + '\n}\n'
+            c_code = 'extern "C" {\n' + c_code + '\n}\n'
+
+        if self.recordip > 0:
+            self.ccode = self.include_code(True) + c_code
         else:
-            self.ccode = self.include_code() + self.cc.cgen()
+            self.ccode = self.include_code(False) + c_code
+
         return self.ccode
 
-    def include_code(self):
-        header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h'] 
-        return ''.join([ f'#include "{f}"\n' for f in header_files])
+    def include_code(self, ip_header=False):
+        if ip_header:
+            header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h']
+        else:
+            header_files = ['ap_int.h', 'ap_fixed.h']
+        return ''.join([ f'#include "{f}"\n' for f in header_files]) + '\n'
 
     def iter_fields(self, node):
         """
@@ -105,9 +117,9 @@ class PLCodeGenerator:
         """Visit a node."""
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        visit_return = visitor(node, config)
         if self.debug:
             print(f'CODEGEN visiting {node.__class__.__name__}: {node}')
+        visit_return = visitor(node, config)
         return visit_return
 
     def generic_visit(self, node, config=None):
@@ -482,7 +494,7 @@ class PLCodeGenerator:
             raise NotImplementedError
 
         if decl:
-            return [decl, asgm]
+            return [decl] + asgm if isinstance(asgm, list) else [decl, asgm]
         else:
             return asgm
 
@@ -507,10 +519,18 @@ class PLCodeGenerator:
                              stmt_lst=self.visit(node.body, config))
 
         if pliter_dom.attr:
-            insert_pragma(compound_node=sim_for.stmt,
-                          pragma=pliter_dom.attr,
-                          attr=(self.visit(pliter_dom.attr_args[0], config)
-                                if pliter_dom.attr_args else None))
+            if self.backend == 'vhls':
+                insert_pragma(compound_node=sim_for.stmt,
+                              pragma=pliter_dom.attr,
+                              attr=(self.visit(pliter_dom.attr_args[0], config)
+                                    if pliter_dom.attr_args else None))
+            elif self.backend == 'merlin':
+                merlin_pragma = get_merlin_pragma(
+                              pragma=pliter_dom.attr,
+                              attr=(self.visit(pliter_dom.attr_args[0], config)
+                                    if pliter_dom.attr_args else None))
+
+                sim_for = [merlin_pragma, sim_for]
 
         return sim_for
 
@@ -561,12 +581,16 @@ class PLCodeGenerator:
                 self.top_func_name = node.name
                 self.return_void = (node.return_type.ty == 'void')
 
-                if self.arg_info != None:
-                    max_idx = insert_interface_pragmas(
-                        compound_node=fd.body,
-                        interface_info=self.arg_info,
-                        num_mem_ports=self.num_mem_ports)
-                    self.max_idx = max_idx
+                if self.backend == 'vhls':
+                    if self.arg_info != None:
+                        max_idx = insert_interface_pragmas(
+                            compound_node=fd.body,
+                            interface_info=self.arg_info,
+                            num_mem_ports=self.num_mem_ports)
+                        self.max_idx = max_idx
+                elif self.backend == 'merlin':
+                    merlin_kernel_pragma = c_ast.Pragma('ACCEL kernel')
+                    fd = [merlin_kernel_pragma, fd]
                 return fd
         else:
             self.cc.append_global(fd)

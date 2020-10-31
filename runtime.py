@@ -6,7 +6,7 @@ import numpy as np
 import hashlib
 import inspect
 
-# DESIGN_LIB = "/home/shuang91/vivado_projects/pylog_projects/"
+# DESIGN_LIB = "/home/ubuntu/vivado_projects/pylog_projects/"
 
 # class LogicInstance:
 #     def __init__(self, key=None):

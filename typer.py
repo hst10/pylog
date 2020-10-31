@@ -188,7 +188,7 @@ class PLTyper:
                 # node.pl_ctx   = {}
             else:
                 print(node.name)
-                breakpoint()
+                # breakpoint()
                 raise NameError
 
         # return node.pl_type, node.pl_shape, node.pl_ctx
@@ -510,8 +510,9 @@ class PLTyper:
         
         # check shapes
         for i in range(len(node.dims)):
-            if (node.dims[i]==0):
-                print("input is a scalar, nothing to do")
+            if self.debug:
+                if (node.dims[i]==0):
+                    print("input is a scalar, nothing to do")
             
             # input is a one-dimensional array
             if (node.dims[i]==1):
@@ -532,14 +533,15 @@ class PLTyper:
             if (node.dims[i]>1):
                 for j in range(node.dims[i]):
                     if global_ip['shape'][i][j] in node.func_configs:
-                        print("enter")
+                        # print("enter")
                         # check if the data shape are consistent    
                         global_sp = node.func_configs[global_ip['shape'][i][j]]
                         current_sp = node.shapes[i][j]
                         input_name = node.args[i].name
-                        print(input_name)
-                        print(global_sp)
-                        print(current_sp)
+                        if self.debug:
+                            print(input_name)
+                            print(global_sp)
+                            print(current_sp)
                         if(current_sp != global_sp):
                             print(f'The size of dimension {j} of input {input_name} should be {global_sp} instead of {current_sp}!')
                             raise NameError
@@ -547,7 +549,8 @@ class PLTyper:
                         if (global_ip['shape'][i][j][0]=='s') :
                             # if begin with "s", the shape should be configured
                             node.func_configs[global_ip['shape'][i][j]] = node.shapes[i][j]
-        print(node.func_configs)
+        if self.debug:
+            print(node.func_configs)
 
 
     def calculate_ip_return(self, node):
@@ -563,10 +566,11 @@ class PLTyper:
 ## have not consider the input is constant such as np.testip(m,m,m,m,5)
 ## have not consider IP shape is fixed 
     def visit_PLIPcore(self, node, ctx={}):
-        print("\n ctx")
-        print(ctx)
-        print("\n args")
-        print(node.args)
+        if self.debug:
+            print("\n ctx")
+            print(ctx)
+            print("\n args")
+            print(node.args)
 
         node.types = []
         node.shapes = []
@@ -582,10 +586,11 @@ class PLTyper:
             node.shapes.append(a.pl_shape)
             node.dims.append(a.pl_type.dim)
 
-        print(node.types)
-        print(node.shapes)
-        print(node.dims)
-        print(type(node.shapes[0]))
+        if self.debug:
+            print(node.types)
+            print(node.shapes)
+            print(node.dims)
+            print(type(node.shapes[0]))
         
         self.check_ip_inputs(node)
         node.pl_type, node.pl_shape  = self.calculate_ip_return(node)

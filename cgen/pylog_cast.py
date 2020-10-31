@@ -122,6 +122,12 @@ def simple_for(iter_var, start, op, end, step, stmt_lst):
     return c_ast.For(init=for_init, cond=for_cond, next=for_next,
                      stmt=c_ast.Compound(block_items=stmt_lst))
 
+def get_merlin_pragma(pragma, attr=None):
+    if pragma == 'unroll':
+        return None
+    return c_ast.Pragma(f'ACCEL {pragma}' + (f' factor={attr.value}' \
+                                                           if attr else ''))
+
 def insert_pragma(compound_node, pragma=None, attr=None, pragma_str=None):
     assert(isinstance(compound_node, c_ast.Compound))
     if pragma_str != None:

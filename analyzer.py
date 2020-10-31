@@ -455,6 +455,7 @@ class PLAnalyzer(PLPostorderVisitor):
                              iter_dom=node.iter.pl_data,
                              body=[s.pl_data for s in node.body],
                              orelse=[s.pl_data for s in node.orelse],
+                             source='for',
                              ast_node=node,
                              config=config)
 

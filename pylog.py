@@ -22,24 +22,28 @@ from chaining_rewriter import *
 
 import numpy as np
 
-HOST_ADDR = 'shuang91@192.168.0.108'
-HOST_BASE = '/home/shuang91/vivado_projects/pylog_projects'
-TARGET_ADDR = 'xilinx@192.168.0.118'
-TARGET_BASE = '/home/xilinx/pylog_projects'
+HOST_ADDR = 'ubuntu@localhost'
+HOST_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
+TARGET_ADDR = 'ubuntu@localhost'
+TARGET_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
 WORKSPACE = HOST_BASE
 
 
-def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
+def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
           board='ultra96', freq=None):
     if func is None:
         return functools.partial(pylog, mode=mode, path=path, \
-                                 board=board, freq=freq)
+                                 backend=backend, board=board, freq=freq)
 
-    code_gen = ('cgen' or 'codegen') in mode
-    hwgen = 'hwgen' in mode
-    vivado_only = 'vivado_only' in mode
+    hwgen = 'hwgen' in mode # hwgen = cgen, hls, syn
+
+    # individual steps
+    gen_hlsc = hwgen or ('cgen' in mode) or ('codegen' in mode) # HLS C gen
+    run_hls  = hwgen or ('hls' in mode) # run HLS
+    run_syn  = hwgen or ('syn' in mode) # run FPGA synthesis
+
     pysim_only = 'pysim' in mode
-    deploy = ('deploy' or 'run' or 'acc') in mode
+    deploy = ('deploy' in mode) or ('run' in mode) or ('acc' in mode)
     debug = 'debug' in mode
     timing = 'timing' in mode
     viz = 'viz' in mode
@@ -80,14 +84,15 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
         # arg_info = { arg_names[i]:(args[i].dtype.name, args[i].shape) \
         #                                           for i in range(len(args)) }
 
-        num_array_inputs = sum(len(val[1]) != 1 for val in arg_info.values())
+        # num_array_inputs = sum(len(val[1]) != 1 for val in arg_info.values())
 
         project_path, top_func, max_idx, return_void = pylog_compile(
             src=source_func,
             arg_info=arg_info,
+            backend=backend,
             board=board,
             path=path,
-            vivado_only=vivado_only,
+            gen_hlsc=gen_hlsc,
             debug=debug,
             viz=viz)
 
@@ -103,14 +108,14 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
             'return_void': return_void
         }
 
-        if hwgen:
+        if run_hls or run_syn or hwgen:
             print("generating hardware ...")
 
-            plsysgen = PLSysGen(board=board)
-            plsysgen.generate_system(config)
+            plsysgen = PLSysGen(backend=backend, board=board)
+            plsysgen.generate_system(config, run_hls, run_syn)
 
         if deploy:
-            process = subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
+            subprocess.call(f"mkdir -p {TARGET_BASE}/{top_func}/", \
                                       shell=True)
 
             if board == 'aws_f1' or board.startswith('alveo'):
@@ -120,7 +125,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
                 xclbin = f'{top_func}/{top_func}_{board}.{ext}'
 
                 if not os.path.exists(f'{TARGET_BASE}/{xclbin}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{xclbin} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
@@ -130,12 +135,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
                 hwh_file = f'{top_func}/{top_func}_{board}.hwh'
 
                 if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
                 if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
-                    process = subprocess.call(
+                    subprocess.call(
                         f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
                         f"{TARGET_BASE}/{top_func}/", shell=True)
 
@@ -145,8 +150,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, \
     return wrapper
 
 
-def pylog_compile(src, arg_info, board, path,
-                  vivado_only=False, debug=False, viz=False):
+def pylog_compile(src, arg_info, backend, board, path,
+                  gen_hlsc=True, debug=False, viz=False):
     print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
     if debug: astpretty.pprint(ast_py)
@@ -159,8 +164,11 @@ def pylog_compile(src, arg_info, board, path,
     analyzer = PLAnalyzer(debug=debug)
     typer = PLTyper(arg_info, debug=debug)
     chaining_rewriter = PLChainingRewriter(debug=debug)
-    optimizer = PLOptimizer(debug=debug)
-    codegen = PLCodeGenerator(arg_info, board, debug=debug)
+    optimizer = PLOptimizer(backend=backend, debug=debug)
+    codegen = PLCodeGenerator(arg_info,
+                              backend=backend,
+                              board=board,
+                              debug=debug)
 
     # execute passes
     if debug:
@@ -169,7 +177,7 @@ def pylog_compile(src, arg_info, board, path,
     pylog_ir = analyzer.visit(ast_py)
     plnode_link_parent(pylog_ir)
 
-    if 0:
+    if debug:
         print('\n')
         print("pylog IR after analyzer")
         print(pylog_ir)
@@ -177,7 +185,7 @@ def pylog_compile(src, arg_info, board, path,
 
     typer.visit(pylog_ir)
 
-    if 0:
+    if debug:
         print('\n')
         print("pylog IR after typer")
         print(pylog_ir)
@@ -187,7 +195,8 @@ def pylog_compile(src, arg_info, board, path,
     optimizer.opt(pylog_ir)
     plnode_link_parent(pylog_ir)  # need to be called since optimizer may insert new nodes when visiting PLDot or PLMap
     chaining_rewriter.visit(pylog_ir)
-    if 0:
+    
+    if debug:
         print('\n')
         print("pylog IR after optimizer")
         print(pylog_ir)
@@ -202,11 +211,11 @@ def pylog_compile(src, arg_info, board, path,
 
     hls_c = codegen.codegen(pylog_ir, project_path)
 
-    if 0:
+    if debug:
         print("Generated C Code:")
         print(hls_c)
 
-    if not vivado_only:
+    if gen_hlsc:
         output_file = f'{project_path}/{analyzer.top_func}.cpp'
         with open(output_file, 'w') as fout:
             fout.write(hls_c)
