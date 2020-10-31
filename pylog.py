@@ -14,9 +14,9 @@ from visitors import *
 from analyzer import *
 from typer import *
 from optimizer import *
-from codegen   import *
-from sysgen    import *
-from runtime   import *
+from codegen import *
+from sysgen import *
+from runtime import *
 import IPinforms
 from chaining_rewriter import *
 
@@ -188,20 +188,19 @@ def pylog_compile(src, arg_info, backend, board, path,
     if debug:
         print('\n')
         print("pylog IR after typer")
-        print(pylog_ir) 
-        print('\n')   
-    chaining_rewriter.visit(pylog_ir)
+        print(pylog_ir)
+        print('\n')
 
-    # transform loop transformation and insert pragmas
+        # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
-
+    plnode_link_parent(pylog_ir)  # need to be called since optimizer may insert new nodes when visiting PLDot or PLMap
+    chaining_rewriter.visit(pylog_ir)
+    
     if debug:
         print('\n')
         print("pylog IR after optimizer")
-        print(pylog_ir) 
-        print('\n')  
-
-
+        print(pylog_ir)
+        print('\n')
 
     project_path = f'{path}/{analyzer.top_func}'
 
@@ -210,8 +209,7 @@ def pylog_compile(src, arg_info, backend, board, path,
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
 
-
-    hls_c = codegen.codegen(pylog_ir, project_path )
+    hls_c = codegen.codegen(pylog_ir, project_path)
 
     if debug:
         print("Generated C Code:")
