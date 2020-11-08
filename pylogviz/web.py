@@ -114,9 +114,13 @@ def node_properties(node):
 
 
 def node_to_dict(node, parent, attr):
-    # print(type(node).__name__)
-    # if isinstance(node, PLNode):
-    #     print(node.__dict__)
+
+    class PLNodeEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, PLNode):
+                return type(obj).__name__
+            return json.JSONEncoder.default(self, obj)
+
     i = []
     children = list(iter_child_nodes(node))
     if len(children) > 0:
@@ -131,7 +135,7 @@ def node_to_dict(node, parent, attr):
             "edge_label": attr,
             "name": type(node).__name__,
             "parent": id(parent),
-            "data": json.dumps(d, skipkeys=True),
+            "data": json.dumps(d, cls=PLNodeEncoder, skipkeys=True),
         }
     )
     return i

@@ -9,24 +9,18 @@ import inspect
 import textwrap
 import functools
 import subprocess
-
-from visitors import *
-from analyzer import *
-from typer import *
-from optimizer import *
-from codegen import *
-from sysgen import *
-from runtime import *
-import IPinforms
-from chaining_rewriter import *
-
 import numpy as np
 
-HOST_ADDR = 'ubuntu@localhost'
-HOST_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
-TARGET_ADDR = 'ubuntu@localhost'
-TARGET_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
-WORKSPACE = HOST_BASE
+from config import HOST_ADDR, HOST_BASE, TARGET_BASE, WORKSPACE
+from nodes import plnode_link_parent
+from analyzer import PLAnalyzer, PLTester, ast_link_parent
+from typer import PLTyper
+from optimizer import PLOptimizer
+from codegen import PLCodeGenerator
+from sysgen import PLSysGen
+from runtime import PLRuntime
+import IPinforms
+from chaining_rewriter import PLChainingRewriter
 
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
@@ -191,9 +185,12 @@ def pylog_compile(src, arg_info, backend, board, path,
         print(pylog_ir)
         print('\n')
 
-        # transform loop transformation and insert pragmas
+    # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
-    plnode_link_parent(pylog_ir)  # need to be called since optimizer may insert new nodes when visiting PLDot or PLMap
+
+    # need to be called since optimizer may insert new nodes when visiting
+    # PLDot or PLMap
+    plnode_link_parent(pylog_ir)
     chaining_rewriter.visit(pylog_ir)
     
     if debug:

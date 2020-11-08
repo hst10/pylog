@@ -1,6 +1,6 @@
 from utils import *
 from nodes import *
-from visitors import *
+from visitors import PLPostorderVisitor
 import IPinforms
 
 
@@ -206,8 +206,9 @@ class PLAnalyzer(PLPostorderVisitor):
                             if isinstance(node.args[1].pl_data, PLVariable):
                                 ty = node.args[1].pl_data.name
                             else:
-                                ty = node.args[
-                                    1].pl_data.attr  # TODO: potential buggy code. Check if it is pl_data.name
+                                ty = node.args[1].pl_data.attr
+                                # TODO: potential buggy code.
+                                # Check if it is pl_data.name
                             if ty.startswith("pl_"):
                                 ty = np_pl_type_map(ty[3:])
                             ele_type = ty
@@ -308,12 +309,11 @@ class PLAnalyzer(PLPostorderVisitor):
                                  ast_node=node,
                                  config=config)
 
-
-        elif node.func.id == "PLType" and len(node.args) == 2 \
-                and isinstance(node.args[0], ast.Name) \
-                and isinstance(node.args[1], ast.Num):
-            node.pl_data = TypeNode(node, config)
-            return node.pl_data.type
+        # elif node.func.id == "PLType" and len(node.args) == 2 \
+        #         and isinstance(node.args[0], ast.Name) \
+        #         and isinstance(node.args[1], ast.Num):
+        #     node.pl_data = TypeNode(node, config)
+        #     return node.pl_data.type
 
         else:
             node.pl_data = PLCall(func=node.func.pl_data,

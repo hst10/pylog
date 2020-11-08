@@ -5,38 +5,6 @@ from utils import *
 from nodes import *
 import IPinforms
 
-class PLType:
-    '''Scalars, arrays, and functions'''
-
-    def __init__(self, ty="float", dim=0):
-        self.ty = ty
-        self.dim = dim
-
-    def __repr__(self):
-        return "PLType(" + self.ty + ", " + str(self.dim) + ")"
-
-    def __eq__(self, other):
-        if (self.ty == other.ty) and (self.dim == other.dim):
-            return True
-        else:
-            return False
-
-    def __add__(self, other):
-        if isinstance(other, int):
-            return PLType(self.ty, self.dim + other)
-        if self.ty != other.ty:
-            return PLType('float', self.dim + other.dim)
-        else:
-            return PLType(self.ty, self.dim + other.dim)
-
-    def __sub__(self, other):
-        if isinstance(other, int):
-            return PLType(self.ty, self.dim - other)
-        if self.ty != other.ty:
-            return PLType('float', self.dim - other.dim)
-        else:
-            return PLType(self.ty, self.dim - other.dim)
-
 
 class PLTyper:
     def __init__(self, args_info, debug=False):
@@ -562,9 +530,9 @@ class PLTyper:
         else :
             return PLType( global_ip_ret, 0) , ()     
 
-## have not consider the situation that argmax(1, a+2), a is not defined
-## have not consider the input is constant such as np.testip(m,m,m,m,5)
-## have not consider IP shape is fixed 
+    ## have not consider the situation that argmax(1, a+2), a is not defined
+    ## have not consider the input is constant such as np.testip(m,m,m,m,5)
+    ## have not consider IP shape is fixed
     def visit_PLIPcore(self, node, ctx={}):
         if self.debug:
             print("\n ctx")

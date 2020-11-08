@@ -2,7 +2,7 @@ import copy
 
 from nodes import *
 from typer import PLType
-
+from iter_schedule import *
 
 class PLOptLoop:
     def __init__(self, plfor, subloops):
@@ -52,6 +52,7 @@ class PLOptMapTransformer:
     def __init__(self, backend='vhls', debug=False):
         self.backend = backend
         self.debug = debug
+        self.count = 0
 
     def visit(self, node, config=None):
         """Visit a node."""
@@ -90,7 +91,8 @@ class PLOptMapTransformer:
                     setattr(node, field, new_node)
         return node
 
-    def get_subscript(self, op_node, iter_prefix='i', config=None):
+    def get_subscript(self, op_node, iter_prefix='i',
+                      config=None, schedule=None):
 
         assert (isinstance(op_node, (PLSubscript, PLVariable)))
 
@@ -112,15 +114,19 @@ class PLOptMapTransformer:
                             if step == 1:
                                 subs.append(PLVariable(f'{iter_prefix}{i}'))
                             else:
-                                subs.append(PLVariable(
-                                    f'({iter_prefix}{i}*({step}))'))
+                                subs.append(
+                                    PLVariable(f'{iter_prefix}{i}')*step)
+                                # subs.append(PLVariable(
+                                #     f'({iter_prefix}{i}*({step}))'))
                         else:
                             if step == 1:
-                                subs.append(PLVariable(
-                                    f'({lower}+{iter_prefix}{i})'))
+                                subs.append(
+                                    PLVariable(f'{iter_prefix}{i}') + lower)
+                                    # f'({lower}+{iter_prefix}{i})'))
                             else:
-                                subs.append(PLVariable(
-                                    f'({lower}+{iter_prefix}{i}*({step}))'))
+                                subs.append(
+                                    PLVariable(f'{iter_prefix}{i}')*step+lower)
+                                    # f'({lower}+{iter_prefix}{i}*({step}))'))
                     else:
                         subs.append(PLVariable(f'{iter_prefix}{i}'))
 
@@ -133,6 +139,10 @@ class PLOptMapTransformer:
 
             target = PLSubscript(var=op_node,
                                  indices=subs)
+
+        if schedule:
+            s = PLSchedule(schedule)
+            target = s.apply(target, iter_prefix=iter_prefix)
 
         target.pl_shape = ()
         target.pl_type = op_node
@@ -197,15 +207,23 @@ class PLOptMapTransformer:
 
     def visit_PLMap(self, node, config=None):
 
+        schedules = node.schedules
+        num_schedules = len(schedules)
+        sched_idx = self.count % num_schedules
+        self.count = self.count + 1
+        schedule = schedules[sched_idx]
+
         args_subs = []
         for array in node.arrays:
-            args_subs.append(self.get_subscript(array, 'i_map_', config))
+            args_subs.append(self.get_subscript(array, 'i_map_',
+                             config, schedule))
 
-        target_subs = self.get_subscript(node.target, 'i_map_', config)
+        target_subs = self.get_subscript(node.target, 'i_map_',
+                                         config, schedule)
         lambda_args = [arg.name for arg in node.func.args]
 
         target_subs.pl_type = PLType(node.pl_type.ty, 0)
-        target_subs.pl_shape = tuple(1 for i in node.pl_shape)  # assuming scalar
+        target_subs.pl_shape = tuple(1 for i in node.pl_shape)# assuming scalar
 
         node.func.arg_map = dict(zip(lambda_args, args_subs))
         node.func.target = target_subs
@@ -226,23 +244,30 @@ class PLOptMapTransformer:
         node.func.body = new_lambda_body
         stmt = self.visit(node.func, config)
 
-        # for i in range(len(node.pl_shape)-1, -1, -1):
-        for i in range(node.pl_type.dim - 1, -1, -1):
-            target = PLVariable(f'i_map_{i}')
-            target.pl_type = PLType('int', 0)
-            target.pl_shape = ()
+        orig_shape    = list(node.pl_shape)
+        orig_ind_vars = [f'i_map_{i}' for i in range(len(orig_shape))]
+        scheduled_shape    = PLSchedule(schedule).apply(orig_shape)
+        scheduled_ind_vars = PLSchedule(schedule).apply(orig_ind_vars)
 
-            stmt = [ PLFor(target=target,
-                           iter_dom=PLIterDom(end=PLConst(node.pl_shape[i])),
-                           body=stmt,
-                           orelse=[],
-                           source='map') ]
+        return gen_loop_nest(scheduled_shape, stmt, 'map', scheduled_ind_vars)
 
-        # add Merlin parallel pragma
-        if self.backend == 'merlin':
-            stmt[0].iter_dom.attr = 'parallel'
+        # # for i in range(len(node.pl_shape)-1, -1, -1):
+        # for i in range(node.pl_type.dim - 1, -1, -1):
+        #     target = PLVariable(f'i_map_{i}')
+        #     target.pl_type = PLType('int', 0)
+        #     target.pl_shape = ()
 
-        return stmt[0]
+        #     stmt = [ PLFor(target=target,
+        #                    iter_dom=PLIterDom(end=PLConst(node.pl_shape[i])),
+        #                    body=stmt,
+        #                    orelse=[],
+        #                    source='map') ]
+
+        # # add Merlin parallel pragma
+        # if self.backend == 'merlin':
+        #     stmt[0].iter_dom.attr = 'parallel'
+
+        # return stmt[0]
 
     def visit_PLDot(self, node, config=None):
 

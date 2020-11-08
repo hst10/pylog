@@ -2,11 +2,10 @@ import os
 import glob
 import json
 import time
-import jinja2
 import subprocess
 
-TEMPLATE_DIR='/home/ubuntu/pylog/tcl_temps/'
-
+from jinja2 import FileSystemLoader, Environment
+from config import TEMPLATE_DIR
 
 # list of supported boards
 supported_boards = [
@@ -184,8 +183,8 @@ class PLSysGen:
 
             if run_hls:
 
-                template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
-                template_env = jinja2.Environment(loader=template_loader)
+                template_loader = FileSystemLoader(searchpath=TEMPLATE_DIR)
+                template_env = Environment(loader=template_loader)
                 hls_template = f"{self.target_board}_hls.tcl.jinja"
                 template = template_env.get_template(hls_template)
                 output_text = template.render(hls_config)
@@ -222,8 +221,8 @@ class PLSysGen:
                     subprocess.call(
                         f"cd {project_path}; " + \
                         f"cp ./{project_name}_{self.target_board}_vivado/" + \
-                        f"{project_name}_{self.target_board}_vivado.runs/impl_1/"+\
-                        f"design_1_wrapper.bit " + \
+                        f"{project_name}_{self.target_board}_vivado.runs/"+\
+                        f"impl_1/design_1_wrapper.bit " + \
                         f"./{project_name}_{self.target_board}.bit;" + \
                         f"cd -;",
                         shell=True)
@@ -241,8 +240,8 @@ class PLSysGen:
                     subprocess.call(
                         f" cd {project_path}; " + \
                         f" v++ -t hw --platform {platform} " + \
-                        f" --link {project_name}_{self.target_board}.xo "+\
-                        f" -o {project_name}_{self.target_board}.xclbin; cd -;",
+                        f" --link {project_name}_{self.target_board}.xo " + \
+                        f" -o {project_name}_{self.target_board}.xclbin;cd -;",
                         shell=True)
 
         else:
