@@ -629,6 +629,7 @@ class PLMap(PLNode):
         self.target = target
         self.func = func
         self.arrays = arrays
+        self.schedules = [[]]
         # self.schedules = [[], [('interchange', 0, 1)]]
         # self.schedules = [[], [('interchange', 0, 1), ('tile', 1, 4)]]
         # self.schedules = [[],

@@ -405,8 +405,8 @@ class PLTyper:
             node.pl_type = func_def_node.return_type
             node.pl_shape = func_def_node.return_shape
 
-        elif func_name is 'len':
-            if len(node.args) is not 1:
+        elif func_name == 'len':
+            if len(node.args) != 1:
                 print(f'Function {func_name} should only have one parameter!')
                 raise TypeError
 
@@ -428,7 +428,7 @@ class PLTyper:
             length.pl_type = PLType('int')
             length.pl_shape = ()
             replace_child(node.parent, node, length)
-        elif func_name is 'range':
+        elif func_name == 'range':
             return
         else:
             print(f'Function {func_name} called before definition!')
