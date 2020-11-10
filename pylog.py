@@ -192,7 +192,7 @@ def pylog_compile(src, arg_info, backend, board, path,
     # PLDot or PLMap
     plnode_link_parent(pylog_ir)
     chaining_rewriter.visit(pylog_ir)
-    
+
     if debug:
         print('\n')
         print("pylog IR after optimizer")

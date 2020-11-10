@@ -304,7 +304,7 @@ class PLTyper:
                 ctx_type, ctx_shape, ctx_decl = ctx[node.target.name]
                 if isinstance(ctx_decl, PLVariableDecl):
                     node.is_decl = False
-                if ctx_shape == node.value.pl_shape:
+                if ctx_shape == self.actual_shape(node.value.pl_shape):
                     # allow types to be different (implicit type cast)
                     node.is_decl = False
 
@@ -317,7 +317,7 @@ class PLTyper:
                                      node.target.pl_shape, \
                                      node)
         else:
-            self.visit(node.target, ctx)  
+            self.visit(node.target, ctx)
             target_type = node.target.pl_type
             target_shape = node.target.pl_shape
 
