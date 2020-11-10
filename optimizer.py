@@ -175,7 +175,7 @@ class PLOptMapTransformer:
         # node.target = self.visit(node.target, config)
         # node.value  = self.visit(node.value, config)
         node_value = self.visit(node.value, config)
-        if isinstance(node_value, PLFor):
+        if isinstance(node_value, (PLFor, list)):
             return node_value
         else:
             return node
@@ -206,6 +206,18 @@ class PLOptMapTransformer:
         return stmts
 
     def visit_PLMap(self, node, config=None):
+
+        decl = None
+        if node.parent.is_decl:
+            if node.pl_type.dim == 0:
+                pass
+            else:
+                elts = [PLConst(i) for i in node.pl_shape]
+                decl = PLArrayDecl(ele_type=node.target.pl_type.ty,
+                                   name=node.target,
+                                   dims=PLArray(elts=elts),
+                                   ast_node=node,
+                                   config=config)
 
         schedules = node.schedules
         num_schedules = len(schedules)
@@ -249,7 +261,9 @@ class PLOptMapTransformer:
         scheduled_shape    = PLSchedule(schedule).apply(orig_shape)
         scheduled_ind_vars = PLSchedule(schedule).apply(orig_ind_vars)
 
-        return gen_loop_nest(scheduled_shape, stmt, 'map', scheduled_ind_vars)
+        loops = gen_loop_nest(scheduled_shape, stmt, 'map', scheduled_ind_vars)
+
+        return [decl, loops]
 
         # # for i in range(len(node.pl_shape)-1, -1, -1):
         # for i in range(node.pl_type.dim - 1, -1, -1):

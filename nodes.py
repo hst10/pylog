@@ -459,16 +459,6 @@ class PLAssign(PLNode):
         self.target.parent = self
         self.value.parent = self
 
-    def __repr__(self):
-        return "PLAssign"
-
-    def __str__(self):
-        import json
-        return json.dumps("PLAssign")
-
-    # def extract(self, ast_node):
-    #     self.targets = [ t.pl_data for t in ast_node.targets ]
-
 
 class PLIf(PLNode):
     def __init__(self, test, body, orelse, ast_node=None, config=None):
@@ -633,6 +623,7 @@ class PLMap(PLNode):
         # self.schedules = [[], [('interchange', 0, 1)]]
         # self.schedules = [[], [('interchange', 0, 1), ('tile', 1, 4)]]
         # self.schedules = [[],
+        #                   [('interchange', 0, 1), ('tile', 1, 4)],
         #                   [('interchange', 0, 1),
         #                    ('tile', 1, 4),
         #                    ('interchange', 0, 1)]
