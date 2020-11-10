@@ -1,5 +1,6 @@
 from IPinforms import *
 import jinja2
+import numpy as np
 
 def analyze_ip_configuration(node):
     ip_config = {}
@@ -14,17 +15,39 @@ def analyze_ip_configuration(node):
             print(f'func_configs {i} should not appear!')
             raise NameError
 
-    for i in Global_IP_optm_configs_Default[node.name]:
+    for i in Global_IP_optm_configs_Default[analyze_ip_versions(node)]:
         if i in node.optm_configs:
             ip_config[i] = node.optm_configs[i]
         else:
-            ip_config[i] = Global_IP_optm_configs_Default[node.name][i]
+            ip_config[i] = Global_IP_optm_configs_Default[analyze_ip_versions(node)][i]
+    
+    if node.name == "argmax":
+        if ('version' not in node.optm_configs ) or node.optm_configs['version'] == 0:
+            ip_config['log2_kernel_size']  =  int(np.log2(ip_config['s0']))
+        else:
+            ip_config['log2_kernel_size']  =  int(np.log2(ip_config['kernel_size']))
+            ip_config['II']  = int(ip_config['s0']) /int(ip_config['kernel_size'])
+
+
     return ip_config
 
 
-def ip_generator(node,project_path, recordip):
+def analyze_ip_versions(node):
     ip_name = node.name
+    if (node.name in Global_IP_versions ):
+        if 'version' in node.optm_configs:
+            ip_name = Global_IP_versions[node.name][node.optm_configs['version']  ]
+        else:
+            ip_name = Global_IP_versions[node.name][0]
+    return ip_name
+
+
+
+def ip_generator(node,project_path, recordip):
+    
+    ip_name = analyze_ip_versions(node)
     ip_config = analyze_ip_configuration(node)
+
     templateLoader = jinja2.FileSystemLoader(searchpath="./")
     templateEnv = jinja2.Environment(loader=templateLoader)
     file_path = Global_IP_file_path[ip_name]

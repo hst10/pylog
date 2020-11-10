@@ -1,0 +1,75 @@
+/*
+numpy.argmax(a, axis=None, out=None)
+Returns the indices of the maximum values along an axis.
+
+Parameters
+    a : Input array. 
+    axis : int, optional
+        By default, the index is into the flattened array, otherwise along the specified axis.
+    out: array, optional
+        If provided, the result will be inserted into this array. It should be of the appropriate shape and dtype.    
+Returns
+    index_array: Array of indices into the array.
+        It has the same shape as a.shape with the dimension along axis removed.
+*/
+#include "argmax_nonepipe.h"
+struct ValIdx
+{
+{{dtype}} max;
+int max_index;
+};
+
+struct ValIdx argmax_kernel{{kernel_size}}(
+            {% for i in range(kernel_size-1) %}{{dtype}} a_0_{{i}},
+            {% endfor %}{{dtype}} a_0_{{kernel_size-1}})
+{
+      {% for i in range(1,log2_kernel_size+1) %}{{dtype}} {% for j in range(((kernel_size//(2**i)))-1)%}a_{{i}}_{{j}},{% endfor %}a_{{i}}_{{ (kernel_size//(2**i))-1}};  
+      {% endfor %}
+
+      {% for i in range(1,log2_kernel_size+1) %}int {% for j in range(((kernel_size//(2**i)))-1)%}index_a_{{i}}_{{j}},{% endfor %}index_a_{{i}}_{{ (kernel_size//(2**i))-1}}; 
+      {% endfor %}
+
+      {% for i in [1] %}{% for j in range(((kernel_size//(2**i))))%}
+      if (a_{{i-1}}_{{j*2}} > a_{{i-1}}_{{j*2+1}}){
+              a_{{i}}_{{j}} = a_{{i-1}}_{{j*2}};
+              index_a_{{i}}_{{j}} = {{j*2}};
+         }else {
+              a_{{i}}_{{j}} = a_{{i-1}}_{{j*2+1}};
+              index_a_{{i}}_{{j}} = {{j*2+1}};
+         }{% endfor %}
+      {% endfor %}
+
+      {% for i in range(2,log2_kernel_size+1) %}{% for j in range(((kernel_size//(2**i))))%}
+      if (a_{{i-1}}_{{j*2}} > a_{{i-1}}_{{j*2+1}}){
+              a_{{i}}_{{j}} = a_{{i-1}}_{{j*2}};
+              index_a_{{i}}_{{j}} = index_a_{{i-1}}_{{j*2}};
+         }else {
+              a_{{i}}_{{j}} = a_{{i-1}}_{{j*2+1}};
+              index_a_{{i}}_{{j}} = index_a_{{i-1}}_{{j*2+1}};
+         }{% endfor %}
+      {% endfor %}
+      struct ValIdx ret ;
+      ret.max =  a_{{log2_kernel_size}}_0;
+      ret.max_index = index_a_{{log2_kernel_size}}_0;
+      return ret ;
+}
+
+
+int argmax_nonpipeline_{{total_size}}_{{kernel_size}}( {{dtype}} input[{{total_size}}] )  {
+    
+    int i = 0;
+    struct ValIdx validx ;
+    int ret;
+    {{dtype}} max = input[0];
+    for (int ii =0; ii< {{II}}; ii++){
+        validx = argmax_kernel{{kernel_size}}( 
+                {% for i in range(kernel_size-1) %} input[{{kernel_size}} * ii+{{i}}],
+                {% endfor %} input[{{kernel_size}} * ii+{{kernel_size-1}}])  ;
+        if (validx.max > max){
+            ret = 4 * ii + validx.max_index;
+            max = validx.max;
+        }
+    }
+    return ret;
+
+}
