@@ -1,7 +1,10 @@
- #include <math.h>  
+ #pragma once
+ 
+ #include <math.h>
 
 int argmax_kernel{{s0}}(
             {% for i in range(s0-1) %}{{d0}} a_0_{{i}},
             {% endfor %}{{d0}} a_0_{{s0-1}});
 
-int argmax_pipeline_{{s0}}( {{d0}} input[{{s0}}] );
+int {{top_name}}({{d0}} input[{{s0}}]);
+

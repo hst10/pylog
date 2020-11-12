@@ -4,13 +4,13 @@ Global_IP_file_path = {"conv1d" : "ip_template/convolve_1d",
 "matmul" : "ip_template/matrixmultiplication",
 "argmax_pipe" : "ip_template/find/argmax_pipe",
 "argmax_nonepipe" : "ip_template/find/argmax_nonepipe",
-"argmix" : "ip_template/find/argmix",
+"argmin" : "ip_template/find/argmin",
 "max" : "ip_template/find/max",
-"mix" : "ip_template/find/max",
+"min" : "ip_template/find/min",
 "sort_insertion": "ip_template/sort/insertion_sort_parallel",
 "sort_merge": "ip_template/sort/merge_sort_parallel",
-"sort_insertion_it": "ip_template/sort/insertion_sort_itself",
-"sort_merge_it": "ip_template/sort/merge_sort_loop_merged",
+"sort_insertion_it": "ip_template/sort_itself/insertion_sort_itself",
+"sort_merge_it": "ip_template/sort_itself/merge_sort_loop_merged",
 "spmv" : "ip_template/spmv/spmv",
 "spmv-re" : "ip_template/spmv/spmv_restructured",
 "testip" : "ip_template/testip"
@@ -18,7 +18,6 @@ Global_IP_file_path = {"conv1d" : "ip_template/convolve_1d",
 
 Global_IP_versions = {
 "argmax" : [ "argmax_pipe",  "argmax_nonepipe"]
-
 }
 
 Global_IP_args = {

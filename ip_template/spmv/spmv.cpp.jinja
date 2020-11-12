@@ -1,6 +1,6 @@
-#include "spmv.h"
+#include "{{top_name}}.h"
 
-void spmv(int rowPtr[ {{NUM_ROWS+1}}], int columnIndex[{{NNZ}}],
+void {{top_name}}(int rowPtr[ {{NUM_ROWS+1}}], int columnIndex[{{NNZ}}],
 		{{DTYPE}} values[{{NNZ}}], {{DTYPE}} y[{{SIZE}}], {{DTYPE}} x[{{SIZE}}])
 {
 L1: for (int i = 0; i < {{NUM_ROWS}}; i++) {
@@ -13,3 +13,4 @@ L1: for (int i = 0; i < {{NUM_ROWS}}; i++) {
 		y[i] = y0;
 	}
 }
+

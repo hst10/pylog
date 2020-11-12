@@ -12,7 +12,7 @@ Returns
     index_array: Array of indices into the array.
         It has the same shape as a.shape with the dimension along axis removed.
 */
-#include "argmax_pipe_{{recordip}}.h"
+#include "{{top_name}}.h"
 
 int argmax_kernel{{s0}}(
             {% for i in range(s0-1) %}{{d0}} a_0_{{i}},
@@ -47,11 +47,12 @@ int argmax_kernel{{s0}}(
       return index_a_{{log2_kernel_size}}_0;
 }
 
-int argmax_pipeline_{{s0}}( {{d0}} input[{{s0}}] )  {
+int {{top_name}}({{d0}} input[{{s0}}])  {
 
-    int  ret = argmax_kernel{{s0}}( 
+    int  ret = argmax_kernel{{s0}}(
             {% for i in range(s0-1) %} input[{{i}}],
             {% endfor %} input[{{s0-1}}]);
     return ret;
 
 }
+

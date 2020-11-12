@@ -1,3 +1,5 @@
+#pragma once
+
 #include <math.h>  
 // //variables to be scheduled
 // #define BATCH_ 16  // need to be 2^n 
@@ -24,7 +26,7 @@ const static int MAX_SIZE ={{ MAX_SIZE_ }};
 typedef {{DTYPE_}} DTYPE;
 
 
-void argmin(DTYPE A[SIZE] , int* min_index );
+void {{top_name}}(DTYPE A[SIZE] , int* min_index);
 DTYPE min_unit(DTYPE a , DTYPE b);
 int min_f2(int A[VAR2]);
 DTYPE min_f1(DTYPE A[SIZE]);

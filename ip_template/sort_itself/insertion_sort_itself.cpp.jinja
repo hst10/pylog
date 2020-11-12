@@ -1,6 +1,6 @@
-#include "insertion_sort_itself.h"
+#include "{{top_name}}.h"
 
-void insertion_sort_itself({{d0}} A[{{s0}}]) {
+void {{top_name}}({{d0}} A[{{s0}}]) {
  L1:
     for(int i = 1; i < {{s0}}; i++) {
 	#pragma HLS LOOP_TRIPCOUNT min={{vm}} max={{vm}}
@@ -18,3 +18,4 @@ void insertion_sort_itself({{d0}} A[{{s0}}]) {
         A[j] = item;
     }
 }
+

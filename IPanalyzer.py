@@ -58,16 +58,17 @@ def ip_generator(node, project_path, recordip):
     template_h = templateEnv.get_template(file_path+'.h.jinja')
 
     ip_config['recordip'] = recordip
-    ip_config['top_name'] = f'{ip_name}_{recordip}'
-    cppoutputText = template_cpp.render(ip_config)  # where to put args to the template renderer    
+    func_name = f'{ip_name}_{recordip}'
+    ip_config['top_name'] = func_name
+    cppoutputText = template_cpp.render(ip_config)
     houtputText = template_h.render(ip_config)
-    f_h = open(project_path+"/"+ip_name+'_'+str(recordip)+".h",'w')
-    f_cpp = open(project_path+"/"+ip_name+'_'+str(recordip)+".cpp",'w')
+    f_h = open(f'{project_path}/{func_name}.h','w')
+    f_cpp = open(f'{project_path}/{func_name}.cpp','w')
     f_h.write(houtputText)
     f_cpp.write(cppoutputText)
 
     file_h= project_path+"/configured_IPcores.h"
-    include_str = f'#include "{ip_name}_{str(recordip)}.h"\n'
+    include_str = f'#include "{func_name}.h"\n'
     if recordip == 0:
         f = open(file_h,'w')
         f.close()

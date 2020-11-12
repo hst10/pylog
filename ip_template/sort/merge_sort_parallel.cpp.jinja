@@ -1,4 +1,4 @@
-#include "merge_sort_parallel.h"
+#include "{{top_name}}.h"
 #include "assert.h"
 
 void merge_arrays({{d0}} in[{{s0}}], int width, {{d0}} out[{{s0}}]) {
@@ -32,7 +32,7 @@ void merge_arrays({{d0}} in[{{s0}}], int width, {{d0}} out[{{s0}}]) {
   }
 }
 
-void merge_sort_parallel({{d0}} A[s0], {{d0}} B[s0]) {
+void {{top_name}}({{d0}} A[s0], {{d0}} B[s0]) {
 #pragma HLS dataflow
 
 	{{d0}} temp[{{v0}}-1][{{s0}}];
@@ -50,3 +50,4 @@ void merge_sort_parallel({{d0}} A[s0], {{d0}} B[s0]) {
 
 	merge_arrays(temp[{{v0}}-2], width, B);
 }
+

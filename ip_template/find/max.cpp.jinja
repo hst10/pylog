@@ -1,6 +1,6 @@
-#include "max.h"
+#include "{{top_name}}.h"
 
-void max(DTYPE A[SIZE] , DTYPE* max ){
+void {{top_name}}(DTYPE A[SIZE] , DTYPE* max ){
     DTYPE temp[STAGE][BATCH/2];
     DTYPE max_value = A[0];
 #pragma HLS ARRAY_PARTITION variable=temp complete
@@ -48,23 +48,16 @@ for (int i=0; i<NUM; i++){
 
 
 }
-{
-
 
 {{dtype}} max_{{kernel_size}}(
             {% for i in range(kernel_size-1) %}{{dtype}} a_0_{{i}},
             {% endfor %}{{dtype}} a_0_{{kernel_size-1}})
 {
-      {% for i in range(1,log2_kernel_size+1) %}{{dtype}} {% for j in range(((kernel_size//(2**i)))-1)%}a_{{i}}_{{j}},{% endfor %}a_{{i}}_{{ (kernel_size//(2**i))-1}}; 
-      {% endfor %}{% for i in range(1,log2_kernel_size+1) %}{% for j in range(((kernel_size//(2**i))))%}
-      if (a_{{i-1}}_{{j*2}} > a_{{i-1}}_{{j*2+1}}){a_{{i}}_{{j}} = a_{{i-1}}_{{j*2}};}
-          else {a_{{i}}_{{j}} = a_{{i-1}}_{{j*2+1}};}{% endfor %}
-      {% endfor %}
-      return a_{{log2_kernel_size}}_0;
-      
-      
-
-
-
-
+    {% for i in range(1,log2_kernel_size+1) %}{{dtype}} {% for j in range(((kernel_size//(2**i)))-1)%}a_{{i}}_{{j}},{% endfor %}a_{{i}}_{{ (kernel_size//(2**i))-1}}; 
+    {% endfor %}{% for i in range(1,log2_kernel_size+1) %}{% for j in range(((kernel_size//(2**i))))%}
+    if (a_{{i-1}}_{{j*2}} > a_{{i-1}}_{{j*2+1}}){a_{{i}}_{{j}} = a_{{i-1}}_{{j*2}};}
+        else {a_{{i}}_{{j}} = a_{{i-1}}_{{j*2+1}};}{% endfor %}
+    {% endfor %}
+    return a_{{log2_kernel_size}}_0;
 }
+

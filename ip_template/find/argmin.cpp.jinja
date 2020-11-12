@@ -12,8 +12,8 @@ Returns
     index_array: Array of indices into the array.
         It has the same shape as a.shape with the dimension along axis removed.
 */
-#include "argmin.h"
-void argmin(DTYPE A[SIZE] , int* min_index )
+#include "{{top_name}}.h"
+void {{top_name}}(DTYPE A[SIZE] , int* min_index )
 {
     DTYPE min = min_f1(A);
     DTYPE temp[VAR2];
