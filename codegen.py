@@ -338,7 +338,7 @@ class PLCodeGenerator:
         if node.is_method:
             return FuncCall(
                 name=StructRef(name=self.visit(node.obj, config), type='.', \
-                               field=self.visit(node.func, config)),
+                               field=self.visit(node.func, config)), \
                 args=el)
         else:
             return FuncCall(name=self.visit(node.func, config), args=el)

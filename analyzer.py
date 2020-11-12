@@ -1,4 +1,4 @@
-from utils import *
+from utils import np_pl_type_map
 from nodes import *
 from visitors import PLPostorderVisitor
 import IPinforms
@@ -238,7 +238,7 @@ class PLAnalyzer(PLPostorderVisitor):
                 elif node.func.attr in IPinforms.Global_IP_args:
                     #if isinstance(node.parent, ast.Assign):
                     node.pl_data = PLIPcore(
-                                        args=[ e.pl_data for e in node.args],
+                                        args=[e.pl_data for e in node.args],
                                         name=node.func.attr, 
                                         func_configs={}, 
                                         optm_configs={}, 

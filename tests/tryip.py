@@ -26,7 +26,7 @@ from pylog import *
 
 
 
-@pylog(mode='debug')
+@pylog(mode='cgen,debug')
 def tryip():
 
     #c = [12.1,1,1]
