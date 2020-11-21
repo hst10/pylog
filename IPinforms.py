@@ -2,17 +2,22 @@ import jinja2
 
 Global_IP_file_path = {"conv1d" : "ip_template/convolve_1d",
 "matmul" : "ip_template/matrixmultiplication",
-"argmax" : "ip_template/find/argmax",
-"argmix" : "ip_template/find/argmix",
+"argmax_pipe" : "ip_template/find/argmax_pipe",
+"argmax_nonepipe" : "ip_template/find/argmax_nonepipe",
+"argmin" : "ip_template/find/argmin",
 "max" : "ip_template/find/max",
-"mix" : "ip_template/find/max",
+"min" : "ip_template/find/min",
 "sort_insertion": "ip_template/sort/insertion_sort_parallel",
 "sort_merge": "ip_template/sort/merge_sort_parallel",
-"sort_insertion_it": "ip_template/sort/insertion_sort_itself",
-"sort_merge_it": "ip_template/sort/merge_sort_loop_merged",
+"sort_insertion_it": "ip_template/sort_itself/insertion_sort_itself",
+"sort_merge_it": "ip_template/sort_itself/merge_sort_loop_merged",
 "spmv" : "ip_template/spmv/spmv",
 "spmv-re" : "ip_template/spmv/spmv_restructured",
 "testip" : "ip_template/testip"
+}
+
+Global_IP_versions = {
+"argmax" : [ "argmax_pipe",  "argmax_nonepipe"]
 }
 
 Global_IP_args = {
@@ -99,10 +104,13 @@ Global_IP_func_configs = {
 "testip" :  ['d0', 's0', 's1']
 }
 
+
+
 Global_IP_optm_configs_Default = {
 "conv1d" : {'v0':10, 'v1':10}, 
 "matmul" : {'v0':1}, 
-"argmax" : {'v1':10, 'v2':10}, 
+"argmax_pipe" : { }, 
+"argmax_nonepipe" : {'kernel_size' : 4 }, 
 "argmix" : {'v1':10, 'v2':10},  
 "max"    : {'v1':10, 'v2':10},  
 "min"    : {'v1':10, 'v2':10}, 

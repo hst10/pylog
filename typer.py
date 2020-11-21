@@ -5,38 +5,6 @@ from utils import *
 from nodes import *
 import IPinforms
 
-class PLType:
-    '''Scalars, arrays, and functions'''
-
-    def __init__(self, ty="float", dim=0):
-        self.ty = ty
-        self.dim = dim
-
-    def __repr__(self):
-        return "PLType(" + self.ty + ", " + str(self.dim) + ")"
-
-    def __eq__(self, other):
-        if (self.ty == other.ty) and (self.dim == other.dim):
-            return True
-        else:
-            return False
-
-    def __add__(self, other):
-        if isinstance(other, int):
-            return PLType(self.ty, self.dim + other)
-        if self.ty != other.ty:
-            return PLType('float', self.dim + other.dim)
-        else:
-            return PLType(self.ty, self.dim + other.dim)
-
-    def __sub__(self, other):
-        if isinstance(other, int):
-            return PLType(self.ty, self.dim - other)
-        if self.ty != other.ty:
-            return PLType('float', self.dim - other.dim)
-        else:
-            return PLType(self.ty, self.dim - other.dim)
-
 
 class PLTyper:
     def __init__(self, args_info, debug=False):
@@ -285,9 +253,11 @@ class PLTyper:
 
         # visit each field first (constant propagation may happen:
         # expression -> PLConst)
-        self.visit(node.lower, ctx)  # not dealing with chaining propagation here (array as subscription)
-        self.visit(node.upper, ctx)  # not dealing with chaining propagation here (array as subscription)
-        self.visit(node.step, ctx)  # not dealing with chaining propagation here (array as subscription)
+        # NOTE: not dealing with chaining propagation here
+        # (array as subscription)
+        self.visit(node.lower, ctx)
+        self.visit(node.upper, ctx)
+        self.visit(node.step, ctx)
 
         lower = node.lower.value if node.lower else None
         upper = node.upper.value if node.upper else None
@@ -324,19 +294,22 @@ class PLTyper:
         node.pl_shape = (length,)
 
     def visit_PLAssign(self, node, ctx={}):
-        self.visit(node.value, ctx)  # not dealing with chaining propagation here (array as subscription)
+        # not dealing with chaining propagation here (array as subscription)
+        self.visit(node.value, ctx)
 
         node.is_decl = True
         if isinstance(node.target, PLSubscript):
             node.is_decl = False
-        elif len(node.op)>=2:#compound assignment operator like += implies the value is already defined
+        elif len(node.op)>=2:
+            # compound assignment operator like += implies the value is
+            # already defined
             node.is_decl= False
         else:
             if node.target.name in ctx:
                 ctx_type, ctx_shape, ctx_decl = ctx[node.target.name]
                 if isinstance(ctx_decl, PLVariableDecl):
                     node.is_decl = False
-                if ctx_shape == node.value.pl_shape:
+                if ctx_shape == self.actual_shape(node.value.pl_shape):
                     # allow types to be different (implicit type cast)
                     node.is_decl = False
 
@@ -349,7 +322,7 @@ class PLTyper:
                                      node.target.pl_shape, \
                                      node)
         else:
-            self.visit(node.target, ctx)  
+            self.visit(node.target, ctx)
             target_type = node.target.pl_type
             target_shape = node.target.pl_shape
 
@@ -410,10 +383,11 @@ class PLTyper:
             self.visit(stmt, ctx)  
 
     def visit_PLIfExp(self, node, ctx={}):
-        #This is to deal with single-line (a if condition else b) expression
+        # This is to deal with single-line (a if condition else b) expression
         self.visit(node.body, ctx)
-        self.visit(node.orelse, ctx)  
-        #right now only support node.body shape and type equals those of node.orelse
+        self.visit(node.orelse, ctx)
+        # right now only support node.body shape and type equals those of
+        # node.orelse
         assert(node.body.pl_shape==node.orelse.pl_shape)
         assert(node.body.pl_type==node.orelse.pl_type)
         node.pl_shape=node.body.pl_shape
@@ -424,7 +398,10 @@ class PLTyper:
         func_name = node.func.name
         if func_name in ctx:
             func_def_node = ctx[func_name][2]
-            node.func_def_node = func_def_node  # register the def node in nodes so that chaining rewriter can read it without passing ctx objects
+            # register the def node in nodes so that chaining rewriter can read
+            # it without passing ctx objects
+            node.func_def_node = func_def_node
+
             for i in range(len(node.args)):
                 self.visit(node.args[i],
                            ctx)  
@@ -432,13 +409,14 @@ class PLTyper:
                 func_def_node.args[i].pl_type = node.args[i].pl_type
                 func_def_node.args[i].pl_shape = node.args[i].pl_shape
 
-            self.visit(func_def_node, ctx)  # Add the for loop inside the func_def, don't need to propagate up.
+            # Add the for loop inside the func_def, don't need to propagate up
+            self.visit(func_def_node, ctx)
 
             node.pl_type = func_def_node.return_type
             node.pl_shape = func_def_node.return_shape
 
-        elif func_name is 'len':
-            if len(node.args) is not 1:
+        elif func_name == 'len':
+            if len(node.args) != 1:
                 print(f'Function {func_name} should only have one parameter!')
                 raise TypeError
 
@@ -460,7 +438,7 @@ class PLTyper:
             length.pl_type = PLType('int')
             length.pl_shape = ()
             replace_child(node.parent, node, length)
-        elif func_name is 'range':
+        elif func_name == 'range':
             return
         else:
             print(f'Function {func_name} called before definition!')
@@ -471,7 +449,7 @@ class PLTyper:
 
         if len(node.dims) != len(global_ip['dim']):
             # check if the number of the inputs is correct
-            print(f'The input number of IP {node.name} is incorrect!')
+            print(f'The number of inputs of IP {node.name} is incorrect!')
             raise NameError
 
         for i in range(len(node.dims)):
@@ -480,10 +458,12 @@ class PLTyper:
                 input_name = node.args[i].name
                 global_dim = global_ip['dim'][i]
                 current_dim = node.dims[i]
-                print("Note that dimension =0 indicates scalar and >1 indicates array")
-                print(f'The dimension of input {input_name} should be {global_dim} instead of {current_dim}!')
+                print(f'The dimension of input {input_name} should be ' + \
+                      f'{global_dim} instead of {current_dim}! (Note ' + \
+                      f'that dimension =0 indicates scalar while >1 ' + \
+                      f'indicates array)')
                 raise NameError
-        
+
         # check types
         for i in range(len(node.dims)):
             if global_ip['type'][i] in node.func_configs:
@@ -492,43 +472,47 @@ class PLTyper:
                 current_ty = node.types[i]
                 input_name = node.args[i].name
                 if(current_ty != global_ty):
-                    print(f'The type of input {input_name} should be {global_ty} instead of {current_ty}!')
+                    print(f'The type of input {input_name} should be ' + \
+                          f'{global_ty} instead of {current_ty}!')
                     raise NameError
             else:
                 if (global_ip['type'][i][0]=='d'):
                     # if begin with "d", the type should be configured
                     node.func_configs[global_ip['type'][i]] = node.types[i]
                 else:
-                    # deal with fixed types like int, void ...
+                    # deal with fixed types like int, void, etc.
                     global_ty = global_ip['type'][i]
                     current_ty = node.types[i]
                     input_name = node.args[i].name
 
                     if ( global_ty != current_ty):
-                        print(f'The type of input {input_name} should be {global_ty} instead of {current_ty}!')
+                        print(f'The type of input {input_name} should be ' + \
+                              f'{global_ty} instead of {current_ty}!')
                         raise NameError
-        
+
         # check shapes
         for i in range(len(node.dims)):
             if self.debug:
                 if (node.dims[i]==0):
                     print("input is a scalar, nothing to do")
-            
+
             # input is a one-dimensional array
             if (node.dims[i]==1):
                 if global_ip['shape'][i] in node.func_configs:
-                    # check if the data shape are consistent    
+                    # check if the data shape are consistent
                     global_sp = node.func_configs[global_ip['shape'][i]]
                     current_sp = node.shapes[i][0]
                     input_name = node.args[i].name
                     if(current_sp != global_sp):
-                        print(f'The shape of input {input_name} should be {global_sp} instead of {current_sp}!')
+                        print(f'The shape of input {input_name} should be ' + \
+                              f'{global_sp} instead of {current_sp}!')
                         raise NameError
                 else:
                     if (global_ip['shape'][i][0]=='s') :
                         # if begin with "s", the shape should be configured
-                        node.func_configs[global_ip['shape'][i]] = node.shapes[i][0]
-            
+                        shape_id = global_ip['shape'][i]
+                        node.func_configs[shape_id] = node.shapes[i][0]
+
             # the input dimension is >1
             if (node.dims[i]>1):
                 for j in range(node.dims[i]):
@@ -543,12 +527,15 @@ class PLTyper:
                             print(global_sp)
                             print(current_sp)
                         if(current_sp != global_sp):
-                            print(f'The size of dimension {j} of input {input_name} should be {global_sp} instead of {current_sp}!')
+                            print(f'The size of dimension {j} of input ' + \
+                                  f'{input_name} should be {global_sp} ' + \
+                                  f'instead of {current_sp}!')
                             raise NameError
                     else:
                         if (global_ip['shape'][i][j][0]=='s') :
                             # if begin with "s", the shape should be configured
-                            node.func_configs[global_ip['shape'][i][j]] = node.shapes[i][j]
+                            shape_id = global_ip['shape'][i][j]
+                            node.func_configs[shape_id] = node.shapes[i][j]
         if self.debug:
             print(node.func_configs)
 
@@ -562,15 +549,13 @@ class PLTyper:
         else :
             return PLType( global_ip_ret, 0) , ()     
 
-## have not consider the situation that argmax(1, a+2), a is not defined
-## have not consider the input is constant such as np.testip(m,m,m,m,5)
-## have not consider IP shape is fixed 
+    ## have not consider the situation that argmax(1, a+2), a is not defined
+    ## have not consider the input is constant such as np.testip(m,m,m,m,5)
+    ## have not consider IP shape is fixed
     def visit_PLIPcore(self, node, ctx={}):
         if self.debug:
-            print("\n ctx")
-            print(ctx)
-            print("\n args")
-            print(node.args)
+            print(f"ctx = {ctx}")
+            print(f"args = {node.args}")
 
         node.types = []
         node.shapes = []
@@ -578,10 +563,14 @@ class PLTyper:
 
         for a in node.args:
             self.visit(a, ctx)
-            if(isinstance(a, PLVariable)):
-                if a.name not in ctx:
-                    print(f'Input argument {a.name} of IP {node.name} called before definition!')
-                    raise NameError
+
+            ## args definition checking has been done by the visit above,
+            ## no need to check again. To be removed.
+            # if(isinstance(a, PLVariable)):
+            #     if a.name not in ctx:
+            #         print(f'Input argument {a.name} of IP {node.name} \
+            #                                called before definition!')
+            #         raise NameError
             node.types.append(a.pl_type.ty)
             node.shapes.append(a.pl_shape)
             node.dims.append(a.pl_type.dim)
@@ -617,11 +606,6 @@ class PLTyper:
 
             subscript_dim = len(node.indices)
 
-            if self.debug:
-                # print(f'Type: >>>>>>>>>>>> {type(node.indices[0])}')
-                print(f'Type: >>>>>>>>>>>> {type(node.indices)}')
-                print(f'Type: >>>>>>>>>>>> {len(node.indices)}')
-
             if not lambda_arg:
                 # allow an extra dimension for bit access
                 if 'fixed' in ctx[array_name][0].ty:
@@ -636,7 +620,6 @@ class PLTyper:
                 # last index (extra dimension) used as range function
                 # implemented as function call, which replaces original object
                 # in the node tree
-                print(">>>>>>>>>>>>>>>>BIT ACCESS")
                 indices = node.indices
                 parent = node.parent
                 range_arg = indices.pop()
@@ -648,9 +631,12 @@ class PLTyper:
                 replace_child(node.parent, node, range_fn)
                 node = range_fn
 
-                self.visit(node.obj, ctx)  # not dealing with chaining propagation here
+                # not dealing with chaining propagation here
+                self.visit(node.obj, ctx)
                 for i in range(len(node.args)):
-                    self.visit(node.args[i], ctx)  # not dealing with chaining propagation here (array as subscription)
+                    # not dealing with chaining propagation here
+                    # (array as subscription)
+                    self.visit(node.args[i], ctx)
 
                 node.pl_type = PLType('bit', 0)
                 node.pl_shape = ()
@@ -659,8 +645,6 @@ class PLTyper:
                 shape = ()
                 indices = node.indices
                 is_empty = False
-                if self.debug:
-                    print(">>>>>>>>>>>>>>>>")
                 for i in range(len(indices)):
                     # indices[i].parent = node
                     # the length along that dimension
@@ -671,7 +655,9 @@ class PLTyper:
                     if self.debug:
                         print('VISITING INDICS')
                         print(f'{type(indices[i])}')
-                    self.visit(indices[i], ctx)  # not dealing with chaining propagation here
+
+                    # not dealing with chaining propagation here
+                    self.visit(indices[i], ctx)
                     idx_shape = indices[i].pl_shape
                     if idx_shape == (0,):
                         is_empty = True
@@ -679,8 +665,7 @@ class PLTyper:
                         shape += (1,)
                     else:
                         shape += indices[i].pl_shape
-                if self.debug:
-                    print("<<<<<<<<<<<<<<<<<<<")
+
                 if is_empty:
                     node.pl_type = PLType(ctx[array_name][0].ty, None)
                     node.pl_shape = None

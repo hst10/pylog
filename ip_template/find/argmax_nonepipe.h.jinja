@@ -1,0 +1,8 @@
+#pragma once
+
+struct ValIdx argmax_kernel{{kernel_size}}(
+            {% for i in range(kernel_size-1) %}{{d0}} a_0_{{i}},
+            {% endfor %}{{d0}} a_0_{{kernel_size-1}});
+
+int {{top_name}}({{d0}} input[{{total_size}}]) ;
+

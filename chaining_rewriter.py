@@ -49,7 +49,7 @@ class PLChainingRewriter:
         return self.NOT_IN_CHAINING_OR_DONT_CARE
 
     def visit_PLIPcore(self, node, stmt_node=None):
-        #TODO: not supported function call
+        # TODO: not supported function call
         return self.NOT_IN_CHAINING_OR_DONT_CARE
 
     def visit_PLChainingTop(self, node, stmt_node=None):
@@ -200,16 +200,14 @@ class PLChainingRewriter:
         return self.NOT_IN_CHAINING_OR_DONT_CARE
 
     def visit_PLIfExp(self, node, stmt_node=None):
-        #TODO: single-line expression not yet suppported
+        # TODO: single-line expression not yet suppported
         # TODO: the condition expr *test* is harder to deal with (maybe temporary object is needed) yet not visited by this vistor
         return self.NOT_IN_CHAINING_OR_DONT_CARE
-        #self.visit(node.body,
+        # self.visit(node.body,
         #               stmt_node=stmt_node)  # This could include chaining for-loop expression. ending point of propagation
 
-        #self.visit(node.orelse,
+        # self.visit(node.orelse,
         #               stmt_node=stmt_node)  # This could include chaining for-loop expression. ending point of propagation
-
-
 
     def visit_PLCall(self, node, stmt_node=None):
         # breakpoint()
@@ -232,8 +230,12 @@ class PLChainingRewriter:
                 raise NameError
 
     def visit_general_variable_nodes(self, node, stmt_node=None):
-        if len(stmt_node.pl_shape) > 0 and not (len(stmt_node.pl_shape)==1 and stmt_node.pl_shape[0]==1):
+        if len(stmt_node.pl_shape) > 0 and not (all([ele == 1 for ele in stmt_node.pl_shape])):
             # create a new PLSubscript to realize PLSubscript to PLSubscript
+            if isinstance(node.parent, PLAssign) and isinstance(node.parent.value, PLFor):
+                # this stmt_node is already dealt with by the optimizer and should not be considered again here
+                return self.NOT_IN_CHAINING_OR_DONT_CARE
+
             indices = []
             if len(node.pl_shape) == 0:
                 return self.IN_CHAINING  # no need to insert new PLSubscript node as the chaining will constantly use this scalar as the element in the generated for loops

@@ -278,7 +278,9 @@ class PLCodeGenerator:
 
         for i in range(len(node.pl_shape) - 1, -1, -1):
             if not any([node.pl_shape[idx] != 1 for idx in range(0, i + 1)]):
-                break  # omitting the indices at the beginning if there bounds are [0,1)
+                break
+                # omitting the indices at the beginning if their bounds
+                # are [0,1)
             stmt = [simple_for(iter_var=f'i_chaining_{i}',
                                start=int32(0),
                                op='<',
@@ -335,7 +337,8 @@ class PLCodeGenerator:
         el = ExprList(exprs=[self.visit(e, config) for e in node.args])
         if node.is_method:
             return FuncCall(
-                name=StructRef(name=self.visit(node.obj, config), type='.', field=self.visit(node.func, config)),
+                name=StructRef(name=self.visit(node.obj, config), type='.', \
+                               field=self.visit(node.func, config)), \
                 args=el)
         else:
             return FuncCall(name=self.visit(node.func, config), args=el)
@@ -359,9 +362,15 @@ class PLCodeGenerator:
             subscripts = []
             for i in range(len(node.indices)):
                 # if len(node.var.indices)<=i:
-                #    rhs=0 # in case of a subscript to a partial subscript, the node.var is at least 1 dimensional array (vector) with a few 1 at the beginning of its pl_shape but the indices is shorter because the non-subscript parts do not need an index. In this case, we add a zero for them
+                #     rhs=0
+                #     # in case of a subscript to a partial subscript,
+                #     # the node.var is at least 1 dimensional array
+                #     # (vector) with a few 1 at the beginning of its
+                #     # pl_shape but the indices is shorter because the
+                #     # non-subscript parts do not need an index.
+                #     # In this case, we add a zero for them
                 # else:
-                #    rhs=node.var.indices[i]
+                #     rhs=node.var.indices[i]
                 plbinop = PLBinOp(op='+',
                                   left=node.indices[i],
                                   right=node.var.indices[i])
@@ -386,7 +395,7 @@ class PLCodeGenerator:
         # else:
         #     sub = subscript(array_name=self.visit(node.var, config),
         #                     subscripts=[ self.visit(idx, config) \
-        #                                             for idx in node.indices ])
+        #                                             for idx in node.indices])
         #     return sub
 
         # obj = self.visit(node.var, config)
@@ -406,17 +415,22 @@ class PLCodeGenerator:
             return int32(0)
 
     def visit_PLAssign(self, node, config=None):
-        #TODO: the compound assign operator can be transcripted correctly now, such as -=, +=
-        # but we don't know them in the compiler flow. Do we need to break them down to assign with children lhs and binop rhs?
+        #TODO: the compound assign operator can be transcripted correctly now,
+        # such as -=, +=, but we don't know them in the compiler flow. Do we
+        # need to break them down to assign with children lhs and binop rhs?
         target_c_obj = self.visit(node.target, config)
         assign_dim = node.target.pl_type.dim
         decl = None
 
         # generate declaration statement
         if node.is_decl:
-            if (assign_dim == 0 and not is_in_chaining(node)) or (
-                    is_in_chaining(node) and not isinstance(node.target, PLSubscript)):
-                # in the second situation, though this assign node is in a chaining subtree, the lhs variable is not PLSubscript means it is originally an scalar instead of an array and should follow this branch.
+            if (assign_dim == 0 and not is_in_chaining(node)) or \
+               (is_in_chaining(node) and \
+                    not isinstance(node.target, PLSubscript)):
+                # in the second situation, though this assign node is in a
+                # chaining subtree, the lhs variable is not PLSubscript means
+                # it is originally an scalar instead of an array and should
+                # follow this branch.
                 if isinstance(node.value, (PLMap, PLFor, PLAssign)):
                     decl = var_decl(var_type=node.target.pl_type.ty,
                                     name=target_c_obj.target.name,
@@ -430,15 +444,18 @@ class PLCodeGenerator:
                     return decl
 
             elif assign_dim > 0 or is_in_chaining(node):
-                if is_in_chaining(
-                        node):  # lhs variable is actually an array but in the guise of PLSubscript due to chaining
-                    # goes to get the information from the var field of the PLSubscript
+                if is_in_chaining(node):
+                    # lhs variable is actually an array but in the guise of
+                    # PLSubscript due to chaining goes to get the information
+                    # from the var field of the PLSubscript
                     dims = [int32(s) for s in node.target.var.pl_shape]
                     name = target_c_obj.name
+                    # target_c_obj.name is ArrayRef and includes name and
+                    # subscript
                     while not isinstance(name, str):
                         name = name.name
                     decl = array_decl(var_type=node.target.var.pl_type.ty,
-                                      name=name,  # target_c_obj.name is ArrayRef and includes name and subscript
+                                      name=name,
                                       dims=dims)
                 else:
                     dims = [int32(s) for s in node.target.pl_shape]

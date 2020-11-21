@@ -1,4 +1,39 @@
 import ast
+# from typer import PLType
+
+
+class PLType:
+    '''Scalars, arrays, and functions'''
+
+    def __init__(self, ty="float", dim=0):
+        self.ty = ty
+        self.dim = dim
+
+    def __repr__(self):
+        return "PLType(" + self.ty + ", " + str(self.dim) + ")"
+
+    def __eq__(self, other):
+        if (self.ty == other.ty) and (self.dim == other.dim):
+            return True
+        else:
+            return False
+
+    def __add__(self, other):
+        if isinstance(other, int):
+            return PLType(self.ty, self.dim + other)
+        if self.ty != other.ty:
+            return PLType('float', self.dim + other.dim)
+        else:
+            return PLType(self.ty, self.dim + other.dim)
+
+    def __sub__(self, other):
+        if isinstance(other, int):
+            return PLType(self.ty, self.dim - other)
+        if self.ty != other.ty:
+            return PLType('float', self.dim - other.dim)
+        else:
+            return PLType(self.ty, self.dim - other.dim)
+
 
 def iter_fields(node):
     if isinstance(node, list):
@@ -27,26 +62,51 @@ def iter_child_nodes(node):
                 if isinstance(item, PLNode):
                     yield item
 
-
-def replace_child(parent, old_child, new_child):
+def replace_child_generic(parent, condition, new_child):
     if isinstance(parent, list):
         for idx in range(len(parent)):
-            if parent[idx] == old_child:
+            if condition(parent[idx]):
                 parent[idx] = new_child
         return
 
     for name, field in iter_fields(parent):
         if isinstance(field, list):
             for idx, child in enumerate(field):
-                if child is old_child:
+                if condition(child):
                     getattr(parent, name)[idx] = new_child
                     new_child.parent = parent
                     return
         elif isinstance(field, PLNode):
-            if field is old_child:
+            if condition(field):
                 setattr(parent, name, new_child)
                 new_child.parent = parent
                 return
+
+def replace_child(parent, old_child, new_child):
+    replace_child_generic(
+        parent,
+        lambda node: True if node is old_child else False,
+        new_child)
+
+# def replace_child(parent, old_child, new_child):
+#     if isinstance(parent, list):
+#         for idx in range(len(parent)):
+#             if parent[idx] == old_child:
+#                 parent[idx] = new_child
+#         return
+
+#     for name, field in iter_fields(parent):
+#         if isinstance(field, list):
+#             for idx, child in enumerate(field):
+#                 if child is old_child:
+#                     getattr(parent, name)[idx] = new_child
+#                     new_child.parent = parent
+#                     return
+#         elif isinstance(field, PLNode):
+#             if field is old_child:
+#                 setattr(parent, name, new_child)
+#                 new_child.parent = parent
+#                 return
 
 
 def plnode_walk(node):
@@ -120,6 +180,26 @@ class PLNode:
 
     def __repr__(self):
         return f'<{self.__class__.__name__}<{hex(id(self))}>>'
+
+    def __add__(self, o):
+        if isinstance(o, (int, float)):
+            o = PLConst(o)
+        return PLBinOp('+', self, o)
+
+    def __mul__(self, o):
+        if isinstance(o, (int, float)):
+            o = PLConst(o)
+        return PLBinOp('*', self, o)
+
+    def __floordiv__(self, o):
+        if isinstance(o, (int, float)):
+            o = PLConst(o)
+        return PLBinOp('//', self, o)
+
+    def __mod__(self, o):
+        if isinstance(o, (int, float)):
+            o = PLConst(o)
+        return PLBinOp('%', self, o)
 
     def set_codegened(self):
         tmp = self.codegened
@@ -248,40 +328,6 @@ class PLBinOp(PLNode):
         self.right = right
 
 
-# class BinOpNode(PLNode):
-#     def __init__(self, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self._fields = []
-#         if ast_node != None:
-#             self.extract(ast_node)
-
-#     def __repr__(self):
-#         if isinstance(self.op, ast.Mult):
-#             return str(self.left) + "*" + str(self.right)
-
-#     def extract(self, ast_node):
-#         self.left = ast_node.left.pl_data
-#         self.right = ast_node.right.pl_data
-#         self.op = ast_node.op
-
-
-## should use PLBinOp instead
-# class PLBoolOp(PLNode):
-#     '''BoolOp'''
-#     def __init__(self, op, values, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self.op = op
-#         self.values = values
-
-## should use PLBinOp instead
-# class PLCompare(PLNode):
-#     '''Compare'''
-#     def __init__(self, ops, values, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self.ops = ops
-#         self.values = values
-
-
 class PLCall(PLNode):
     '''ast.Call
         func: PLVariable
@@ -292,8 +338,8 @@ class PLCall(PLNode):
         obj: object when it is a class method
     '''
 
-    def __init__(self, func, args, attr=None, attr_args=None, is_method=False, obj=None, \
-                 ast_node=None, config=None):
+    def __init__(self, func, args, attr=None, attr_args=None, is_method=False,\
+                 obj=None, ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['func', 'args', 'attr', 'attr_args']
         self.func = func
@@ -307,7 +353,8 @@ class PLCall(PLNode):
 #@@ modified by cy
 class PLIPcore(PLNode):
     '''IP cores'''
-    def __init__(self, args, name=None, func_configs=None, optm_configs=None, ast_node=None, config=None):
+    def __init__(self, args, name=None, func_configs=None, optm_configs=None, \
+                 ast_node=None, config=None):
         PLNode.__init__(self, ast_node, config)
         self._fields = ['args','name','func_configs','optm_configs']
         self.args = args
@@ -412,9 +459,6 @@ class PLAssign(PLNode):
         self.target.parent = self
         self.value.parent = self
 
-    # def extract(self, ast_node):
-    #     self.targets = [ t.pl_data for t in ast_node.targets ]
-
 
 class PLIf(PLNode):
     def __init__(self, test, body, orelse, ast_node=None, config=None):
@@ -510,7 +554,7 @@ class PLFunctionDef(PLNode):
     def __init__(self, name, args, body, decorator_list, pl_top=False,
                  ast_node=None, config=None, annotations={}):
         PLNode.__init__(self, ast_node, config)
-        self._fields = ['name', 'args', 'body', 'decorator_list', 'annotations']
+        self._fields = ['name', 'args', 'body', 'decorator_list','annotations']
         self.name = name
         self.args = args
         self.body = body
@@ -518,12 +562,6 @@ class PLFunctionDef(PLNode):
         self.iter_vars = []
         self.pl_top = pl_top
         self.annotations = annotations
-        # if config != None:
-        #     print(">>>>>>>>>>> FuncDef Found CONFIG")
-        #     print(config.var_list)
-
-    # def extract(self, ast_node):
-    #     self.name = ast_node.name
 
 
 class PLLambda(PLNode):
@@ -537,36 +575,6 @@ class PLLambda(PLNode):
         self._fields = ['args', 'body']
         self.args = args
         self.body = body
-
-    # def __repr__(self):
-    #     return "LambdaNode"
-
-    # def extract(self, ast_node):
-    #     self.args = ast_node.args.pl_data
-    #     self.body = ast_node.body.pl_data
-    #     self.type = self.body.type
-    #     print("LambdaNode assigns type to " + self.name +": "+str(self.type))
-    #     print("LambdaNode body type: ", type(self.body))
-
-    # def codegen(self, config, arguments, output_var):
-    #     # if self.set_codegened(): return ""
-    #     self.src = ""
-
-    #     self.iter_vars = config.iter_vars
-    #     param_names = [e.name for e in self.args]
-    #     argum_names = [e.name for e in arguments]
-    #     self.param2arg = dict(zip(param_names, argum_names))
-    #     self.output_var = output_var
-
-    #     curr_context = Context(in_lambda=True,
-    #                             lambda_args_map=self.param2arg)
-
-    #     new_config = config
-    #     new_config.context = curr_context
-
-    #     self.src += self.body.codegen(new_config)
-
-    #     return self.src
 
 
 class PLReturn(PLNode):
@@ -611,6 +619,15 @@ class PLMap(PLNode):
         self.target = target
         self.func = func
         self.arrays = arrays
+        self.schedules = [[]]
+        # self.schedules = [[], [('interchange', 0, 1)]]
+        # self.schedules = [[], [('interchange', 0, 1), ('tile', 1, 4)]]
+        # self.schedules = [[],
+        #                   [('interchange', 0, 1), ('tile', 1, 4)],
+        #                   [('interchange', 0, 1),
+        #                    ('tile', 1, 4),
+        #                    ('interchange', 0, 1)]
+        #                  ]
 
 
 class PLDot(PLNode):
@@ -624,241 +641,21 @@ class PLDot(PLNode):
         self.op1 = op1
         self.op2 = op2
 
-# class PLMap(PLNode):
-#     def __init__(self, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self._fields = []
-#         self.iter_vars = []
-#         if ast_node != None:
-#             self.extract(ast_node)
-#         if config != None:
-#             print(">>>>>>>>>>> Map Found CONFIG")
-#             print(config.var_list)
+def gen_loop_nest(shape, body, source, targets=None):
+    if targets:
+        assert(len(shape) == len(targets))
+    stmt = body
+    for i in range(len(shape)-1, -1, -1):
+        if targets:
+            target = PLVariable(f'{targets[i]}')
+        else:
+            target = PLVariable(f'i_{source}_{i}')
+        target.pl_type  = PLType('int', 0)
+        target.pl_shape = ()
 
-#     def extract(self, ast_node):
-#         arg_lst = [ arg.pl_data for arg in ast_node.args ]
-#         self.func = arg_lst[0]
-#         self.data = arg_lst[1:]
-#         self.target = None
-#         print("!!!!!! parent for map: ", ast_node.parent)
-#         if isinstance(ast_node.parent, ast.Assign):
-#             self.target = ast_node.parent.targets[0].pl_data
-#             print("!!! Assign target for map")
-#         # elif ast_node.parent.pl_data.type:
-
-#         self.dim = self.data[0].dim
-
-#         if self.func.type:
-#             print("############# lambda type: ", self.func.type)
-
-#         self.type = self.func.type + 1
-#         print(">>>>>>>>>>>> Map assigns type to " + self.name +": "+\
-#                                                             str(self.type))
-
-#     def codegen(self, config):
-#         # if self.set_codegened(): return ""
-#         self.src = ""
-#         dim = self.dim
-#         indent_level = config.indent_level
-#         indent_str = config.indent_str
-#         idx_var_num = config.idx_var_num
-#         for dim_i in range(dim):
-#             idx_var_num += 1
-
-#             # assuming these are all consts not variables
-#             lower_i = self.data[0].slices[dim_i][0]
-#             upper_i = self.data[0].slices[dim_i][1]
-#             step_i  = self.data[0].slices[dim_i][2]
-#             self.src += indent_str*indent_level \
-#                + "map_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" %   \
-#                (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
-#                 idx_var_num, step_i)
-#             self.iter_vars.append("i%d" % idx_var_num)
-
-#             indent_level += 1
-
-#         config.indent_level = indent_level
-#         config.idx_var_num = idx_var_num
-#         config.iter_vars = self.iter_vars
-#         if not hasattr(config, "context"):
-#             config.context = Context()
-#         # config.context.map_vars = [ VariableNode(name=var.name, index=) \
-#                                                        for var in self.data ]
-
-#         self.src += self.func.codegen(config, self.data, self.target)
-
-#         self.src += indent_str*indent_level + str(self.target) + \
-#                     "[" + "][".join(self.iter_vars) + "] = " + \
-#                                      str(config.context.return_var) + "; \n"
-
-#         for dim_i in range(dim):
-#             indent_level -= 1
-#             self.src += indent_str*indent_level + "}\n"
-
-#         config.indent_level = indent_level
-
-
-# class PLHmap(PLNode):
-#     def __init__(self, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self._fields = []
-#         self.iter_vars = []
-#         if ast_node != None:
-#             self.extract(ast_node)
-#         if config != None:
-#             print(">>>>>>>>>>> Hmap Found CONFIG")
-#             print(config.var_list)
-
-#     def extract(self, ast_node):
-#         arg_lst = [ arg.pl_data for arg in ast_node.args ]
-#         self.func = arg_lst[0]
-#         self.data = arg_lst[1:]
-#         self.target = ast_node.parent.targets[0].pl_data
-#         self.dim = self.data[0].dim
-
-#         print("########### ", type(self.func))
-
-#         if arg_lst[0].type:
-#             print("############# lambda type: ", arg_lst[0].type)
-#         if arg_lst[1].type:
-#             print("############# data: ", arg_lst[1].type)
-
-#         self.type = arg_lst[1].type + arg_lst[0].type
-#         print(">>>>>>>>>>>> HmapNode assigns type to " + self.name +": "+\
-#                                                              str(self.type))
-
-#         # print("hmap_func   = ", self.func)
-#         # print("hmap_data   = ", self.data)
-#         # print("hmap_target = ", self.target)
-
-#         # print(self.data.dim)
-#         # print(self.data.slices)
-
-#     def codegen(self, config):
-#         # if self.set_codegened(): return ""
-#         self.src = ""
-#         dim = self.dim
-#         indent_level = config.indent_level
-#         indent_str = config.indent_str
-#         idx_var_num = config.idx_var_num
-#         for dim_i in range(dim):
-#             idx_var_num += 1
-
-#             # assuming these are all consts not variables
-#             lower_i = self.data[0].slices[dim_i][0]
-#             upper_i = self.data[0].slices[dim_i][1]
-#             step_i  = self.data[0].slices[dim_i][2]
-#             self.src += indent_str*indent_level \
-#                 + "hmap_i%d: for (int i%d = %d; i%d < %d; i%d += %d) {\n" % \
-#                 (idx_var_num, idx_var_num, lower_i, idx_var_num, upper_i, \
-#                  idx_var_num, step_i)
-#             self.iter_vars.append("i%d" % idx_var_num)
-
-#             indent_level += 1
-
-#         config.indent_level = indent_level
-#         config.idx_var_num = idx_var_num
-#         config.iter_vars = self.iter_vars
-#         if not hasattr(config, "context"):
-#             config.context = Context()
-#         # config.context.map_vars = [ VariableNode(name=var.name, index=)\
-#         #                                          for var in self.data ]
-
-#         self.src += self.func.codegen(config, self.data, self.target)
-
-#         self.src += indent_str*indent_level + str(self.target) + \
-#                     "[" + "][".join(self.iter_vars) + "] = " + \
-#                                     str(config.context.return_var) + "; \n"
-
-#         for dim_i in range(dim):
-#             indent_level -= 1
-#             self.src += indent_str*indent_level + "}\n"
-
-#         config.indent_level = indent_level
-
-# class PLDot(PLNode):
-#     """dot(A, B): returns the dot product of A and B"""
-#     """NOTE: This definition is different from NumPy. Will be upated later"""
-#     def __init__(self, ast_node=None, config=None):
-#         PLNode.__init__(self, ast_node, config)
-#         self._fields = []
-#         self.iter_vars = []
-#         self.operands = []
-#         if ast_node != None:
-#             self.extract(ast_node)
-#         if len(self.operands) == 2:
-#             print("DotNode operand types: ", self.operands[0].type)
-#             print("DotNode operand types: ", self.operands[1].type)
-#             if self.operands[0].type and self.operands[1].type:
-#                 self.type = PLType(self.operands[0].type.ele_type, 0)
-#                 print("DotNode assigns type to " + self.name +": "+\
-#                                                             str(self.type))
-
-#     def extract(self, ast_node):
-#         assert(len(ast_node.args) == 2)
-#         self.operands = [ e.pl_data for e in ast_node.args ]
-#         self.dim = self.operands[0].dim
-
-#     def gen_inner_vars(self, var, config):
-#         assert(hasattr(config.context, "lambda_args_map"))
-#         if var.name in config.context.lambda_args_map:
-#             tmp_src = config.context.lambda_args_map[var.name]
-#             tmp_src += "[" + "][".join([ self.iter_vars[i]+"+"+\
-#                         config.iter_vars[i]+"+("+str(var.slices[i][0])+")" \
-#                         for i in range(len(self.iter_vars)) ]) + "]"
-#             return tmp_src
-#         else:
-#             tmp_src = var.name
-#             tmp_src += "[" + "][".join(self.iter_vars) + "]"
-#             return tmp_src
-
-#     def codegen(self, config):
-#         # if self.set_codegened(): return ""
-#         self.src = ""
-#         if not hasattr(config.context, "lambda_args_map"): return self.src
-
-#         indent_level = config.indent_level
-#         indent_str = config.indent_str
-#         idx_var_num = config.idx_var_num
-
-#         idx_var_num += 1
-#         accum_var_name = "tmp" + str(idx_var_num)
-#         config.context.return_var = VariableNode(name=accum_var_name)
-
-#         self.src += indent_str*indent_level + "int " + accum_var_name+" = 0;\n"
-
-#         for dim_i in range(self.dim):
-#             idx_var_num += 1
-
-#             # assuming these are all consts not variables
-#             lower_i = self.operands[0].slices[dim_i][0]
-#             upper_i = self.operands[0].slices[dim_i][1]
-#             step_i  = self.operands[0].slices[dim_i][2]
-#             range_i = upper_i - lower_i
-
-#             self.src += indent_str*indent_level \
-#                 + "dot_i%d: for (int i%d = 0; i%d < %d; i%d += %d) {\n" %   \
-#                 (idx_var_num, idx_var_num, idx_var_num, range_i, \
-#                  idx_var_num, step_i)
-#             self.iter_vars.append("i%d" % idx_var_num)
-
-#             indent_level += 1
-
-
-#         # print loop body
-#         self.src += indent_str*indent_level + accum_var_name + " += "
-#         self.src += self.gen_inner_vars(self.operands[0], config)
-#         self.src += " * "
-#         self.src += self.gen_inner_vars(self.operands[1], config)
-#         self.src += "; \n"
-
-#         config.indent_level = indent_level
-#         config.idx_var_num = idx_var_num
-
-#         for dim_i in range(self.dim):
-#             indent_level -= 1
-#             self.src += indent_str*indent_level + "}\n"
-
-#         config.indent_level = indent_level
-
-#         return self.src
+        stmt = [ PLFor(target=target,
+                        iter_dom=PLIterDom(end=PLConst(shape[i])),
+                        body=stmt,
+                        orelse=[],
+                        source=source) ]
+    return stmt[0]

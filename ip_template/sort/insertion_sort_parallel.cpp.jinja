@@ -1,7 +1,7 @@
-#include "insertion_sort_parallel.h"
+#include "{{top_name}}.h"
 #include "assert.h"
 
-void insertion_sort_parallel({{d0}} A[{{s0}}], {{d0}} B[{{s0}}]) {
+void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s0}}]) {
 #pragma HLS array_partition variable=B cyclic factor={{v0}}
  L1:
     for(int i = 0; i < {{s0}}; i++) {
@@ -23,3 +23,4 @@ void insertion_sort_parallel({{d0}} A[{{s0}}], {{d0}} B[{{s0}}]) {
         }
     }
 }
+

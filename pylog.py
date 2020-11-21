@@ -9,24 +9,18 @@ import inspect
 import textwrap
 import functools
 import subprocess
-
-from visitors import *
-from analyzer import *
-from typer import *
-from optimizer import *
-from codegen   import *
-from sysgen    import *
-from runtime   import *
-import IPinforms
-from chaining_rewriter import *
-
 import numpy as np
 
-HOST_ADDR = 'ubuntu@localhost'
-HOST_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
-TARGET_ADDR = 'ubuntu@localhost'
-TARGET_BASE = '/home/ubuntu/vivado_projects/pylog_projects'
-WORKSPACE = HOST_BASE
+from config import HOST_ADDR, HOST_BASE, TARGET_BASE, WORKSPACE
+from nodes import plnode_link_parent
+from analyzer import PLAnalyzer, PLTester, ast_link_parent
+from typer import PLTyper
+from optimizer import PLOptimizer
+from codegen import PLCodeGenerator
+from sysgen import PLSysGen
+from runtime import PLRuntime
+import IPinforms
+from chaining_rewriter import PLChainingRewriter
 
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
@@ -62,7 +56,11 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
         # builtins = open('builtin.py').read()
         source_func = textwrap.dedent(inspect.getsource(func))
-        if debug: print(source_func)
+        if debug: 
+            print("[DEBUG] original python func------------------")
+            print(source_func)
+            print("----------------------------------------------")
+
         arg_names = inspect.getfullargspec(func).args
 
         for arg in args:
@@ -152,9 +150,12 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
 def pylog_compile(src, arg_info, backend, board, path,
                   gen_hlsc=True, debug=False, viz=False):
-    print("Compiling PyLog code ...")
+    print("[INFO] Compiling PyLog code ...")
     ast_py = ast.parse(src)
-    if debug: astpretty.pprint(ast_py)
+    if debug: 
+        print("[DEBUG] parsing python func------------------")
+        astpretty.pprint(ast_py)
+        print("---------------------------------------------")
 
     # add an extra attribute pointing to parent for each node
     ast_link_parent(ast_py)  # need to be called before analyzer
@@ -188,20 +189,22 @@ def pylog_compile(src, arg_info, backend, board, path,
     if debug:
         print('\n')
         print("pylog IR after typer")
-        print(pylog_ir) 
-        print('\n')   
-    chaining_rewriter.visit(pylog_ir)
+        print(pylog_ir)
+        print('\n')
 
     # transform loop transformation and insert pragmas
     optimizer.opt(pylog_ir)
 
+    # need to be called since optimizer may insert new nodes when visiting
+    # PLDot or PLMap
+    plnode_link_parent(pylog_ir)
+    chaining_rewriter.visit(pylog_ir)
+
     if debug:
         print('\n')
         print("pylog IR after optimizer")
-        print(pylog_ir) 
-        print('\n')  
-
-
+        print(pylog_ir)
+        print('\n')
 
     project_path = f'{path}/{analyzer.top_func}'
 
@@ -210,8 +213,7 @@ def pylog_compile(src, arg_info, backend, board, path,
     # else:
     #     print(f"Directory {project_path} exists! Overwriting... ")
 
-
-    hls_c = codegen.codegen(pylog_ir, project_path )
+    hls_c = codegen.codegen(pylog_ir, project_path)
 
     if debug:
         print("Generated C Code:")

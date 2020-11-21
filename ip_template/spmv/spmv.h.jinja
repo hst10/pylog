@@ -1,5 +1,4 @@
-#ifndef __SPMV_H__
-#define __SPMV_H__
+#pragma once
 
 // #define NNZ_ 9  
 // //variables to be defined
@@ -15,10 +14,6 @@
 // typedef DTYPE_ DTYPE;
 
 
-void spmv(int rowPtr[ {{NUM_ROWS}}+1], int columnIndex[{{NNZ}}],
+void {{top_name}}(int rowPtr[ {{NUM_ROWS}}+1], int columnIndex[{{NNZ}}],
 		  {{DTYPE}} values[{{NNZ}}], {{DTYPE}} y[{{SIZE}}], {{DTYPE}} x[{{SIZE}}]);
-
-#endif // __MATRIXMUL_H__ not defined
-
-
 

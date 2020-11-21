@@ -18,9 +18,9 @@ Returns
                 Since a view is returned, this operation is done in constant time.
 */
 
-#include "convolve_1d.h"
+#include "{{top_name}}.h"
 
-void convolve_1d({{d0}} A[{{s0}}] , {{d0}} B[{{s1}}], {{d0}} C[{{s2}}])
+void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s1}}], {{d0}} C[{{s2}}])
 {
 #pragma HLS ARRAY_PARTITION variable=A complete
 #pragma HLS ARRAY_PARTITION variable=B complete
@@ -29,7 +29,7 @@ void convolve_1d({{d0}} A[{{s0}}] , {{d0}} B[{{s1}}], {{d0}} C[{{s2}}])
 
     for (int i=0; i<{{s2}}; i++){
         #pragma HLS unroll
-        C[i] = 0; 
+        C[i] = 0;
     }
 
     for (int m=0; m<{{v0}} ; m++){
@@ -38,10 +38,11 @@ void convolve_1d({{d0}} A[{{s0}}] , {{d0}} B[{{s1}}], {{d0}} C[{{s2}}])
             for ( int i=0; i< {{s2}} ; i=i+{{v0}}){
                 for (int k=0; k< {{s1}}; k=k+{{v1}} ){
                     if ( (i-k>=0)&&(i-k<{{s0}}-1)&&(i+m<{{s2}})&&(k+n<{{s1}}) ){
-                        C[i+m] += A[k+n]*B[i+m-k-n];         
+                        C[i+m] += A[k+n]*B[i+m-k-n];
                     }
                 }
             }
         } 
     }
 }
+

@@ -1,8 +1,8 @@
-#include "spmv_restructured.h"
+#include "{{top_name}}.h"
 #include <iostream>
 
 
-void spmv(int row_ptr[ {{NUM_ROWS+1}} ], int columnIndex[{{NNZ}}],
+void {{top_name}}(int row_ptr[ {{NUM_ROWS+1}} ], int columnIndex[{{NNZ}}],
        {{DTYPE}} values[{{NNZ}}], {{DTYPE}} y[{{SIZE}}], {{DTYPE}} x[{{SIZE}}])
 {
 #pragma HLS ARRAY_PARTITION variable=row_ptr cyclic factor=16 dim=1
@@ -70,3 +70,4 @@ ACC:  for(int i = 0; i < loop_bound/S; i++ )
 			}
 	  }
 }
+

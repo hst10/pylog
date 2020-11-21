@@ -1,6 +1,6 @@
-#include "min.h"
+#include "{{top_name}}.h"
 
-void min(DTYPE A[SIZE] , DTYPE* min ){
+void {{top_name}}(DTYPE A[SIZE] , DTYPE* min){
     DTYPE temp[STAGE][BATCH/2];
     DTYPE min_value = A[0];
 #pragma HLS ARRAY_PARTITION variable=temp complete
@@ -33,3 +33,4 @@ void min(DTYPE A[SIZE] , DTYPE* min ){
 DTYPE min_unit(DTYPE a , DTYPE b){
     return a<b?a:b ;
 }
+
