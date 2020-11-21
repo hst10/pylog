@@ -1,0 +1,2 @@
+export PYTHONPATH="${PYTHONPATH}:${PWD}"
+export PYLOGPATH=$PWD

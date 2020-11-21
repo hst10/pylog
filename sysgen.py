@@ -11,6 +11,7 @@ from config import TEMPLATE_DIR
 supported_boards = [
     'zedboard',
     'pynq',
+    'pynq-z2',
     'ultra96',
     'aws_f1',
     'alveo_u200',
