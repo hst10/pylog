@@ -56,11 +56,7 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
         # builtins = open('builtin.py').read()
         source_func = textwrap.dedent(inspect.getsource(func))
-        if debug: 
-            print("[DEBUG] original python func------------------")
-            print(source_func)
-            print("----------------------------------------------")
-
+        if debug: print(source_func)
         arg_names = inspect.getfullargspec(func).args
 
         for arg in args:
@@ -150,12 +146,9 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
 def pylog_compile(src, arg_info, backend, board, path,
                   gen_hlsc=True, debug=False, viz=False):
-    print("[INFO] Compiling PyLog code ...")
+    print("Compiling PyLog code ...")
     ast_py = ast.parse(src)
-    if debug: 
-        print("[DEBUG] parsing python func------------------")
-        astpretty.pprint(ast_py)
-        print("---------------------------------------------")
+    if debug: astpretty.pprint(ast_py)
 
     # add an extra attribute pointing to parent for each node
     ast_link_parent(ast_py)  # need to be called before analyzer
