@@ -97,9 +97,9 @@ class PLCodeGenerator:
 
     def include_code(self, ip_header=False):
         if ip_header:
-            header_files = ['ap_int.h', 'ap_fixed.h', 'configured_IPcores.h']
+            header_files = ['ap_int.h', 'ap_fixed.h', 'hls_math.h', 'configured_IPcores.h']
         else:
-            header_files = ['ap_int.h', 'ap_fixed.h']
+            header_files = ['ap_int.h', 'ap_fixed.h', 'hls_math.h']
         return ''.join([ f'#include "{f}"\n' for f in header_files]) + '\n'
 
     def iter_fields(self, node):

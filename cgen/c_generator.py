@@ -76,7 +76,10 @@ class CGenerator(object):
                             lambda d: not self._is_simple_node(d))
         rval_str = self._parenthesize_if(n.right,
                             lambda d: not self._is_simple_node(d))
-        return '%s %s %s' % (lval_str, n.op, rval_str)
+        if n.op=='**':
+            return 'pow(%s,%s)' % (lval_str, rval_str)
+        else:
+            return '%s %s %s' % (lval_str, n.op, rval_str)
 
     def visit_Assignment(self, n):
         rval_str = self._parenthesize_if(
