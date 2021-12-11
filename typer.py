@@ -15,7 +15,10 @@ class PLTyper:
         """Visit a node."""
 
         if self.debug:
-            print(f'Visiting {node.__class__.__name__}, {node}')
+            if isinstance(node, PLArrayDecl):
+                print("vising an array")
+            else:
+                print(f'Visiting {node.__class__.__name__}, {node}')
 
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
@@ -119,8 +122,14 @@ class PLTyper:
 
     def visit_PLArrayDecl(self, node, ctx={}):
         dims = ()
-        for e in node.dims.elts:
-            dims += (e.value,)
+        if isinstance(node.dims, PLConst):
+            dims+=(node.dims.value,)
+        else:
+            for e in node.dims.elts:
+                #if isinstance(e,PLVariable):
+                #    dims += (e,)
+                #else:
+                dims += (e.value,)
 
         node.pl_type = PLType(ty=node.ele_type, dim=len(dims))
         node.pl_shape = dims
@@ -259,9 +268,16 @@ class PLTyper:
         self.visit(node.upper, ctx)
         self.visit(node.step, ctx)
 
-        lower = node.lower.value if node.lower else None
-        upper = node.upper.value if node.upper else None
-        step = node.step.value if node.step else None
+        lower = node.lower if node.lower else None
+        upper = node.upper if node.upper else None
+        step = node.step if node.step else None
+
+        if lower is not None and not isinstance(lower, PLVariable) and not isinstance(lower, PLBinOp):
+            lower = lower.value
+        if upper is not None and not isinstance(upper, PLVariable) and not isinstance(upper, PLBinOp):
+            upper = upper.value
+        if step is not None and not isinstance(step, PLVariable) and not isinstance(step, PLBinOp):
+            step= step.value
 
         if hasattr(node, 'is_offset'):
             if step is None: step = 1

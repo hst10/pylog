@@ -170,7 +170,10 @@ class PLCodeGenerator:
     #     pass
 
     def visit_PLArrayDecl(self, node, config=None):
-        dims = [self.visit(e, config) for e in node.dims.elts]
+        if isinstance(node.dims, PLConst):
+            dims = [node.dims.value]
+        else:
+            dims = [self.visit(e, config) for e in node.dims.elts]
         return array_decl(var_type=node.ele_type,  # string
                           name=self.visit(node.name, config).name,
                           dims=dims)

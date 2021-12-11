@@ -32,7 +32,10 @@ class CGenerator(object):
         if node is None:
             return ''
         else:
-            return ''.join(self.visit(c) for c_name, c in node.children())
+            if isinstance(node, int):
+                return str(node)
+            else:
+                return ''.join(self.visit(c) for c_name, c in node.children())
 
     def visit_Constant(self, n):
         return n.value
