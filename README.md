@@ -1,3 +1,8 @@
+#this is the "readme" page for Jiawei_pylog_branch
+  I modify some of the jinja templete to make it generate correct C/C++ template code.
+  Also, the analysior and IPanalysior had been modified to make sure it get correct IP core. 
+
+
 # PyLog
 
 PyLog: An Algorithm-Centric FPGA Programming and Synthesis Flow
