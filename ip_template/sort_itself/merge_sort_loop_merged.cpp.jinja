@@ -1,6 +1,6 @@
 #include "{{top_name}}.h"
 #include "assert.h"
-
+#include "ap_int.h"
 void {{top_name}}({{d0}} A[{{s0}}]) {
     {{d0}}  temp[{{s0}}];
  stage:
@@ -15,7 +15,7 @@ void {{top_name}}({{d0}} A[{{s0}}]) {
         for (int i = 0; i < {{s0}}; i++) {
 #pragma HLS pipeline II= {{v0}}
             {{d0}}  t1 = A[f1];
-            {{d0}}  t2 = (f2 == i3) ? 0 : A[f2];
+            {{d0}}  t2 = (f2 == i3) ? 0 : A[f2].to_int();
             if(f2 == i3 || (f1 < i2 && t1 <= t2)) {
                 temp[i] = t1;
                 f1++;
