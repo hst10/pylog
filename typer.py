@@ -511,7 +511,7 @@ class PLTyper:
                     if (global_ip['shape'][i][0]=='s') :
                         # if begin with "s", the shape should be configured
                         shape_id = global_ip['shape'][i]
-                        node.func_configs[shape_id] = node.shapes[i][0]
+                        node.func_configs[shape_id] = node.shapes[i]
 
             # the input dimension is >1
             if (node.dims[i]>1):
