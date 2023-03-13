@@ -1,48 +1,19 @@
-/*
-numpy.convolve(a, v, mode='full')
-Reverse the order of elements in an array along the given axis.
-The shape of the array is preserved, but the elements are reordered.
-
-Parameters
-    a : Input array. First one-dimensional input array.
-    v : Second one-dimensional input array.
-    mode : {‘full’, ‘valid’, ‘same’}, optional
-    ‘full’: By default, mode is ‘full’. This returns the convolution at each point of overlap,
-        with an output shape of (N+M-1,). At the end-points of the convolution, the signals do not
-        overlap completely, and boundary effects may be seen.
-    ‘same’: Mode ‘same’ returns output of length max(M, N). Boundary effects are still visible.
-    ‘valid’: Mode ‘valid’ returns output of length max(M, N) - min(M, N) + 1. The convolution product is only
-        given for points where the signals overlap completely. Values outside the signal boundary have no effect.
-Returns
-    outarray_like: A view of m with the entries of axis reversed. 
-                Since a view is returned, this operation is done in constant time.
-*/
-
 #include "{{top_name}}.h"
-
-void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s1}}], {{d0}} C[{{s2}}])
+#include "ap_int.h"
+void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s1}}], {{d0}} output[{{s2}}])
 {
 #pragma HLS ARRAY_PARTITION variable=A complete
 #pragma HLS ARRAY_PARTITION variable=B complete
 #pragma HLS ARRAY_PARTITION variable=C complete
 
-
-    for (int i=0; i<{{s2}}; i++){
-        #pragma HLS unroll
-        C[i] = 0;
-    }
-
-    for (int m=0; m<{{v0}} ; m++){
-        for (int n=0; n<{{v1}} ; n++){
-        #pragma HLS pipeline
-            for ( int i=0; i< {{s2}} ; i=i+{{v0}}){
-                for (int k=0; k< {{s1}}; k=k+{{v1}} ){
-                    if ( (i-k>=0)&&(i-k<{{s0}}-1)&&(i+m<{{s2}})&&(k+n<{{s1}}) ){
-                        C[i+m] += A[k+n]*B[i+m-k-n];
-                    }
-                }
+    for (int i = 0; i < output_size; i++) {
+        output[i] = 0;
+        for (int j = 0; j < kernel_len; j++) {
+            int signal_index = i - j;
+            if (signal_index >= 0 && signal_index < signal_len) {
+                output[i] += A[signal_index] * B[j];
             }
-        } 
+        }
     }
-}
 
+}
