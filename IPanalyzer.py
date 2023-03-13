@@ -1,6 +1,7 @@
 from IPinforms import *
 import jinja2
 import numpy as np
+import math 
 
 def analyze_ip_configuration(node):
     ip_config = {}
@@ -21,17 +22,45 @@ def analyze_ip_configuration(node):
             ip_config[i] = node.optm_configs[i]
         else:
             ip_config[i] = Global_IP_optm_configs_Default[ip_name][i]
-
-    if node.name == "argmax":
+    '''
+    if (node.name == "argmax") or (node.name == "max") or(node.name=="min"):
         if ('version' not in node.optm_configs) or \
            (node.optm_configs['version'] == 0):
+            print("if branch ahs been executed")
             log2_kernel_size = int(np.log2(ip_config['s0']))
             ip_config['log2_kernel_size'] = log2_kernel_size
+########add
+            ip_config['kernel_size'] = int(np.log2(log2_kernel_size))
+            #ip_config['II']  = int(ip_config['s0']) / int(kernel_size)
+            ip_config['SIZE_']=2
+            ip_config['BATCH_']=2
+            ip_config['STAGE'] = 4
+
         else:
+            print("else branch has been executed")
             kernel_size = ip_config['kernel_size']
             ip_config['log2_kernel_size'] = int(np.log2(kernel_size))
             ip_config['II']  = int(ip_config['s0']) / int(kernel_size)
-
+    print(ip_config)
+    '''
+    if node.name == "argmax" or node.name == "argmin":
+        if ('version' not in node.optm_configs) or \
+           (node.optm_configs['version'] == 0):
+            log2_kernel_size = math.ceil(np.log2(tupToInt(ip_config['s0'])))
+            ip_config['log2_kernel_size'] = log2_kernel_size
+            
+        else:
+            kernel_size = ip_config['kernel_size']
+            ip_config['log2_kernel_size'] = int(math.ceil(np.log2(kernel_size)))
+            ip_config['II']  = int(ip_config['s0']) / int(kernel_size)
+    
+    if node.name == "max" or node.name =="min":
+        #since we only exist argmax pipeline method, so dont need to detect if it is in Global_IP_versions
+        log2_kernel_size = int((np.log2(ip_config['s0'])))
+        ip_config['SIZE'] = tupToInt(ip_config['s0'])
+        ip_config['BATCH'] = 4
+        ip_config['ITERATION'] = math.ceil(tupToInt(ip_config['s0'])/ip_config['BATCH'])
+    
     return ip_config
 
 
@@ -50,7 +79,24 @@ def ip_generator(node, project_path, recordip):
 
     ip_name = analyze_ip_versions(node)
     ip_config = analyze_ip_configuration(node)
-
+    '''print("debug IPanalysis!")
+    print(node.func_configs)
+    print(node.func_configs['s0'][0])
+    ip_config['s0'] = tupToInt(node.func_configs['s0'])
+    ip_config['s1'] = tupToInt(node.func_configs['s2'])
+    ip_config['s2'] = tupToInt(node.func_configs['s2'])
+    
+    print(node.func_configs)
+    print(ip_config)
+    '''
+    
+    
+    if node.name !="matmul":
+        templetShapeTransformer(ip_config, node)
+    #debug!
+    
+    
+    
     templateLoader = jinja2.FileSystemLoader(searchpath="./")
     templateEnv = jinja2.Environment(loader=templateLoader)
     file_path = Global_IP_file_path[ip_name]
@@ -78,3 +124,16 @@ def ip_generator(node, project_path, recordip):
     f.close()
     f_h.close()
     f_cpp.close()
+
+def tupToInt(thistuple):
+    res=""
+    for i in thistuple:
+        res+=str(i)
+    res=int(res)
+    return res
+
+def templetShapeTransformer(ip_config, node):
+    keylist = {'s0', 's1', 's2', 's3', 's4', 's5'}
+    for i in keylist:
+        if i in ip_config.keys():
+            ip_config[i] = tupToInt(node.func_configs[i])
