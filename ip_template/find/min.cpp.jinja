@@ -1,36 +1,36 @@
 #include "{{top_name}}.h"
-
-void {{top_name}}(DTYPE A[SIZE] , DTYPE* min){
-    DTYPE temp[STAGE][BATCH/2];
-    DTYPE min_value = A[0];
+#include "ap_int.h"
+DTYPE min_unit(DTYPE a , DTYPE b){
+    return a<b?a:b ;
+}
+void min_0(DTYPE A[SIZE] , DTYPE* min ){
+    DTYPE temp[2][SIZE/2+1];//SIZE DEVIDED BY 2 AND CILING
 #pragma HLS ARRAY_PARTITION variable=temp complete
 #pragma HLS ARRAY_PARTITION variable=A complete
 
     for (int i=0; i<ITERATION; i++){
-        #pragma HLS pipeline
         for(int b=0;b<BATCH;b=b+2){ // BATCH = 2^n
         	if( i*BATCH+b+1 <SIZE ){
-            temp[0][b/2] = min_unit(A[i*BATCH+b],A[i*BATCH+b+1]);
-        	}else if(i*BATCH+b<SIZE && i*BATCH+b+1>=SIZE ){
-        	temp[0][b/2] = min_unit(A[i*BATCH+b],A[0]);
+            temp[0][i*BATCH/2+b/2] = min_unit(A[i*BATCH+b],A[i*BATCH+b+1]);
+        	}else if(i*BATCH/2+b<SIZE && i*BATCH+b+1>=SIZE ){
+        	temp[0][i*BATCH/2+b/2] = min_unit(A[i*BATCH+b],A[i*BATCH+b]);
         	}else {
-        		temp[0][b/2] = A[0] ;
+        		temp[0][i*BATCH+b/2] = A[i*BATCH+b] ;
         	}
+        }        
+        for(int m=0; m<BATCH/2; m=m+2){
+            if( i*BATCH/2+1<SIZE/2+1){
+                temp[1][i]= min_unit(temp[0][i*BATCH/2],temp[0][i*BATCH/2+1]);
+        	}else if((i*BATCH/2<SIZE/2+1) && (i*BATCH/2+1>=SIZE/2+1) ){
+        	    temp[1][i]= min_unit(temp[0][i*BATCH/2],temp[0][i*BATCH/2]);
+        	}else {
+        		temp[1][i]= 0 ;
+        	}
+        }    
+
+        for(int j = 0; j <BATCH/4; j++){
+            if (temp[1][i*BATCH/4+j]<= *min){
+                *min = temp[1][i*BATCH/4+j];}
         }
-
-        for (int s=0; s<STAGE-1; s++){
-            for(int m=0; m<BATCH/2; m=m+2){
-                temp[s+1][m/2]= min_unit(temp[s][m],temp[s][m+1]);
-        }    }
-        if(temp[STAGE-1][0]<min_value)
-            min_value = temp[STAGE-1][0];
-        if(temp[STAGE-1][1]<min_value)
-            min_value = temp[STAGE-1][1];
     }
-    *min= min_value;
-}
-
-DTYPE min_unit(DTYPE a , DTYPE b){
-    return a<b?a:b ;
-}
-
+    
