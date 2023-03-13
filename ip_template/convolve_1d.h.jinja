@@ -1,4 +1,6 @@
 #pragma once
-
-void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s1}}], {{d0}} C[{{s2}}]);
-
+#include "ap_int.h"
+#define output_size {{s0+s1-1}}
+#define kernel_len {{s1}}
+#define signal_len {{s0}}
+void {{top_name}}({{d0}} A[{{s0}}], {{d0}} B[{{s1}}], {{d0}} output[{{s2}}]);
