@@ -1,5 +1,3 @@
-from env import *
-
 import numpy as np
 #from pysim import *
 from pylog import *

@@ -1,7 +1,5 @@
-from env import *
-
 import numpy as np
-#from pysim import *
+# from pysim import *
 from pylog import *
 
 @pylog(mode='debug')#(mode='pysim')
