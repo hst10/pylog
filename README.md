@@ -18,12 +18,13 @@ export PYTHONPATH=/your/path/to/pylog:$PYTHONPATH
 
 Also, please modify the paths at the beginning the following files: 
 - `tests/env.py`: Modify PyLog path accordingly. `env.py` is imported by test code under `tests` (not necessary if you add PyLog path to `PYTHONPATH`)
-- `pylog.py`: Set the following addresses for your host system (used for compilation and synthesis) and target system (used for deployment, i.e. the FPGA system)
-  - `HOST_ADDR`: The address of the host system (should be reachable from target system), used only in `deploy` mode to fetch syntehsis results. 
-  - `HOST_BASE`: The path to the workspace directory on the host system. If the directory doesn't exist, PyLog will create it. PyLog compilation and synthesis outputs will be written to this directory. 
-  - `TARGET_ADDR`: The address of the target system. Currently not used. 
-  - `TARGET_BASE`: The path to the workspace directory on the target system. If the directory doesn't exist, PyLog will create it. PyLog compilation outputs will be written to this directory. Bitstreams (\*.bit) and hardware handoff files (\*.hwh) will be copied to this directory from host system. 
-  - `WORKSPACE`: The actually used path to workspace. Points to `HOST_BASE` when you are using PyLog for synthesis on the host system and `TARGET_BASE` when you are using PyLog for deployment on the target system.  
+- `config.py`: Set the following addresses for your host system (used for compilation and synthesis) and target system (used for deployment, i.e., the FPGA system)
+  - `PYLOG_ROOT_DIR`: The path to your local PyLog copy
+  - `WORKSPACE`: Directory for generated Vitis/Vivado project files. By default, it is set to PYLOG_ROOT_DIR + `/pylog_projects`. If the directory doesn't exist, PyLog will create it. PyLog compilation and synthesis outputs will be written to this directory. 
+  - `HOST_ADDR`: (only used in deploy mode) The address of the host system (should be reachable from target system), used only in `deploy` mode to `scp` syntehsis results from host. 
+  - `TARGET_ADDR`: (only used in deploy mode) The address of the target system. Currently not used. 
+  - `TARGET_BASE`: (only used in deploy mode) The path to the workspace directory on the target system. If the directory doesn't exist, PyLog will create it. PyLog compilation outputs will be written to this directory. Bitstreams (\*.bit) and hardware handoff files (\*.hwh) will be copied to this directory from host system. 
+
 
 ### PyLog usage
 To use PyLog, import pylog and simply add PyLog decorator `@pylog` to the function that you'd like to synthesize into an FPGA accelerator. Pass NumPy arrays to the decorated function and call the decorated function. Then run the whole Python program. In the following example, `vecadd` function will be compiled into HLS C code by PyLog. 
