@@ -10,7 +10,8 @@ from config import TEMPLATE_DIR, HLS_CMD
 # list of supported boards
 supported_boards = [
     'zedboard',
-    'pynq',
+    'pynq-z1',
+    'pynq-z2',
     'ultra96',
     'aws_f1',
     'alveo_u200',
@@ -30,13 +31,13 @@ config = {
 
 
 class PLSysGen:
-    def __init__(self, backend='vhls', board='pynq', config=None):
+    def __init__(self, backend='vhls', board='pynq-z2', config=None):
         self.backend = backend
         self.target_board = board
         self.config = config
         if board not in supported_boards:
-            print(f'{board} is not supported. Using pynq as target. ')
-            self.target_board = 'pynq'
+            print(f'{board} is not supported. Using pynq-z2 as target. ')
+            self.target_board = 'pynq-z2'
 
         self.using_vitis = (board == 'aws_f1' or board.startswith('alveo'))
 

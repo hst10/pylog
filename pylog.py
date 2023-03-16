@@ -11,7 +11,7 @@ import functools
 import subprocess
 import numpy as np
 
-from config import HOST_ADDR, HOST_BASE, TARGET_BASE, WORKSPACE
+from config import TARGET_BASE, WORKSPACE
 from nodes import plnode_link_parent
 from analyzer import PLAnalyzer, PLTester, ast_link_parent
 from typer import PLTyper
@@ -25,7 +25,7 @@ from chaining_rewriter import PLChainingRewriter
 PYLOG_KERNELS = dict()
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
-          board='ultra96', freq=None):
+          board='pynq-z2', freq=None):
     if func is None:
         return functools.partial(pylog, mode=mode, path=path, \
                                  backend=backend, board=board, freq=freq)
@@ -121,25 +121,25 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
                 xclbin = f'{top_func}/{top_func}_{board}.{ext}'
 
-                if not os.path.exists(f'{TARGET_BASE}/{xclbin}'):
-                    subprocess.call(
-                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{xclbin} " + \
-                        f"{TARGET_BASE}/{top_func}/", shell=True)
+                # if not os.path.exists(f'{TARGET_BASE}/{xclbin}'):
+                #     subprocess.call(
+                #         f"scp -r {HOST_ADDR}:{HOST_BASE}/{xclbin} " + \
+                #         f"{TARGET_BASE}/{top_func}/", shell=True)
 
             else:
 
                 bit_file = f'{top_func}/{top_func}_{board}.bit'
                 hwh_file = f'{top_func}/{top_func}_{board}.hwh'
 
-                if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
-                    subprocess.call(
-                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
-                        f"{TARGET_BASE}/{top_func}/", shell=True)
+                # if not os.path.exists(f'{TARGET_BASE}/{bit_file}'):
+                #     subprocess.call(
+                #         f"scp -r {HOST_ADDR}:{HOST_BASE}/{bit_file} " + \
+                #         f"{TARGET_BASE}/{top_func}/", shell=True)
 
-                if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
-                    subprocess.call(
-                        f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
-                        f"{TARGET_BASE}/{top_func}/", shell=True)
+                # if not os.path.exists(f'{TARGET_BASE}/{hwh_file}'):
+                #     subprocess.call(
+                #         f"scp -r {HOST_ADDR}:{HOST_BASE}/{hwh_file} " + \
+                #         f"{TARGET_BASE}/{top_func}/", shell=True)
 
             plrt = PLRuntime(config)
             return plrt.call(args)

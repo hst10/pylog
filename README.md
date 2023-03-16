@@ -56,12 +56,12 @@ You can also pass arguments to `@pylog` decorator to control the behavior of PyL
   - `'deploy'` or `'run'` or `'acc'`: Run PyLog in deploy mode. This will program FPGA, use PyLog runtime to invoke FPGA and collect results. 
   
 - `path`: This overwrites the `WORKSPACE` string in `pylog.py`. 
-- `board`: The target FPGA board. Currently PyLog support `zedboard`, `pynq`, and `ultra96`. By default `board='ultra96'`. 
+- `board`: The target FPGA board. Currently PyLog support `pynq-z2`, `pynq-z1`, `zedboard`, and `ultra96`. By default `board='pynq-z2'`. 
 
 Here is one example of configuring PyLog:  
 
 ```Python
-@pylog(mode='deploy', board='pynq')
+@pylog(mode='deploy', board='pynq-z2')
 ```
 In this example, PyLog will run in deploy mode, targeting PYNQ board (implying the current program is running on a PYNQ board). 
 

@@ -1,11 +1,17 @@
-# Used in pylog.py
-HOST_ADDR = 'ubuntu@localhost'
-HOST_BASE = '/home/ubuntu/fpga_projects/pylog_projects'
+# Please modify the following line to your actual PyLog root path
+PYLOG_ROOT_DIR = '/home/ubuntu/pylog'
+
+# Directory for generated Vitis/Vivado project files
+WORKSPACE = PYLOG_ROOT_DIR + '/pylog_projects'
+
+# # Only used in deploy mode (for scp'ing bitstreams and configurations):
+# HOST_ADDR = 'ubuntu@localhost'
 # TARGET_ADDR = 'ubuntu@localhost'
+
+# The project path on TARGET FPGA system, only used in deploy mode
 TARGET_BASE = '/home/ubuntu/pylog_projects'
-WORKSPACE = HOST_BASE
 
 # Used in sysgen.py
-TEMPLATE_DIR='/home/ubuntu/pylog/boards/'
+TEMPLATE_DIR = PYLOG_ROOT_DIR + '/boards/'
 
-HLS_CMD='vitis_hls'
+HLS_CMD = 'vitis_hls'

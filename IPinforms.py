@@ -5,7 +5,7 @@ Global_IP_file_path = {"conv1d" : "ip_template/convolve_1d",
 "argmax_pipe" : "ip_template/find/argmax_pipe",
 "argmax_nonepipe" : "ip_template/find/argmax_nonepipe",
 "argmin" : "ip_template/find/argmin",
-"max" : "ip_template/find/max",
+"max" : "./ip_template/find/max",
 "min" : "ip_template/find/min",
 "sort_insertion": "ip_template/sort/insertion_sort_parallel",
 "sort_merge": "ip_template/sort/merge_sort_parallel",
@@ -22,7 +22,7 @@ Global_IP_versions = {
 
 Global_IP_args = {
 "conv1d" : {
-                    'type' : ['d0','d0','d0'], 
+                    'type' : ['d0','d0','d0'],
                     'shape': ['s0','s1','s2'],
                     'dim'  : [1,1,1],
                     'ret'  : 'void gf' },

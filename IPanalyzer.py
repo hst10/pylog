@@ -22,7 +22,7 @@ def analyze_ip_configuration(node):
         else:
             ip_config[i] = Global_IP_optm_configs_Default[ip_name][i]
 
-    if node.name == "argmax":
+    if (node.name == "argmax") or (node.name == "max"):
         if ('version' not in node.optm_configs) or \
            (node.optm_configs['version'] == 0):
             log2_kernel_size = int(np.log2(ip_config['s0']))
