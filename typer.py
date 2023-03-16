@@ -511,7 +511,7 @@ class PLTyper:
                     if (global_ip['shape'][i][0]=='s') :
                         # if begin with "s", the shape should be configured
                         shape_id = global_ip['shape'][i]
-                        node.func_configs[shape_id] = node.shapes[i][0]
+                        node.func_configs[shape_id] = node.shapes[i]
 
             # the input dimension is >1
             if (node.dims[i]>1):
@@ -542,12 +542,12 @@ class PLTyper:
 
     def calculate_ip_return(self, node):
         global_ip_ret = IPinforms.Global_IP_args[node.name]['ret']
-        if (global_ip_ret[0]=='d'):
-            return PLType( node.func_configs[global_ip_ret[0]],0), () 
-        if (global_ip_ret =='void'):
-            return PLType('void', 0) , ()
-        else :
-            return PLType( global_ip_ret, 0) , ()     
+        if (global_ip_ret[0] == 'd'):
+            return PLType(node.func_configs[global_ip_ret], 0), ()
+        if (global_ip_ret == 'void'):
+            return PLType('void', 0), ()
+        else:
+            return PLType(global_ip_ret, 0), ()
 
     ## have not consider the situation that argmax(1, a+2), a is not defined
     ## have not consider the input is constant such as np.testip(m,m,m,m,5)

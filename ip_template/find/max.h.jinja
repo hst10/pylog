@@ -11,7 +11,7 @@
 
 
 const static int BATCH = {{BATCH_}};
-const static int ITERATION = {{(SIZE_%BATCH_==0) ? SIZE_/BATCH_ : SIZE_/BATCH_+1}};
+const static int ITERATION = {{ SIZE_/BATCH_ if ((SIZE_%BATCH_) == 0) else SIZE_/BATCH_+1 }};
 const static int STAGE = {{log2(BATCH)-1}}; 
 
 const static int SIZE = {{SIZE_}};

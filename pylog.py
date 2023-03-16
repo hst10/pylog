@@ -22,6 +22,7 @@ from runtime import PLRuntime
 import IPinforms
 from chaining_rewriter import PLChainingRewriter
 
+PYLOG_KERNELS = dict()
 
 def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
           board='ultra96', freq=None):
@@ -50,6 +51,8 @@ def pylog(func=None, *, mode='cgen', path=WORKSPACE, backend='vhls', \
 
     if pysim_only:
         return func
+
+    PYLOG_KERNELS[func.__name__] = func
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

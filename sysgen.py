@@ -5,7 +5,7 @@ import time
 import subprocess
 
 from jinja2 import FileSystemLoader, Environment
-from config import TEMPLATE_DIR
+from config import TEMPLATE_DIR, HLS_CMD
 
 # list of supported boards
 supported_boards = [
@@ -195,7 +195,7 @@ class PLSysGen:
 
                 subprocess.call(
                     f"cd {project_path}; " + \
-                    f"vivado_hls -f {hls_tcl_script}; " + \
+                    f"{HLS_CMD} -f {hls_tcl_script}; " + \
                     f"cd -;",
                     shell=True)
 

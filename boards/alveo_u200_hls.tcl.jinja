@@ -4,7 +4,7 @@ set_top {{ hls_top }}
 add_files {{ hls_file_name }}  -cflags "-std=c++0x"
 
 open_solution -reset "solution1"
-set_part {xcu280-fsvh2892-2L-e} -tool vivado
+set_part {xcu200-fsgd2104-2-e}
 create_clock -period {{ hls_freq }}MHz
 
 config_sdx -optimization_level none -target xocc
@@ -15,6 +15,6 @@ config_schedule -enable_dsp_full_reg
 # csim_design
 
 csynth_design
-export_design -format ip_catalog -version "1.0" -xo {{ hls_base_path }}/{{hls_top}}_{{hls_board}}.xo
+export_design -format xo -version "1.0" -output {{ hls_base_path }}/{{hls_top}}_{{hls_board}}.xo
 
 exit
