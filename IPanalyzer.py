@@ -23,7 +23,7 @@ def analyze_ip_configuration(node):
         else:
             ip_config[i] = Global_IP_optm_configs_Default[ip_name][i]
     '''
-    if (node.name == "argmax") or (node.name == "max") or(node.name=="min"):
+    if (node.name == "argmax") or (node.name == "max") or(node.name=="min"):        
         if ('version' not in node.optm_configs) or \
            (node.optm_configs['version'] == 0):
             print("if branch ahs been executed")
@@ -48,11 +48,27 @@ def analyze_ip_configuration(node):
            (node.optm_configs['version'] == 0):
             log2_kernel_size = math.ceil(np.log2(tupToInt(ip_config['s0'])))
             ip_config['log2_kernel_size'] = log2_kernel_size
+            #print("log2_kernal_size = ", log2_kernel_size)
+            index_temp=[]
+            len_of_layer = tupToInt(ip_config['s0'])
+            for i in range (1, log2_kernel_size+1):
+                if(len_of_layer%2 ==0):
+                    index_temp.append(len_of_layer//2)
+                    len_of_layer = len_of_layer//2
+                else:
+                    index_temp.append(len_of_layer//2+1)
+                    len_of_layer=len_of_layer//2+1
+            ip_config['index_temp'] = index_temp
+            #print("jiaweiIPcheck Yes")                                                                              
+            #print(ip_config)
             
         else:
             kernel_size = ip_config['kernel_size']
             ip_config['log2_kernel_size'] = int(math.ceil(np.log2(kernel_size)))
             ip_config['II']  = int(ip_config['s0']) / int(kernel_size)
+            ip_config['self_define'] = 123321
+            #print("jiaweiIPcheck")
+            #print(ip_config)
     
     if node.name == "max" or node.name =="min":
         #since we only exist argmax pipeline method, so dont need to detect if it is in Global_IP_versions
