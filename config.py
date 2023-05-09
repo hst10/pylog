@@ -1,5 +1,6 @@
-# Please modify the following line to your actual PyLog root path
-PYLOG_ROOT_DIR = '/home/ubuntu/pylog'
+import os
+# If necessary, please modify the following line to your actual PyLog root path
+PYLOG_ROOT_DIR = os.getcwd() # '/home/ubuntu/pylog'
 
 # Directory for generated Vitis/Vivado project files
 WORKSPACE = PYLOG_ROOT_DIR + '/pylog_projects'
@@ -9,7 +10,7 @@ WORKSPACE = PYLOG_ROOT_DIR + '/pylog_projects'
 # TARGET_ADDR = 'ubuntu@localhost'
 
 # The project path on TARGET FPGA system, only used in deploy mode
-TARGET_BASE = '/home/ubuntu/pylog_projects'
+TARGET_BASE = os.getcwd() + '/pylog_projects'
 
 # Used in sysgen.py
 TEMPLATE_DIR = PYLOG_ROOT_DIR + '/boards/'
